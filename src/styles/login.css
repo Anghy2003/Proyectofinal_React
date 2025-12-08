@@ -1,0 +1,175 @@
+/* ============================= */
+/*   RESET Y CONFIGURACIÓN BASE  */
+/* ============================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+}
+
+/* ============================= */
+/*        FONDO GENERAL          */
+/* ============================= */
+
+.background {
+  position: fixed;
+  inset: 0;
+  background-image: url("../assets/fondo.png");
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.55);
+  z-index: -1;
+}
+
+/* ============================= */
+/*         CONTENEDOR LOGIN      */
+/* ============================= */
+
+.login-wrapper {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================= */
+/*      MARCO / IMAGEN FONDO     */
+/* ============================= */
+
+.login-frame {
+  width: 1100px;     /* ✔ tamaño exacto del modelo */
+  max-width: 92%;
+  opacity: 1;
+  display: block;
+}
+
+/* ============================= */
+/*     FORMULARIO SOBRE MARCO     */
+/* ============================= */
+
+.login-content {
+  position: absolute;
+
+  /* ✔ posición exacta del diseño original */
+  width: 330px;
+  top: 50%;
+  left: 34%;
+  transform: translate(-50%, -50%);
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================= */
+/*            TÍTULO             */
+/* ============================= */
+
+.title {
+  color: #ffffff;
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1.4rem;
+}
+
+/* ============================= */
+/*            INPUTS             */
+/* ============================= */
+
+.input-group {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.input-group input {
+  width: 100%;
+  height: 46px;
+  padding-left: 42px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+
+  background: rgba(20, 32, 58, 0.85);
+  color: white;
+  font-size: 1rem;
+}
+
+.input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.input-icon {
+  position: absolute;
+  width: 20px;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+}
+
+/* ============================= */
+/*      BOTÓN "INICIAR SESIÓN"   */
+/* ============================= */
+
+.btn-primary {
+  width: 100%;
+  height: 46px;
+
+  margin-top: 0.7rem;
+  border: none;
+  border-radius: 8px;
+
+  background: #0d89e9;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+/* ============================= */
+/*    TEXTO "INICIA CON"         */
+/* ============================= */
+
+.text {
+  color: white;
+  text-align: center;
+  margin: 1rem 0 0.7rem;
+  font-size: 0.9rem;
+}
+
+/* ============================= */
+/*      BOTÓN GOOGLE LOGIN       */
+/* ============================= */
+
+.btn-google {
+  width: 100%;
+  height: 46px;
+
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+
+  background: rgba(0, 0, 0, 0.55);
+
+  color: #ffffff;
+  font-size: 0.82rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+
+  cursor: pointer;
+}
+
+.google-icon {
+  width: 20px;
+}

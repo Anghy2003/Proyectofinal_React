@@ -1,0 +1,286 @@
+/* ===== Fondo general (mismo que login) ===== */
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+}
+
+.background {
+  position: fixed;
+  inset: 0;
+  background-image: url("../assets/fondo.png");
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.55);
+  z-index: -1;
+}
+
+/* ===== Layout principal ===== */
+
+.dashboard {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  color: #ffffff;
+}
+
+/* ===== Sidebar ===== */
+
+.sidebar {
+  width: 240px;
+  padding: 20px 18px;
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 0 20px 20px 0;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  flex-direction: column;
+
+  /* 🔥 YA NO usamos space-between */
+  justify-content: flex-start;
+
+  /* 🔥 sidebar con altura completa como los cuadros */
+  height: calc(100vh - 40px);
+  margin: 20px 0;
+
+  margin-top: auto; /* 🔥 Esto lo empuja al fondo del sidebar */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.sidebar-logo {
+  width: 48px;
+}
+
+.sidebar-title {
+  font-weight: 600;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px 20px;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-item.active {
+  background: rgba(49, 119, 255, 0.25);
+  border: 1px solid rgba(49, 119, 255, 0.7);
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-logout {
+  align-self: flex-start;
+  background: transparent;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.sidebar-version {
+  opacity: 0.7;
+}
+
+/* ===== Contenido principal Usuarios ===== */
+
+/* === PANEL PRINCIPAL GRANDE TRANSPARENTE === */
+
+.usuarios-main {
+  flex: 1;
+  padding-left: 20px;
+  box-sizing: border-box;
+  display: flex;
+}
+
+.usuario-panel {
+  width: 96%;
+  height: calc(100vh - 83px);
+  margin: 20px 0;
+  padding: 20px;
+
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.0); /* MISMA TRANSPARENCIA DEL SIDEBAR */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+
+
+.usuarios-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+/* Buscador con efecto glass */
+.usuarios-search {
+  width: 60%;
+  max-width: 520px;
+}
+
+.usuarios-search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.01);
+  background: rgba(75, 79, 92, 0.1);
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.usuarios-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Tarjeta grande glass de la tabla */
+.usuarios-card {
+  margin-top: 10px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.01);
+  background: rgba(75, 79, 92, 0.1);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
+  padding: 18px 20px;
+}
+
+.usuarios-card-inner {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 12px 0;
+  overflow: hidden;
+}
+
+/* Tabla de usuarios */
+.usuarios-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;  /* 🔥 Reparte las columnas de manera uniforme */
+  font-size: 0.82rem;
+}
+
+.usuarios-table th,
+.usuarios-table td {
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  text-align: left;
+  vertical-align: middle;
+}
+
+
+.usuarios-table thead th {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.usuarios-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.usuarios-table th:nth-child(1),
+.usuarios-table td:nth-child(1) {
+  width: 60px;
+  text-align: center;
+}
+
+
+.usuarios-table th:nth-child(3),
+.usuarios-table td:nth-child(3) {
+  width: 220px;
+}
+
+
+.user-photo-icon {
+  width: 18px;
+}
+
+/* Estado (Activos / Suspendidos) */
+.badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.badge-success {
+  background: #22c55e;
+}
+
+.badge-danger {
+  background: #ef4444;
+}
+
+.time {
+  opacity: 0.8;
+}
+
+.acciones {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.icon-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+}
+
+.icon-button img {
+  width: 14px;
+}
+
+/* Texto de última actualización */
+.usuarios-update {
+  font-size: 0.78rem;
+  opacity: 0.85;
+  margin-top: 4px;
+  text-align: right;
+}
