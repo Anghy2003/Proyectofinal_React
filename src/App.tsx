@@ -1,4 +1,6 @@
+// src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";       
 import Login from "./pages/login";
 import Dashboard from "./pages/Dashboard";
 import Analisis from "./pages/analisis";
@@ -11,7 +13,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
+        {/* INICIO = Home */}
+        <Route path="/" element={<Home />} />
+
+        {/* LOGIN EN /login */}
+        <Route path="/login" element={<Login />} />
 
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/analisis" element={<Analisis />} />

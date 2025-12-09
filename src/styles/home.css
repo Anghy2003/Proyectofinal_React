@@ -1,0 +1,237 @@
+/* Reset básico */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Que todo ocupe el 100% del viewport */
+html,
+body {
+  height: 100%;
+  width: 100%;
+}
+
+/* Fondo general igual al del hero */
+body {
+  margin: 0;
+  background-color: #020814;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+    "Segoe UI", sans-serif;
+}
+
+/* MUY IMPORTANTE: que root no tenga max-width ni margin auto */
+#root {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
+
+.hero {
+  min-height: 100vh;
+  width: 100%;
+  padding: 40px 120px 60px;
+  background-color: #020814;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+
+/* ================= HEADER ================= */
+
+.hero-header {
+  display: flex;
+  align-items: flex-start;     /* 👈 ahora se alinean arriba */
+  justify-content: space-between;
+  padding-top: 10px;           /* un pequeño respiro desde arriba */
+  margin-bottom: 40px;
+}
+
+
+/* Logo */
+.hero-logo img {
+  height: 120px;     
+  width: auto;
+}
+
+
+/* Nav */
+.hero-nav {
+  display: flex;
+  gap: 48px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.hero-nav a {
+  letter-spacing: 0.03em;
+}
+
+/* Botón login */
+.hero-login-btn {
+  display: inline-block;
+  padding: 12px 32px;
+  border-radius: 40px;
+  background: linear-gradient(90deg, #00a7ff, #00d1ff);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 163, 255, 0.45);
+  text-decoration: none;
+}
+
+
+/* ================= MAIN ================= */
+
+.hero-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: 60px;
+}
+
+/* --------- LADO IZQUIERDO --------- */
+
+.hero-left h1 {
+  font-size: 6.2rem;   /* antes 4.2rem */
+  line-height: 1;
+  font-weight: 700;
+}
+
+/* Texto pequeño con flecha abajo */
+.hero-bottom-copy {
+  position: absolute;
+  left: 80px;
+  bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #b3c5d8;
+}
+
+.hero-arrow {
+  height: 38px;
+}
+
+/* --------- LADO DERECHO --------- */
+
+.hero-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-phone-wrapper {
+  width: 600px;    /* antes 430px */
+  max-width: 100%;
+}
+
+
+/* Una sola imagen: red + celular */
+.hero-visual {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  /* Si tu imagen YA viene inclinada, no rotamos nada */
+  /* Si quieres inclinar un poco más, puedes usar: */
+  /* transform: rotate(-3deg); */
+  filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.8));
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 980px) {
+  .hero {
+    padding: 20px 24px 32px;
+  }
+
+  .hero-main {
+    grid-template-columns: 1fr;
+    row-gap: 40px;
+  }
+
+  .hero-left h1 {
+    font-size: 3rem;
+  }
+
+  .hero-bottom-copy {
+    position: static;
+    margin-top: 32px;
+  }
+
+  .hero-phone-wrapper {
+    width: 320px;
+  }
+
+  .hero-header {
+    gap: 16px;
+  }
+
+  .hero-nav {
+    display: none;
+  }
+}
+
+/* ====== CONTENEDOR GENERAL DE LA SEGUNDA SECCIÓN ====== */
+
+.about-section {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;          /* ocupa toda la pantalla */
+  overflow: hidden;
+}
+
+/* Imagen de fondo ocupando toda la sección */
+.about-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.about-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Oscurecer un poco para que el texto se lea bien */
+.about-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 40%, transparent 0, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+  z-index: 1;
+}
+
+/* Contenido encima de la imagen */
+.about-content {
+  position: relative;
+  z-index: 2;
+  max-width: 520px;
+  padding: 120px 120px;   /* margen desde los bordes */
+  color: #ffffff;
+}
+
+/* Título y texto */
+.about-content h2 {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.about-content p {
+  font-size: 1.1rem;
+  line-height: 1.7;
+}

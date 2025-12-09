@@ -34,7 +34,7 @@ export default function Login() {
 
   return (
     <>
-      <div className="background" />
+      <div className="login-background" />
 
       <div className="login-wrapper">
         {/* Imagen del recuadro */}
