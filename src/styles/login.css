@@ -1,6 +1,4 @@
-/* ============================= */
 /*   RESET Y CONFIGURACIÓN BASE  */
-/* ============================= */
 
 *,
 *::before,
@@ -13,9 +11,7 @@ body {
   font-family: "Inter", sans-serif;
 }
 
-/* ============================= */
 /*        FONDO GENERAL          */
-/* ============================= */
 
 .background {
   position: fixed;
@@ -27,9 +23,7 @@ body {
   z-index: -1;
 }
 
-/* ============================= */
 /*         CONTENEDOR LOGIN      */
-/* ============================= */
 
 .login-wrapper {
   width: 100%;
@@ -41,25 +35,20 @@ body {
   overflow: hidden;
 }
 
-/* ============================= */
 /*      MARCO / IMAGEN FONDO     */
-/* ============================= */
 
 .login-frame {
-  width: 1100px;     /* ✔ tamaño exacto del modelo */
+  width: 1100px;  
   max-width: 92%;
   opacity: 1;
   display: block;
 }
 
-/* ============================= */
 /*     FORMULARIO SOBRE MARCO     */
-/* ============================= */
 
 .login-content {
   position: absolute;
 
-  /* ✔ posición exacta del diseño original */
   width: 330px;
   top: 50%;
   left: 34%;
@@ -69,9 +58,7 @@ body {
   flex-direction: column;
 }
 
-/* ============================= */
 /*            TÍTULO             */
-/* ============================= */
 
 .title {
   color: #ffffff;
@@ -80,9 +67,7 @@ body {
   margin-bottom: 1.4rem;
 }
 
-/* ============================= */
 /*            INPUTS             */
-/* ============================= */
 
 .input-group {
   position: relative;
@@ -115,9 +100,7 @@ body {
   transform: translateY(-50%);
 }
 
-/* ============================= */
 /*      BOTÓN "INICIAR SESIÓN"   */
-/* ============================= */
 
 .btn-primary {
   width: 100%;
@@ -135,9 +118,7 @@ body {
   cursor: pointer;
 }
 
-/* ============================= */
 /*    TEXTO "INICIA CON"         */
-/* ============================= */
 
 .text {
   color: white;
@@ -146,9 +127,7 @@ body {
   font-size: 0.9rem;
 }
 
-/* ============================= */
 /*      BOTÓN GOOGLE LOGIN       */
-/* ============================= */
 
 .btn-google {
   width: 100%;

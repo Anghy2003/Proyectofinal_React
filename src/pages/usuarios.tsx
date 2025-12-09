@@ -121,7 +121,7 @@ export default function Usuarios() {
               alt="SafeZone"
               className="sidebar-logo"
             />
-            <div className="sidebar-title">Administrador de SafeZone</div>
+            <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
@@ -131,7 +131,7 @@ export default function Usuarios() {
                 className="nav-icon"
                 alt="Dashboard"
               />
-              <span>Panel</span>
+              <span>Dashboard</span>
             </Link>
 
             <Link to="/usuarios" className="sidebar-item active">
@@ -146,17 +146,17 @@ export default function Usuarios() {
 
             <Link to="/reportes" className="sidebar-item">
               <img src={iconRepo} alt="Reportes" />
-              <span>Informes</span>
+              <span>Reportes</span>
             </Link>
 
             <Link to="/analisis" className="sidebar-item">
               <img src={iconIa} alt="IA Análisis" />
-              <span>Análisis de IA</span>
+              <span>IA Análisis</span>
             </Link>
 
             <Link to="/codigo-acceso" className="sidebar-item">
               <img src={iconAcceso} alt="Código Acceso" />
-              <span>Código de acceso</span>
+              <span>Código Acceso</span>
             </Link>
           </nav>
 
@@ -263,9 +263,9 @@ export default function Usuarios() {
                             <span className="time">{u.hora}</span>
                           </td>
                           <td className="acciones">
-                            <button className="icon-button">
+                            {/*<button className="icon-button">
                               <img src={iconEdit} alt="Editar" />
-                            </button>
+                            </button>*/}
                             <button className="icon-button">
                               <img src={iconEliminar} alt="Eliminar" />
                             </button>

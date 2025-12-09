@@ -25,7 +25,12 @@ body {
 
 /* ===== Sidebar ===== */
 
-.sidebar {
+.sidebar { 
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
   width: 240px;
   padding: 20px 18px;
   box-sizing: border-box;
@@ -39,19 +44,13 @@ body {
 
   display: flex;
   flex-direction: column;
-
-  /* 🔥 YA NO usamos space-between */
   justify-content: flex-start;
-
-  /* 🔥 sidebar con altura completa como los cuadros */
-  height: calc(100vh - 40px);
-  margin: 20px 0;
-
-  margin-top: auto; /* 🔥 Esto lo empuja al fondo del sidebar */
-  display: flex;
-  flex-direction: column;
   gap: 10px;
+
+  z-index: 10;   /* 🔥 ahora queda por encima de las cards */
 }
+
+
 
 .sidebar-header {
   display: flex;
@@ -121,12 +120,18 @@ body {
 
 .dashboard-main {
   flex: 1;
-  padding: 20px 26px 26px;
+  margin-left: 260px; /* espacio del sidebar */
+  padding: 20px 26px;
+
+  height: calc(100vh - 40px);  /* ⬅️ MISMO ALTO QUE EL SIDEBAR */
   box-sizing: border-box;
+
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
+
+
 
 /* Base de las tarjetas (glass) */
 .card {

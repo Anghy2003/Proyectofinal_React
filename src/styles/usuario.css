@@ -26,6 +26,11 @@ body {
 /* ===== Sidebar ===== */
 
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
   width: 240px;
   padding: 20px 18px;
   box-sizing: border-box;
@@ -39,18 +44,10 @@ body {
 
   display: flex;
   flex-direction: column;
-
-  /* 🔥 YA NO usamos space-between */
   justify-content: flex-start;
-
-  /* 🔥 sidebar con altura completa como los cuadros */
-  height: calc(100vh - 40px);
-  margin: 20px 0;
-
-  margin-top: auto; /* 🔥 Esto lo empuja al fondo del sidebar */
-  display: flex;
-  flex-direction: column;
   gap: 10px;
+
+  z-index: 10;
 }
 
 .sidebar-header {
@@ -66,6 +63,9 @@ body {
 
 .sidebar-title {
   font-weight: 600;
+  font-size: 1rem; 
+  line-height: 1.1;
+  white-space: nowrap; 
 }
 
 .sidebar-menu {
@@ -119,23 +119,24 @@ body {
 
 /* ===== Contenido principal Usuarios ===== */
 
-/* === PANEL PRINCIPAL GRANDE TRANSPARENTE === */
-
 .usuarios-main {
   flex: 1;
-  padding-left: 20px;
   box-sizing: border-box;
   display: flex;
+
+  margin-left: 260px; 
+  padding: 20px 26px; 
+  height: 100vh;
 }
 
 .usuario-panel {
-  width: 96%;
-  height: calc(100vh - 83px);
-  margin: 20px 0;
+  width: 100%;
+  height: calc(100vh - 40px);
   padding: 20px;
+  margin: 0;
 
   border-radius: 26px;
-  background: rgba(255, 255, 255, 0.0); /* MISMA TRANSPARENCIA DEL SIDEBAR */
+  background: rgba(255, 255, 255, 0);
   border: 1px solid rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -145,8 +146,6 @@ body {
   flex-direction: column;
   gap: 20px;
 }
-
-
 
 .usuarios-title {
   font-size: 1.4rem;
@@ -198,18 +197,17 @@ body {
 .usuarios-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;  /* 🔥 Reparte las columnas de manera uniforme */
-  font-size: 0.82rem;
+  table-layout: fixed;
+  font-size: 0.9rem;
 }
 
 .usuarios-table th,
 .usuarios-table td {
   padding: 10px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: left;
   vertical-align: middle;
 }
-
 
 .usuarios-table thead th {
   font-weight: 500;
@@ -227,12 +225,10 @@ body {
   text-align: center;
 }
 
-
 .usuarios-table th:nth-child(3),
 .usuarios-table td:nth-child(3) {
   width: 220px;
 }
-
 
 .user-photo-icon {
   width: 18px;
