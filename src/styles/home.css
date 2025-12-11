@@ -337,10 +337,10 @@ body {
 }
 
 /* HOVER SUAVE EN TODA LA TARJETA */
-.project-card-inner:hover {
+/*.project-card-inner:hover {
   transform: translateY(-6px);
   transition: transform 0.25s ease;
-}
+}*/
 
 /* RESPONSIVE */
 @media (max-width: 980px) {
@@ -360,6 +360,7 @@ body {
 
   .project-card {
     width: 100%;
+     perspective: 1000px;
   }
 
   .project-card-inner {
@@ -370,6 +371,15 @@ body {
     height: auto;
   }
 }
+
+
+/* ===== EFECTO 3D PARA TARJETAS ===== */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.2s ease-out;
+  will-change: transform;
+}
+
 
 /* ============= SECCIÓN COMUNIDAD ============= */
 
@@ -541,5 +551,139 @@ body {
 
   .download-phone img {
     width: 260px;
+  }
+}
+
+/* ============= FOOTER ============= */
+
+.footer {
+  background: linear-gradient(to bottom, #071b2b, #020814);
+  color: #ffffff;
+  padding: 32px 120px 20px;
+  font-size: 0.95rem;
+}
+
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 60px;
+}
+
+/* columnas */
+.footer-col {
+  flex: 1;
+}
+
+/* izquierda */
+.footer-col-left {
+  max-width: 220px;
+}
+
+.footer-logo {
+  height: 68px;
+  width: auto;
+  margin-bottom: 8px;
+}
+
+.footer-text-small {
+  font-size: 0.9rem;
+  color: #d4e4f3;
+  line-height: 1.4;
+}
+
+/* centro */
+.footer-col-center {
+  text-align: center;
+}
+
+.footer-title {
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+}
+
+.footer-nav a {
+  color: #e5f1ff;
+  font-size: 0.95rem;
+  text-decoration: none;
+}
+
+.footer-nav a:hover {
+  text-decoration: underline;
+}
+
+/* derecha */
+.footer-col-right {
+  text-align: right;
+}
+
+.footer-social {
+  display: flex;
+  justify-content: flex-end;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.footer-social a {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer-social img {
+  width: 22px;
+  height: 22px;
+}
+
+/* línea que separa del texto final */
+.footer-divider {
+  margin: 18px 0 10px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.15),
+    transparent
+  );
+}
+
+/* parte inferior */
+.footer-bottom {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #aabed3;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 980px) {
+  .footer {
+    padding: 28px 24px 18px;
+  }
+
+  .footer-top {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .footer-col-left,
+  .footer-col-right {
+    text-align: center;
+  }
+
+  .footer-social {
+    justify-content: center;
   }
 }

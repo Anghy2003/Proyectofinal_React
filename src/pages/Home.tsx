@@ -1,6 +1,7 @@
 // src/pages/Home.tsx
 import "./../styles/home.css";
 import { Link } from "react-router-dom";
+import { useEffect } from "react";
 
 import logo from "../assets/logo-safe-zone.png";
 import heroVisual from "../assets/logocelular.png";
@@ -14,8 +15,64 @@ import iconoComu from "../assets/iconComuni.svg";
 import lineasGeometricas from "../assets/lineas_geome.png";
 import iconDesc from "../assets/iconDesc.svg";
 import celularIncli from "../assets/celular3.png";
+import iconoInsta from "../assets/iconInsta.svg";
+import iconoFace from "../assets/iconFace.svg";
+
 
 export default function Home() {
+  // ============================
+  // 🔥 EFECTO 3D PROFESIONAL EN TARJETAS
+  // ============================
+  useEffect(() => {
+    const cards = document.querySelectorAll<HTMLElement>(".tilt-card");
+
+    const maxRotate = 14; // grados máx. en X/Y
+    const scale = 1.04;
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const card = event.currentTarget as HTMLElement;
+      const rect = card.getBoundingClientRect();
+
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+
+      const percentX = x / rect.width - 0.5; // -0.5 a 0.5
+      const percentY = y / rect.height - 0.5;
+
+      const rotateY = percentX * maxRotate * 2;
+      const rotateX = -percentY * maxRotate * 2;
+
+      card.style.transform = `
+        perspective(900px)
+        rotateX(${rotateX}deg)
+        rotateY(${rotateY}deg)
+        scale(${scale})
+      `;
+    };
+
+    const handleMouseLeave = (event: MouseEvent) => {
+      const card = event.currentTarget as HTMLElement;
+      card.style.transform = `
+        perspective(900px)
+        rotateX(0deg)
+        rotateY(0deg)
+        scale(1)
+      `;
+    };
+
+    cards.forEach((card) => {
+      card.addEventListener("mousemove", handleMouseMove as any);
+      card.addEventListener("mouseleave", handleMouseLeave as any);
+    });
+
+    return () => {
+      cards.forEach((card) => {
+        card.removeEventListener("mousemove", handleMouseMove as any);
+        card.removeEventListener("mouseleave", handleMouseLeave as any);
+      });
+    };
+  }, []);
+
   return (
     <>
       <section className="hero">
@@ -71,10 +128,10 @@ export default function Home() {
         <div className="about-content">
           <h2>¿Qué es SafeZone?</h2>
           <p>
-            Sistema digital de alerta comunitaria inteligente con
-            geolocalización, comunicación híbrida (WiFi/SMS) e inteligencia
-            artificial, que permite reportar y recibir emergencias en tiempo
-            real y optimizar la respuesta ciudadana.
+            Sistema digital de alerta comunitaria inteligente con geolocalización,
+            comunicación híbrida (WiFi/SMS) e inteligencia artificial, que permite
+            reportar y recibir emergencias en tiempo real y optimizar la respuesta
+            ciudadana.
           </p>
         </div>
       </section>
@@ -86,7 +143,7 @@ export default function Home() {
         <div className="project-cards">
           {/* CARD 1 */}
           <div className="project-card project-card--red">
-            <div className="project-card-inner">
+            <div className="project-card-inner tilt-card">
               <div className="project-icon-wrapper">
                 <img src={iconoSos} alt="SOS" className="project-icon" />
               </div>
@@ -106,7 +163,7 @@ export default function Home() {
 
           {/* CARD 2 */}
           <div className="project-card project-card--teal">
-            <div className="project-card-inner">
+            <div className="project-card-inner tilt-card">
               <div className="project-icon-wrapper">
                 <img
                   src={iconoGeo}
@@ -131,7 +188,7 @@ export default function Home() {
 
           {/* CARD 3 */}
           <div className="project-card project-card--blue">
-            <div className="project-card-inner">
+            <div className="project-card-inner tilt-card">
               <div className="project-icon-wrapper">
                 <img
                   src={iconoAi}
@@ -160,7 +217,6 @@ export default function Home() {
       <section className="community-section" id="comunidad">
         <div className="community-inner">
           <div className="community-text">
-            {/* 🔵 ICONO DE CABECERA */}
             <img
               src={iconoComu}
               alt="Icono Comunidad"
@@ -189,6 +245,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+
       {/* ============= PATRÓN GEOMÉTRICO SUPERIOR ============= */}
       <section className="download-pattern-block">
         <img src={lineasGeometricas} alt="Patrón geométrico" />
@@ -220,6 +277,55 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ============= FOOTER ============= */}
+<footer className="footer">
+  <div className="footer-top">
+    {/* Columna izquierda: logo + texto */}
+    <div className="footer-col footer-col-left">
+      <img
+        src={logo}
+        alt="SafeZone"
+        className="footer-logo"
+      />
+      <p className="footer-text-small">
+        Tu seguridad, nuestra <br />
+        comunidad
+      </p>
+    </div>
+
+    {/* Columna centro: navegación */}
+    <div className="footer-col footer-col-center">
+      <h3 className="footer-title">EXPLORAR</h3>
+      <nav className="footer-nav">
+        <a href="#inicio">Inicio</a>
+        <a href="#comunidad">Comunidad</a>
+        <a href="#descarga">Descarga</a>
+      </nav>
+    </div>
+
+    {/* Columna derecha: redes sociales */}
+    <div className="footer-col footer-col-right">
+      <h3 className="footer-title">Síguenos</h3>
+      <div className="footer-social">
+        {/* 👉 Aquí solo cambia las rutas a tus iconos */}
+        <a href="#" aria-label="Instagram">
+          <img src={iconoInsta} alt="Instagram" />
+        </a>
+        <a href="#" aria-label="Facebook">
+          <img src={iconoFace} alt="Facebook" />
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div className="footer-divider" />
+
+  <div className="footer-bottom">
+    <p>Última versión 1.0</p>
+  </div>
+</footer>
+
     </>
   );
 }
