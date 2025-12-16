@@ -9,78 +9,14 @@ import iconIa from "../assets/icon_ia.svg";
 import iconAcceso from "../assets/icon_acceso.svg";
 
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
-import Chart from "chart.js/auto";
+import IncidentHeatmap from "../components/incidentemap";
 
 export default function Dashboard() {
   const navigate = useNavigate();
 
-  const chartRef = useRef<HTMLCanvasElement | null>(null);
-  const chartInstanceRef = useRef<Chart | null>(null);
-
   const handleLogout = () => {
-    // luego limpiamos sesión/token
-    navigate("/");
+    navigate("/login");
   };
-
-  // --- Crear gráfica de reportes ---
-  useEffect(() => {
-    const ctx = chartRef.current?.getContext("2d");
-    if (!ctx) return;
-
-    // destruir gráfica anterior si existe
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-    }
-
-    chartInstanceRef.current = new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: ["Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
-        datasets: [
-          {
-            label: "Reportes",
-            data: [40, 55, 60, 70, 80, 92],
-            borderColor: "#3177ff",
-            backgroundColor: "rgba(49, 119, 255, 0.25)",
-            tension: 0.35,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          x: {
-            ticks: {
-              color: "#ffffff",
-            },
-            grid: {
-              display: false,
-            },
-          },
-          y: {
-            ticks: {
-              color: "#ffffff",
-            },
-            grid: {
-              color: "rgba(255, 255, 255, 0.08)",
-            },
-          },
-        },
-      },
-    });
-
-    // cleanup al desmontar
-    return () => {
-      chartInstanceRef.current?.destroy();
-    };
-  }, []);
 
   return (
     <>
@@ -90,21 +26,13 @@ export default function Dashboard() {
         {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sidebar-header">
-            <img
-              src={logoSafeZone}
-              alt="SafeZone"
-              className="sidebar-logo"
-            />
+            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
             <Link to="/dashboard" className="sidebar-item active">
-              <img
-                src={iconDashboard}
-                className="nav-icon"
-                alt="Dashboard"
-              />
+              <img src={iconDashboard} className="nav-icon" alt="Dashboard" />
               <span>Dashboard</span>
             </Link>
 
@@ -186,12 +114,13 @@ export default function Dashboard() {
             </article>
           </section>
 
-          {/* FILA MEDIA: COMUNIDADES + GRÁFICA */}
+          {/* FILA MEDIA: COMUNIDADES + MAPA */}
           <section className="middle-cards">
             <article className="card card-communities">
               <header className="card-header">
                 <h3>Comunidades</h3>
               </header>
+
               <table className="table">
                 <thead>
                   <tr>
@@ -242,31 +171,36 @@ export default function Dashboard() {
               </table>
             </article>
 
-            <article className="card card-growth">
-              <header className="card-header">
-                <h3>Crecimiento de reportes (últimos 6 meses)</h3>
+            {/* ✅ REEMPLAZO: MAPA DE CALOR */}
+            <article className="card card-heatmap">
+              <header className="card-header heatmap-header">
+                <h3>Mapa de calor de incidentes</h3>
+                <span className="heatmap-sub">
+                  Zonas con mayor concentración de emergencias
+                </span>
               </header>
 
-              <div className="growth-chart-container">
-                <canvas ref={chartRef} />
-              </div>
+              <div className="heatmap-map">
+                {/* MAPA REAL (Leaflet + Heat) consumiendo el endpoint mock */}
+                <IncidentHeatmap />
 
-              <div className="growth-footer">
-                <button className="pill">Mes actual: Dic</button>
-                <button className="pill pill-outline">2025</button>
-                <span className="pill pill-outline pill-small">
-                  Tipos: Robo · Accidente · Incendio
-                </span>
+                {/* (Opcional) Botones de filtro visuales */}
+                <div className="heatmap-filters">
+                  <button className="pill">Últimos 7 días</button>
+                  <button className="pill pill-outline">Tipo</button>
+                  <button className="pill pill-outline">Comunidad</button>
+                </div>
               </div>
             </article>
           </section>
 
-          {/* FILA INFERIOR: ALERTAS + TOP COMUNIDADES */}
+          {/* FILA INFERIOR */}
           <section className="bottom-cards">
             <article className="card card-alerts">
               <header className="card-header">
                 <h3>Últimas alertas</h3>
               </header>
+
               <table className="table">
                 <thead>
                   <tr>

@@ -15,9 +15,14 @@ body {
 
 /* Fondo SOLO para el Home */
 .hero {
-  background-color: #020814; 
+  min-height: 100vh;
+  width: 100%;
+  padding: 40px 120px 60px; 
+  background-color: #020814;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
 }
-
 
 #root {
   height: 100%;
@@ -27,46 +32,54 @@ body {
   max-width: none;
 }
 
-.hero {
-  min-height: 100vh;
-  width: 100%;
-  padding: 40px 120px 60px;
-  background-color: #020814;
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-}
-
 /* ================= HEADER ================= */
 
 .hero-header {
+  position: relative;
   display: flex;
-  align-items: flex-start; /* 👈 ahora se alinean arriba */
-  justify-content: space-between;
-  padding-top: 10px; /* un pequeño respiro desde arriba */
-  margin-bottom: 40px;
+  justify-content: center; 
+  align-items: center;
+  margin-bottom: 72px;
 }
 
-/* Logo */
+/* Logo en esquina superior izquierda */
+.hero-logo {
+  position: absolute;
+  left: -110px;
+  top: 0;
+}
+
 .hero-logo img {
-  height: 120px;
+  height: 135px;  
   width: auto;
+  margin-top: -39px;
 }
 
-/* Nav */
+/* Nav centrado */
 .hero-nav {
   display: flex;
-  gap: 48px;
+  gap: 56px;
   font-size: 14px;
   font-weight: 400;
 }
 
+/* links con blanco en opacidad */
 .hero-nav a {
+  color: rgba(255, 255, 255, 0.6); 
   letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: color 0.25s ease;
 }
 
-/* Botón login */
+.hero-nav a:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Botón login a la derecha */
 .hero-login-btn {
+  position: absolute;
+  right: 0;
+  top: -6px;
   display: inline-block;
   padding: 12px 32px;
   border-radius: 40px;
@@ -79,13 +92,14 @@ body {
   cursor: pointer;
   box-shadow: 0 10px 30px rgba(0, 163, 255, 0.45);
   text-decoration: none;
+  right: -55px;
 }
 
 /* ================= MAIN ================= */
 
 .hero-main {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   align-items: center;
   column-gap: 60px;
 }
@@ -93,15 +107,19 @@ body {
 /* --------- LADO IZQUIERDO --------- */
 
 .hero-left h1 {
-  font-size: 6.2rem; /* antes 4.2rem */
-  line-height: 1;
-  font-weight: 700;
+  font-size: 4.8rem;        
+  font-weight: 400;         
+  font-family: "Inter", sans-serif;
+  letter-spacing: 0.01em;   
+  max-width: 12ch; 
+  text-align: right;
+  margin-left: -95px;
 }
 
 /* Texto pequeño con flecha abajo */
 .hero-bottom-copy {
   position: absolute;
-  left: 80px;
+  left: 96px;  
   bottom: 40px;
   display: flex;
   align-items: center;
@@ -123,20 +141,21 @@ body {
 }
 
 .hero-phone-wrapper {
-  width: 600px; /* antes 430px */
+  width: 780px;
   max-width: 100%;
+  margin-top: 80px;
+  margin-left: -70px;
 }
 
-/* Una sola imagen: red + celular */
 .hero-visual {
-  width: 100%;
+  width: 800px;
+  max-width: 100%;
   height: auto;
   display: block;
   object-fit: contain;
-  /* Si tu imagen YA viene inclinada, no rotamos nada */
-  /* Si quieres inclinar un poco más, puedes usar: */
-  /* transform: rotate(-3deg); */
   filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.8));
+    transform: scale(1.5);
+  transform-origin: center;
 }
 
 /* ================= RESPONSIVE ================= */
@@ -146,6 +165,15 @@ body {
     padding: 20px 24px 32px;
   }
 
+  .hero-header {
+    justify-content: space-between;
+    margin-bottom: 40px;
+  }
+
+  .hero-nav {
+    display: none;
+  }
+
   .hero-main {
     grid-template-columns: 1fr;
     row-gap: 40px;
@@ -153,34 +181,40 @@ body {
 
   .hero-left h1 {
     font-size: 3rem;
+    max-width: none;
   }
 
   .hero-bottom-copy {
     position: static;
     margin-top: 32px;
+    left: auto;
   }
 
   .hero-phone-wrapper {
     width: 320px;
   }
 
-  .hero-header {
-    gap: 16px;
+  .hero-login-btn {
+    position: static;
   }
 
-  .hero-nav {
-    display: none;
+  .hero-logo {
+    position: static;
   }
 }
+
 
 /* ====== CONTENEDOR GENERAL DE LA SEGUNDA SECCIÓN ====== */
 
 .about-section {
   position: relative;
   width: 100%;
-  min-height: 100vh; /* ocupa toda la pantalla */
+  min-height: 100vh;
   overflow: hidden;
+  display: flex;               
+  align-items: center;          
 }
+
 
 /* Imagen de fondo ocupando toda la sección */
 .about-bg {
@@ -215,20 +249,23 @@ body {
   position: relative;
   z-index: 2;
   max-width: 520px;
-  padding: 120px 120px; /* margen desde los bordes */
-  color: #ffffff;
+  padding-left: 120px; 
+  color: #f2f6fa;       
 }
 
 /* Título y texto */
 .about-content h2 {
-  font-size: 2.8rem;
+  color: #ffffff;
+  font-size: 2.9rem;
   font-weight: 700;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .about-content p {
-  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.85); 
+  font-size: 1.15rem;
   line-height: 1.7;
+  max-width: 480px;
 }
 
 /* ==================== SECCIÓN PROYECTO ==================== */
@@ -257,7 +294,7 @@ body {
 .project-card {
   width: 32%;
   border-radius: 34px;
-  padding: 6px;                 /* pequeño padding para el glow */
+  padding: 6px;                 
   background: transparent;
 }
 
@@ -288,12 +325,12 @@ body {
   align-items: center;
   text-align: center;
 
-  min-height: 520px;          /* altura consistente de tarjeta */
+  min-height: 520px;       
 }
 
 /* ICONO */
 .project-icon-wrapper {
-  height: 150px;              /* mismo alto para los 3 iconos */
+  height: 150px;            
   display: flex;
   align-items: center;
   justify-content: center;
@@ -307,7 +344,7 @@ body {
 
 /* TÍTULO CON ALTURA FIJA PARA ALINEAR PÁRRAFOS */
 .project-title-wrapper {
-  height: 90px;               /* 🔥 reserva espacio igual para 1 o 2 líneas */
+  height: 90px;              
   display: flex;
   align-items: center;
   justify-content: center;
@@ -323,9 +360,9 @@ body {
 
 /* PÁRRAFO CON ALTURA FIJA → ALINEADOS ARRIBA Y ABAJO */
 .project-text {
-  height: 170px;              /* 🔥 misma caja para todos los párrafos */
+  height: 170px;           
   display: flex;
-  align-items: flex-start;    /* alineados desde arriba */
+  align-items: flex-start;   
   justify-content: center;
 }
 
@@ -428,10 +465,10 @@ body {
 
 /* ICONO DE COMUNIDAD SOBRE EL TÍTULO */
 .community-icon {
-  width: 85px;              /* tamaño ideal como el diseño */
+  width: 85px;              
   height: auto;
-  margin-bottom: 12px;      /* separación con el título */
-  opacity: 0.9;             /* ligero efecto elegante */
+  margin-bottom: 12px;     
+  opacity: 0.9;          
 }
 
 /* ============= FRANJA DEL PATRÓN GEOMÉTRICO ============= */
@@ -439,7 +476,7 @@ body {
 .download-pattern-block {
   background-color: #020814;
   overflow: hidden;
-  margin-bottom: 0; /* no deje espacios */
+  margin-bottom: 0; 
 }
 
 .download-pattern-block img {
@@ -451,13 +488,13 @@ body {
 
 .download-section {
   background-color: #020814;
-  padding: 20px 120px 100px;  /* 🔥 SUBÍ la sección MÁS ARRIBA */
+  padding: 20px 120px 100px;  
   color: #ffffff;
 }
 
 .download-inner {
   max-width: 1200px;
-  margin: -40px auto 0; /* 🔥 AÚN MÁS ARRIBA */
+  margin: -40px auto 0;
   display: grid;
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
   column-gap: 60px;
@@ -489,7 +526,7 @@ body {
   border-radius: 999px;
 
   border: 1px solid rgba(0, 224, 200, 0.6);
-  background: rgba(4, 30, 35, 0.9); /* 🔥 FONDO UNIFORME SIN DEGRADADO CELESTE */
+  background: rgba(4, 30, 35, 0.9); 
   color: #ffffff;
 
   font-size: 1rem;
@@ -507,9 +544,9 @@ body {
 /* ICONO DEL BOTÓN MÁS GRANDE */
 
 .download-btn-icon img {
-  width: 30px;    /* 🔥 AUMENTADO */
-  height: 30px;   /* 🔥 AUMENTADO */
-  filter: brightness(1.2); /* más visible */
+  width: 30px;   
+  height: 30px;   
+  filter: brightness(1.2); 
 }
 
 /* ===== CELULAR ===== */
@@ -519,10 +556,10 @@ body {
 }
 
 .download-phone img {
-  width: 330px; /* 🔥 MÁS GRANDE */
+  width: 330px;
   display: inline-block;
 
-  transform: none; /* 🔥 SIN INCLINACIÓN */
+  transform: none;
   filter: drop-shadow(0 25px 55px rgba(0, 0, 0, 0.9));
 }
 
@@ -659,7 +696,7 @@ body {
   );
 }
 
-/* parte inferior */
+/* Parte inferior */
 .footer-bottom {
   text-align: center;
   font-size: 0.85rem;

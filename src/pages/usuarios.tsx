@@ -93,7 +93,7 @@ export default function Usuarios() {
 
   const handleLogout = () => {
     // aquí luego limpias token / sesión
-    navigate("/");
+    navigate("/login");
   };
 
   const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) => {

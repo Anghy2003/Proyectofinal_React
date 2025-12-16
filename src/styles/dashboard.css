@@ -25,7 +25,7 @@ body {
 
 /* ===== Sidebar ===== */
 
-.sidebar { 
+.sidebar {
   position: fixed;
   top: 0;
   left: 0;
@@ -47,10 +47,8 @@ body {
   justify-content: flex-start;
   gap: 10px;
 
-  z-index: 10;   /* 🔥 ahora queda por encima de las cards */
+  z-index: 10;
 }
-
-
 
 .sidebar-header {
   display: flex;
@@ -120,24 +118,22 @@ body {
 
 .dashboard-main {
   flex: 1;
-  margin-left: 260px; /* espacio del sidebar */
+  margin-left: 260px;
   padding: 20px 26px;
-
-  height: calc(100vh - 40px);  /* ⬅️ MISMO ALTO QUE EL SIDEBAR */
   box-sizing: border-box;
 
-  display: flex;
-  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 16px;
 }
 
-
-
 /* Base de las tarjetas (glass) */
 .card {
-  background: rgba(255, 255, 255, 0.00); /* 🔥 más transparente */
+  background: rgba(255, 255, 255, 0);
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
@@ -445,4 +441,133 @@ body {
 .growth-chart-container canvas {
   width: 100%;
   height: 180px;
+}
+/* ===== MAPA DE CALOR (REEMPLAZO DE LA GRÁFICA) ===== */
+
+.card-heatmap {
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  color: white;
+}
+
+.heatmap-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heatmap-sub {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.heatmap-map {
+  position: relative;
+  margin-top: 10px;
+  height: 320px;
+  border-radius: 14px;
+  overflow: hidden;
+
+  /* fondo tipo “mapa nocturno” */
+  background: linear-gradient(
+      0deg,
+      rgba(0, 10, 30, 0.65),
+      rgba(0, 10, 30, 0.65)
+    ),
+    radial-gradient(
+      circle at 30% 30%,
+      rgba(49, 119, 255, 0.15),
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 70% 50%,
+      rgba(49, 119, 255, 0.12),
+      transparent 55%
+    );
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* líneas tipo calles */
+.heatmap-map::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      transparent 96%,
+      rgba(120, 170, 255, 0.12) 96%
+    ),
+    linear-gradient(90deg, transparent 96%, rgba(120, 170, 255, 0.1) 96%);
+  background-size: 140px 90px;
+  opacity: 0.35;
+}
+
+/* “mancha” heatmap (simulación) */
+.heat-blob {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  left: 55%;
+  top: 55%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  filter: blur(2px);
+
+  background: radial-gradient(
+    circle,
+    rgba(255, 59, 59, 0.95) 0%,
+    rgba(255, 165, 0, 0.75) 35%,
+    rgba(34, 197, 94, 0.45) 65%,
+    rgba(34, 197, 94, 0) 78%
+  );
+  opacity: 0.95;
+}
+
+/* Leyenda */
+.heatmap-legend {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  background: rgba(5, 16, 46, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(10px);
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+  margin: 6px 0;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dot-red {
+  background: #ff3b3b;
+}
+.dot-orange {
+  background: #ffb020;
+}
+.dot-green {
+  background: #22c55e;
+}
+
+/* Filtros */
+.heatmap-filters {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }

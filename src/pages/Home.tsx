@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useEffect } from "react";
 
 import logo from "../assets/logo-safe-zone.png";
-import heroVisual from "../assets/logocelular.png";
+import heroVisual from "../assets/celularLineas.svg";
 import arrowDown from "../assets/flechaAbajo.svg";
 import fondoComu from "../assets/fondocomunidad.png";
 import iconoSos from "../assets/logo1.png";
@@ -20,13 +20,10 @@ import iconoFace from "../assets/iconFace.svg";
 
 
 export default function Home() {
-  // ============================
-  // 🔥 EFECTO 3D PROFESIONAL EN TARJETAS
-  // ============================
   useEffect(() => {
     const cards = document.querySelectorAll<HTMLElement>(".tilt-card");
 
-    const maxRotate = 14; // grados máx. en X/Y
+    const maxRotate = 14;
     const scale = 1.04;
 
     const handleMouseMove = (event: MouseEvent) => {
@@ -281,7 +278,6 @@ export default function Home() {
       {/* ============= FOOTER ============= */}
 <footer className="footer">
   <div className="footer-top">
-    {/* Columna izquierda: logo + texto */}
     <div className="footer-col footer-col-left">
       <img
         src={logo}
@@ -308,7 +304,6 @@ export default function Home() {
     <div className="footer-col footer-col-right">
       <h3 className="footer-title">Síguenos</h3>
       <div className="footer-social">
-        {/* 👉 Aquí solo cambia las rutas a tus iconos */}
         <a href="#" aria-label="Instagram">
           <img src={iconoInsta} alt="Instagram" />
         </a>

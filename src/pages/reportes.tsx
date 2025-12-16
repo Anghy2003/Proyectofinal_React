@@ -77,7 +77,7 @@ export default function Reportes() {
   const [filtroFecha, setFiltroFecha] = useState<string>(""); // yyyy-mm-dd
 
   const handleLogout = () => {
-    navigate("/");
+    navigate("/login");
   };
 
   // 🔹 LISTAS ÚNICAS PARA LOS SELECT

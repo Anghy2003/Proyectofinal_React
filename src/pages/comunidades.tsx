@@ -27,7 +27,7 @@ export default function Comunidades() {
 
   const handleLogout = () => {
     // luego aquí limpiamos token / sesión
-    navigate("/");
+    navigate("/login");
   };
 
   // Cargar comunidades del backend

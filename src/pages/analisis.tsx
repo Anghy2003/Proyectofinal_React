@@ -14,7 +14,7 @@ export default function Analisis() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    navigate("/");
+    navigate("/login");
   };
 
   return (

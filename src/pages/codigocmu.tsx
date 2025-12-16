@@ -40,7 +40,7 @@ export default function CodigoAcceso() {
   const [loading, setLoading] = useState(false);
 
   const handleLogout = () => {
-    navigate("/");
+    navigate("/login");
   };
 
   // Cargar comunidades al entrar
