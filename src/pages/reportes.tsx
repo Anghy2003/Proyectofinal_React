@@ -7,11 +7,13 @@ import iconComu from "../assets/icon_comu.svg";
 import iconRepo from "../assets/icon_repo.svg";
 import iconIa from "../assets/icon_ia.svg";
 import iconAcceso from "../assets/icon_acceso.svg";
-import iconEdit from "../assets/icon_edit.svg";
 import iconEliminar from "../assets/icon_eliminar.svg";
 
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";   // 👈 NUEVO
+import { useEffect, useMemo, useState } from "react";
+
+
+import { reportesService } from "../services/reportes.service";
 
 type EstadoReporte = "Atendido" | "Pendiente" | "Falso positivo";
 
@@ -20,40 +22,10 @@ type Reporte = {
   usuario: string;
   tipo: string;
   comunidad: string;
-  fecha: string;      // dd/mm/aaaa
+  fecha: string; // dd/mm/aaaa
   ubicacion: string;
   estado: EstadoReporte;
 };
-
-const reportesMock: Reporte[] = [
-  {
-    id: "RPT-11",
-    usuario: "Kevin Moscoso",
-    tipo: "Robo",
-    comunidad: "Parque Industrial",
-    fecha: "07/11/2025",
-    ubicacion: "Parque Industrial",
-    estado: "Atendido",
-  },
-  {
-    id: "RPT-12",
-    usuario: "Andres Illescas",
-    tipo: "Incendio",
-    comunidad: "Milchichig",
-    fecha: "08/11/2025",
-    ubicacion: "Milchichig",
-    estado: "Pendiente",
-  },
-  {
-    id: "RPT-13",
-    usuario: "Samy López",
-    tipo: "Accidente",
-    comunidad: "Quinta Chica",
-    fecha: "08/11/2025",
-    ubicacion: "Quinta Chica",
-    estado: "Falso positivo",
-  },
-];
 
 function getBadgeClass(estado: EstadoReporte): string {
   if (estado === "Atendido") return "badge badge-ok";
@@ -61,7 +33,7 @@ function getBadgeClass(estado: EstadoReporte): string {
   return "badge badge-bad";
 }
 
-// 👇 helper para comparar fecha del filtro con la del reporte
+// helper para comparar fecha del filtro con la del reporte
 function fechaToISO(fechaDDMMYYYY: string): string {
   const [dd, mm, yyyy] = fechaDDMMYYYY.split("/");
   return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}`;
@@ -69,6 +41,11 @@ function fechaToISO(fechaDDMMYYYY: string): string {
 
 export default function Reportes() {
   const navigate = useNavigate();
+
+  // 🔹 DATA REAL
+  const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
 
   // 🔹 ESTADOS DE LOS FILTROS
   const [filtroTipo, setFiltroTipo] = useState<string>("");
@@ -80,26 +57,71 @@ export default function Reportes() {
     navigate("/login");
   };
 
-  // 🔹 LISTAS ÚNICAS PARA LOS SELECT
-  const tiposUnicos = Array.from(new Set(reportesMock.map((r) => r.tipo)));
-  const estadosUnicos = Array.from(new Set(reportesMock.map((r) => r.estado)));
-  const comunidadesUnicas = Array.from(
-    new Set(reportesMock.map((r) => r.comunidad))
+  // =====================
+  // CARGAR REPORTES
+  // =====================
+  const cargarReportes = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await reportesService.listar(); // 👈 del service
+      setReportes(data as unknown as Reporte[]);
+    } catch (e: any) {
+      setError(e?.message || "Error cargando reportes");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarReportes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 🔹 LISTAS ÚNICAS PARA LOS SELECT (basadas en data real)
+  const tiposUnicos = useMemo(
+    () => Array.from(new Set(reportes.map((r) => r.tipo))),
+    [reportes]
+  );
+  const estadosUnicos = useMemo(
+    () => Array.from(new Set(reportes.map((r) => r.estado))),
+    [reportes]
+  );
+  const comunidadesUnicas = useMemo(
+    () => Array.from(new Set(reportes.map((r) => r.comunidad))),
+    [reportes]
   );
 
-  // 🔹 APLICAR FILTROS
-  const reportesFiltrados = reportesMock.filter((r) => {
-    if (filtroTipo && r.tipo !== filtroTipo) return false;
-    if (filtroEstado && r.estado !== filtroEstado) return false;
-    if (filtroComunidad && r.comunidad !== filtroComunidad) return false;
+  // 🔹 APLICAR FILTROS (sobre data real)
+  const reportesFiltrados = useMemo(() => {
+    return reportes.filter((r) => {
+      if (filtroTipo && r.tipo !== filtroTipo) return false;
+      if (filtroEstado && r.estado !== filtroEstado) return false;
+      if (filtroComunidad && r.comunidad !== filtroComunidad) return false;
 
-    if (filtroFecha) {
-      const fechaReporteISO = fechaToISO(r.fecha); // dd/mm/yyyy -> yyyy-mm-dd
-      if (fechaReporteISO !== filtroFecha) return false;
+      if (filtroFecha) {
+        const fechaReporteISO = fechaToISO(r.fecha); // dd/mm/yyyy -> yyyy-mm-dd
+        if (fechaReporteISO !== filtroFecha) return false;
+      }
+
+      return true;
+    });
+  }, [reportes, filtroTipo, filtroEstado, filtroComunidad, filtroFecha]);
+
+  // =====================
+  // ELIMINAR
+  // =====================
+  const eliminarReporte = async (id: string) => {
+    const ok = window.confirm("¿Seguro que deseas eliminar este reporte?");
+    if (!ok) return;
+
+    try {
+      await reportesService.eliminar(id); // 👈 backend DELETE /incidentes/{id}
+      setReportes((prev) => prev.filter((r) => r.id !== id));
+    } catch (e: any) {
+      alert(e?.message || "No se pudo eliminar el reporte");
     }
-
-    return true;
-  });
+  };
 
   return (
     <>
@@ -109,11 +131,7 @@ export default function Reportes() {
         {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sidebar-header">
-            <img
-              src={logoSafeZone}
-              alt="SafeZone"
-              className="sidebar-logo"
-            />
+            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
@@ -150,11 +168,7 @@ export default function Reportes() {
           </nav>
 
           <div className="sidebar-footer">
-            <button
-              id="btnSalir"
-              className="sidebar-logout"
-              onClick={handleLogout}
-            >
+            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
               Salir
             </button>
             <span className="sidebar-version">v1.0 - SafeZone</span>
@@ -164,7 +178,26 @@ export default function Reportes() {
         {/* ===== CONTENIDO PRINCIPAL ===== */}
         <main className="reportes-main">
           <section className="reportes-panel">
-            <h1 className="panel-title">Reportes Recientes</h1>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <h1 className="panel-title">Reportes Recientes</h1>
+
+              <button
+                className="filter-pill"
+                style={{ cursor: "pointer" }}
+                onClick={cargarReportes}
+                disabled={loading}
+                title="Recargar"
+              >
+                {loading ? "Cargando..." : "Recargar"}
+              </button>
+            </div>
+
+            {/* Mensajes */}
+            {error && (
+              <div style={{ padding: "10px 0", color: "tomato" }}>
+                {error}
+              </div>
+            )}
 
             {/* KPI */}
             <div className="kpi-row">
@@ -243,8 +276,15 @@ export default function Reportes() {
                       <th>Acciones</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {reportesFiltrados.length === 0 ? (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: "center", padding: "14px" }}>
+                          Cargando reportes...
+                        </td>
+                      </tr>
+                    ) : reportesFiltrados.length === 0 ? (
                       <tr>
                         <td colSpan={8} style={{ textAlign: "center", padding: "14px" }}>
                           No se encontraron reportes.
@@ -265,10 +305,11 @@ export default function Reportes() {
                             </span>
                           </td>
                           <td className="acciones">
-                            {/*<button className="icon-button">
-                              <img src={iconEdit} alt="Editar" />
-                            </button>*/}
-                            <button className="icon-button">
+                            <button
+                              className="icon-button"
+                              onClick={() => eliminarReporte(reporte.id)}
+                              title="Eliminar"
+                            >
                               <img src={iconEliminar} alt="Eliminar" />
                             </button>
                           </td>

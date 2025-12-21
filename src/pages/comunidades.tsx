@@ -14,9 +14,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 // 👉 types solo como type
-import type { Comunidad, EstadoComunidad } from "../services/comunidadService";
+import type { Comunidad, EstadoComunidad } from "../services/comunidad.Service";
 // 👉 función para traer TODAS las comunidades
-import { getTodasComunidades } from "../services/comunidadService";
+import { getTodasComunidades } from "../services/comunidad.Service";
 
 export default function Comunidades() {
   const navigate = useNavigate();

@@ -13,12 +13,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 // 👉 TYPES: type-only import
-import type { Comunidad } from "../services/comunidadService";
+import type { Comunidad } from "../services/comunidad.Service";
 // 👉 FUNCIONES: import normal
 import {
   getTodasComunidades,
   aprobarComunidadApi,
-} from "../services/comunidadService";
+} from "../services/comunidad.Service";
 
 
 type CodigoRow = {

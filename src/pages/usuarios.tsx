@@ -19,7 +19,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import {
   usuarioService,
   type UsuarioApi,
-} from "../services/UsuarioService";
+} from "../services/Usuario.Service";
 
 type EstadoUsuario = "Activo" | "Suspendido";
 
