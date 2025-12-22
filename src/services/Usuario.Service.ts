@@ -1,11 +1,9 @@
-// src/service/UsuarioService.ts
-import axios from "axios";
-import type { AxiosInstance } from "axios";
+// src/services/Usuario.Service.ts
+import { apiClient } from "./apiClient";
 
-// Ajusta si tu backend tiene distinta URL
-const API_BASE_URL = "http://localhost:8080/api";
-
-// ===== Tipos del backend =====
+/**
+ * DTO EXACTO según backend /api/usuarios
+ */
 export interface UsuarioApi {
   id: number;
   nombre: string;
@@ -13,29 +11,23 @@ export interface UsuarioApi {
   email: string;
   telefono?: string;
   fotoUrl?: string;
+
   fechaRegistro?: string;
   ultimoAcceso?: string | null;
   activo: boolean;
+
+  comunidadId?: number | null;
+  comunidadNombre?: string | null;
+  rol?: string | null;              // ej: "vecino"
+  estadoEnComunidad?: string | null; // ej: "activo"
 }
 
-// ===== Servicio Axios =====
-class UsuarioService {
-  private api: AxiosInstance;
+export const usuariosService = {
+  listar: async (): Promise<UsuarioApi[]> => {
+    return apiClient.get<UsuarioApi[]>("/usuarios");
+  },
 
-  constructor() {
-    this.api = axios.create({
-      baseURL: API_BASE_URL,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-  }
-
-  async getUsuarios(): Promise<UsuarioApi[]> {
-    const response = await this.api.get<UsuarioApi[]>("/usuarios");
-    return response.data;
-  }
-}
-
-export const usuarioService = new UsuarioService();
+  obtener: async (id: number): Promise<UsuarioApi> => {
+    return apiClient.get<UsuarioApi>(`/usuarios/${id}`);
+  },
+};

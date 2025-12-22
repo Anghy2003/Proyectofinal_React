@@ -1,3 +1,4 @@
+// src/pages/CodigoAcceso.tsx
 import "../styles/codigocom.css";
 
 import logoSafeZone from "../assets/logo-safe-zone.png";
@@ -10,11 +11,12 @@ import iconAcceso from "../assets/icon_acceso.svg";
 import iconEliminar from "../assets/icon_eliminar.svg";
 
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-// ✅ TYPES + FUNCIONES desde el mismo archivo (nombre consistente)
-import type { Comunidad } from "../services/comunidad.Service";
-import { getTodasComunidades, aprobarComunidadApi } from "../services/comunidad.Service";
+import {
+  comunidadesService,
+  type Comunidad,
+} from "../services/comunidad.Service";
 
 type CodigoRow = {
   id: number;
@@ -27,33 +29,40 @@ type CodigoRow = {
 export default function CodigoAcceso() {
   const navigate = useNavigate();
 
-  const [pendientes, setPendientes] = useState<Comunidad[]>([]);
-  const [activas, setActivas] = useState<Comunidad[]>([]);
+  const [todas, setTodas] = useState<Comunidad[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
   const [codigoActual, setCodigoActual] = useState<string | null>(null);
   const [listaCodigos, setListaCodigos] = useState<CodigoRow[]>([]);
+
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogout = () => {
     navigate("/login");
   };
 
-  useEffect(() => {
-    cargarComunidades();
-  }, []);
+  const pendientes = useMemo(
+    () => todas.filter((c) => c.estado === "SOLICITADA"),
+    [todas]
+  );
+
+  const activas = useMemo(
+    () => todas.filter((c) => c.estado === "ACTIVA"),
+    [todas]
+  );
 
   const cargarComunidades = async () => {
     try {
-      const todas = await getTodasComunidades();
+      setLoading(true);
+      setError(null);
 
-      const dataPend = todas.filter((c) => c.estado === "SOLICITADA");
-      const dataAct = todas.filter((c) => c.estado === "ACTIVA");
+      const data = await comunidadesService.listar();
+      setTodas(data);
 
-      setPendientes(dataPend);
-      setActivas(dataAct);
-
-      const rows: CodigoRow[] = dataAct
-        .filter((c) => !!c.codigoAcceso)
+      // construir tabla de códigos (solo activas con código)
+      const rows: CodigoRow[] = data
+        .filter((c) => c.estado === "ACTIVA" && !!c.codigoAcceso)
         .map((c) => ({
           id: c.id,
           codigo: c.codigoAcceso as string,
@@ -63,11 +72,18 @@ export default function CodigoAcceso() {
         }));
 
       setListaCodigos(rows);
-    } catch (error) {
-      console.error(error);
-      alert("No se pudieron cargar las comunidades.");
+    } catch (e: any) {
+      console.error(e);
+      setError(e?.message || "No se pudieron cargar las comunidades.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    cargarComunidades();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const aprobarComunidad = async () => {
     if (typeof selectedId !== "number") {
@@ -77,38 +93,51 @@ export default function CodigoAcceso() {
 
     setLoading(true);
     try {
-      // ✅ backend: aprueba + genera código + envía SMS al solicitante
-      const comunidadActualizada = await aprobarComunidadApi(selectedId);
+      // ✅ backend: aprueba + genera código + (opcional) envía SMS
+      const comunidadActualizada = await comunidadesService.aprobar(selectedId);
 
       if (!comunidadActualizada.codigoAcceso) {
-        alert("La comunidad se aprobó, pero el backend no devolvió un código de acceso.");
+        alert(
+          "La comunidad se aprobó, pero el backend no devolvió un código de acceso."
+        );
         return;
       }
 
       setCodigoActual(comunidadActualizada.codigoAcceso);
 
-      setPendientes((prev) => prev.filter((c) => c.id !== comunidadActualizada.id));
-
-      setActivas((prev) => {
+      // refrescar data local sin volver a pedir todo (optimista)
+      setTodas((prev) => {
         const rest = prev.filter((c) => c.id !== comunidadActualizada.id);
         return [comunidadActualizada, ...rest];
       });
 
-      setListaCodigos((prev) => [
-        {
-          id: comunidadActualizada.id,
-          codigo: comunidadActualizada.codigoAcceso ?? "",
-          comunidad: comunidadActualizada.nombre,
-          fecha: new Date(comunidadActualizada.fechaCreacion).toLocaleDateString("es-EC"),
-          estado: "Activo",
-        },
-        ...prev,
-      ]);
+      // agregar/actualizar en la tabla de códigos
+      setListaCodigos((prev) => {
+        const rest = prev.filter((r) => r.id !== comunidadActualizada.id);
+        return [
+          {
+            id: comunidadActualizada.id,
+            codigo: comunidadActualizada.codigoAcceso ?? "",
+            comunidad: comunidadActualizada.nombre,
+            fecha: new Date(comunidadActualizada.fechaCreacion).toLocaleDateString("es-EC"),
+            estado: "Activo",
+          },
+          ...rest,
+        ];
+      });
 
-      alert("Comunidad aprobada y código generado correctamente. Se envió el SMS al solicitante (si Twilio está OK).");
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo aprobar la comunidad. Verifica el servidor o el endpoint /api/comunidades/{id}/aprobar.");
+      // limpiar selección
+      setSelectedId(null);
+
+      alert(
+        "Comunidad aprobada y código generado correctamente. Si Twilio está configurado, se envió el SMS."
+      );
+    } catch (e: any) {
+      console.error(e);
+      alert(
+        e?.message ||
+          "No se pudo aprobar la comunidad. Verifica el endpoint /api/comunidades/{id}/aprobar."
+      );
     } finally {
       setLoading(false);
     }
@@ -125,6 +154,8 @@ export default function CodigoAcceso() {
   };
 
   const eliminarCodigo = (id: number) => {
+    // OJO: esto solo lo quita de la tabla frontend.
+    // Si quieres desactivar/borrar en backend, necesitas endpoint y llamar service.
     setListaCodigos((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -173,7 +204,11 @@ export default function CodigoAcceso() {
           </nav>
 
           <div className="sidebar-footer">
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
+            <button
+              id="btnSalir"
+              className="sidebar-logout"
+              onClick={handleLogout}
+            >
               Salir
             </button>
             <span className="sidebar-version">v1.0 - SafeZone</span>
@@ -183,15 +218,34 @@ export default function CodigoAcceso() {
         {/* CONTENIDO PRINCIPAL */}
         <main className="main">
           <section className="panel">
-            <h1 className="title">Generar Código de Comunidad</h1>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h1 className="title">Generar Código de Comunidad</h1>
+
+              <button
+                className="filter-pill"
+                style={{ cursor: "pointer" }}
+                onClick={cargarComunidades}
+                disabled={loading}
+                title="Recargar"
+              >
+                {loading ? "Cargando..." : "Recargar"}
+              </button>
+            </div>
+
+            {error && (
+              <div style={{ padding: "10px 0", color: "tomato" }}>{error}</div>
+            )}
 
             <div className="form-container">
               {/* Seleccionar comunidad solicitada */}
               <div className="form-card">
                 <label>Selecciona una comunidad solicitada</label>
+
                 <select
                   value={selectedId ?? ""}
-                  onChange={(e) => setSelectedId(e.target.value === "" ? null : Number(e.target.value))}
+                  onChange={(e) =>
+                    setSelectedId(e.target.value === "" ? null : Number(e.target.value))
+                  }
                 >
                   <option value="">-- Selecciona --</option>
                   {pendientes.map((c) => (
@@ -202,9 +256,10 @@ export default function CodigoAcceso() {
                 </select>
 
                 <p className="codigo-msg" style={{ textAlign: "left" }}>
-                  Estas comunidades fueron enviadas desde la app en estado <strong>SOLICITADA</strong>. Al aprobar,
-                  SafeZone generará un código de acceso de 5 dígitos y el backend enviará el código por SMS al usuario
-                  solicitante (si está configurado Twilio).
+                  Estas comunidades fueron enviadas desde la app en estado{" "}
+                  <strong>SOLICITADA</strong>. Al aprobar, SafeZone generará un
+                  código de acceso de 5 dígitos y el backend enviará el código
+                  por SMS al usuario solicitante (si Twilio está configurado).
                 </p>
 
                 <button
@@ -224,11 +279,16 @@ export default function CodigoAcceso() {
                 <div className="codigo-box">{codigoActual ?? "---"}</div>
 
                 <p className="codigo-msg">
-                  Comparte este código con los vecinos para que se unan desde la app SafeZone. El solicitante lo recibe
-                  también por SMS.
+                  Comparte este código con los vecinos para que se unan desde la
+                  app SafeZone. El solicitante lo recibe también por SMS.
                 </p>
 
-                <button className="copy-btn" type="button" onClick={copiarCodigo} disabled={!codigoActual}>
+                <button
+                  className="copy-btn"
+                  type="button"
+                  onClick={copiarCodigo}
+                  disabled={!codigoActual}
+                >
                   Copiar
                 </button>
               </div>
@@ -280,6 +340,10 @@ export default function CodigoAcceso() {
                 </tbody>
               </table>
             </div>
+
+            <p className="panel-update">
+              Última actualización: {new Date().toLocaleString("es-EC")}
+            </p>
           </section>
         </main>
       </div>

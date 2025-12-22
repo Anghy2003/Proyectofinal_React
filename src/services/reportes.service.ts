@@ -1,10 +1,7 @@
-// src/services/reportes.service.ts
+// src/services/reportesService.ts
+import { apiClient } from "./apiClient";
+import type { IncidenteResponseDTO } from "./incidentesService";
 
-const BASE_URL = "http://localhost:8080/api";
-
-// =====================
-// TIPOS
-// =====================
 export type EstadoReporte = "Atendido" | "Pendiente" | "Falso positivo";
 
 export type Reporte = {
@@ -12,35 +9,11 @@ export type Reporte = {
   usuario: string;
   tipo: string;
   comunidad: string;
-  fecha: string;      // dd/mm/yyyy
+  fecha: string; // dd/mm/yyyy
   ubicacion: string;
   estado: EstadoReporte;
 };
 
-// Lo que viene del backend (IncidenteResponseDTO)
-export type IncidenteApi = {
-  id: number;
-  tipo?: string | null;
-  estado?: string | null;
-  fechaCreacion?: string | null;
-
-  usuario?: {
-    nombre?: string;
-    name?: string;
-    email?: string;
-  } | null;
-
-  comunidad?: {
-    nombre?: string;
-    name?: string;
-  } | null;
-
-  ubicacion?: any;
-};
-
-// =====================
-// HELPERS
-// =====================
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -59,84 +32,42 @@ function normalizarEstado(estadoApi?: string | null): EstadoReporte {
   return "Pendiente";
 }
 
-function mapIncidenteToReporte(i: IncidenteApi): Reporte {
+function mapIncidenteToReporte(i: IncidenteResponseDTO): Reporte {
   return {
     id: String(i.id),
-    usuario:
-      i.usuario?.nombre ||
-      i.usuario?.name ||
-      i.usuario?.email ||
-      "Usuario",
-
+    usuario: i.usuarioNombre || "Usuario",
     tipo: i.tipo || "Sin tipo",
-
-    comunidad:
-      i.comunidad?.nombre ||
-      i.comunidad?.name ||
-      "Sin comunidad",
-
+    comunidad: i.comunidadNombre || "Sin comunidad",
     fecha: isoToDDMMYYYY(i.fechaCreacion),
-
-    ubicacion: i.ubicacion
-      ? "Ubicación registrada"
-      : "Sin ubicación",
-
+    ubicacion:
+      typeof i.lat === "number" && typeof i.lng === "number"
+        ? `(${i.lat.toFixed(5)}, ${i.lng.toFixed(5)})`
+        : "Sin ubicación",
     estado: normalizarEstado(i.estado),
   };
 }
 
-// =====================
-// SERVICE
-// =====================
 export const reportesService = {
   // GET /api/incidentes
   async listar(): Promise<Reporte[]> {
-    const resp = await fetch(`${BASE_URL}/incidentes`);
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      console.error("Error listar reportes:", txt);
-      throw new Error("No se pudieron cargar los reportes");
-    }
-
-    const data: IncidenteApi[] = await resp.json();
+    const data = await apiClient.get<IncidenteResponseDTO[]>("/incidentes");
     return data.map(mapIncidenteToReporte);
   },
 
-  // DELETE /api/incidentes/{id}
+  // DELETE /api/incidentes/{id}  (solo si tu backend lo tiene)
   async eliminar(id: string | number): Promise<void> {
-    const resp = await fetch(`${BASE_URL}/incidentes/${id}`, {
-      method: "DELETE",
-    });
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      console.error("Error eliminar reporte:", txt);
-      throw new Error("No se pudo eliminar el reporte");
-    }
+    await apiClient.del<void>(`/incidentes/${id}`);
   },
 
-  // PUT /api/incidentes/{id}/estado
+  // PUT /api/incidentes/{id}/estado?estado=...&moderadorId=...
   async cambiarEstado(
     id: string | number,
     estado: "pendiente" | "resuelto" | "falso_positivo",
     moderadorId?: number
   ): Promise<void> {
-    const params = new URLSearchParams({ estado });
-
-    if (moderadorId) {
-      params.append("moderadorId", String(moderadorId));
-    }
-
-    const resp = await fetch(
-      `${BASE_URL}/incidentes/${id}/estado?${params.toString()}`,
-      { method: "PUT" }
-    );
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-      console.error("Error cambiar estado:", txt);
-      throw new Error("No se pudo cambiar el estado");
-    }
+    await apiClient.putQ<void>(`/incidentes/${id}/estado`, {
+      estado,
+      moderadorId,
+    });
   },
 };

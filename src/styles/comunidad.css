@@ -25,7 +25,7 @@ body {
 /* ===== Sidebar ===== */
 
 .sidebar {
-  position: fixed; 
+  position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
@@ -46,7 +46,7 @@ body {
   justify-content: flex-start;
   gap: 10px;
 
-  z-index: 10; 
+  z-index: 10;
 }
 
 .sidebar-header {
@@ -120,9 +120,9 @@ body {
   box-sizing: border-box;
   display: flex;
 
-  margin-left: 260px; 
+  margin-left: 260px;
   padding: 20px 26px;
-  height: 100vh; 
+  height: 100vh;
 }
 
 .comunidades-panel {
@@ -134,9 +134,9 @@ body {
   border-radius: 26px;
 
   /* 🎯 FONDO GLASS */
-  background: rgba(255, 255, 255, 0); 
+  background: rgba(255, 255, 255, 0);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(22px); 
+  backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(18px);
 
   /* 🎯 SOMBRA GLASS */
@@ -164,7 +164,7 @@ body {
 .kpi-card {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.18);
- background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   padding: 16px 18px;
@@ -223,24 +223,24 @@ body {
 .tabla-panel {
   margin-top: 8px;
   border-radius: 24px;
-  /* 🎯 Fondo blanco ultra transparente para el efecto Glass */
-  background: rgba(255, 255, 255, 0.01)!important; 
-  border: 1px solid rgba(255, 255, 255, 0.12)!important;
+  background: rgba(255, 255, 255, 0.01) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  
-  /* Ajuste de sombra para que no se vea pesada */
+
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   padding: 18px 20px;
   flex: 1;
+
+  /* ✅ evita que la tabla se salga del panel */
+  overflow: hidden;
 }
 
 .tabla-inner {
   border-radius: 18px;
-  /* Borde casi invisible */
-  border: 1px solid rgba(255, 255, 255, 0.08); 
+  border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  background: transparent !important; /* Aseguramos que sea transparente */
+  background: transparent !important;
 }
 
 .tabla-comunidades {
@@ -254,29 +254,51 @@ body {
 .tabla-comunidades td {
   padding: 10px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  text-align: left; 
+  text-align: left;
   vertical-align: middle;
 }
 
 .tabla-comunidades thead th {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.9);
-  /* Aseguramos transparencia total en el header */
-  background: rgba(255, 255, 255, 0.03)!important; 
+  background: rgba(255, 255, 255, 0.03) !important;
   border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .tabla-comunidades tbody tr:hover {
-  background: rgba(255, 255, 255, 0.04)!important;
+  background: rgba(255, 255, 255, 0.04) !important;
   transition: background 0.2s ease;
 }
 
-.tabla-comunidades th:nth-child(3),
-.tabla-comunidades td:nth-child(3),
+/* ✅ Con la nueva tabla:
+   1 = Foto, 2 = Código, 3 = Nombre, 4 = Miembros, 5 = Dirección, 6 = Estado, 7 = Acciones
+   Solo centramos "Miembros" (4)
+*/
 .tabla-comunidades th:nth-child(4),
 .tabla-comunidades td:nth-child(4) {
   text-align: center;
 }
+
+/* ✅ Dirección larga: que no rompa la tabla */
+.tabla-comunidades th:nth-child(5),
+.tabla-comunidades td:nth-child(5) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ✅ Foto columna compacta */
+.tabla-comunidades th:nth-child(1),
+.tabla-comunidades td:nth-child(1) {
+  width: 70px;
+}
+
+/* ✅ Acciones compacta */
+.tabla-comunidades th:nth-child(7),
+.tabla-comunidades td:nth-child(7) {
+  width: 110px;
+}
+
 /* Estados */
 
 .badge {
@@ -294,6 +316,10 @@ body {
 
 .badge-danger {
   background: #ef4444;
+}
+
+.badge-warning {
+  background: #f59e0b;
 }
 
 .acciones {
