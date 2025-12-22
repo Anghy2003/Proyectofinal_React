@@ -7,7 +7,6 @@ body {
 .background {
   position: fixed;
   inset: 0;
-  background-image: url("../assets/fondo.png");
   background-size: cover;
   background-position: center;
   filter: brightness(0.55);
@@ -165,7 +164,7 @@ body {
 .kpi-card {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.03);
+ background: rgba(255, 255, 255, 0.02) !important;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   padding: 16px 18px;
@@ -224,21 +223,24 @@ body {
 .tabla-panel {
   margin-top: 8px;
   border-radius: 24px;
-
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(75, 79, 92, 0.2);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.);
-
+  /* 🎯 Fondo blanco ultra transparente para el efecto Glass */
+  background: rgba(255, 255, 255, 0.01)!important; 
+  border: 1px solid rgba(255, 255, 255, 0.12)!important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  
+  /* Ajuste de sombra para que no se vea pesada */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   padding: 18px 20px;
   flex: 1;
 }
 
 .tabla-inner {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* Borde casi invisible */
+  border: 1px solid rgba(255, 255, 255, 0.08); 
   overflow: hidden;
+  background: transparent !important; /* Aseguramos que sea transparente */
 }
 
 .tabla-comunidades {
@@ -257,13 +259,16 @@ body {
 }
 
 .tabla-comunidades thead th {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  /* Aseguramos transparencia total en el header */
+  background: rgba(255, 255, 255, 0.03)!important; 
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
-.tabla-comunidades tbody tr:last-child td {
-  border-bottom: none;
+.tabla-comunidades tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04)!important;
+  transition: background 0.2s ease;
 }
 
 .tabla-comunidades th:nth-child(3),

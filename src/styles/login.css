@@ -16,7 +16,7 @@ body {
 .login-background {
   position: fixed;
   inset: 0;
-  background-image: url("../assets/fondo.png");
+  background-image: url("../assets/Fondo_Admin.png");
   background-size: cover;
   background-position: center;
   filter: brightness(0.79);

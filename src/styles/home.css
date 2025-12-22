@@ -50,7 +50,7 @@ body {
 }
 
 .hero-logo img {
-  height: 135px;  
+  height: 160px;  
   width: auto;
   margin-top: -39px;
 }
@@ -94,6 +94,21 @@ body {
   text-decoration: none;
   right: -55px;
 }
+
+/* Elemento oculto al inicio */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+  will-change: opacity, transform;
+}
+
+/* Cuando entra en pantalla */
+.reveal.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 
 /* ================= MAIN ================= */
 
@@ -436,12 +451,14 @@ body {
 }
 
 .community-text h2 {
-  font-size: 3rem;
+  margin-left: -60px;
+  font-size: 3.08rem;
   margin-bottom: 24px;
 }
 
 .community-text p {
-  font-size: 1rem;
+  margin-left: -60px;
+  font-size: 1.20rem;
   line-height: 1.8;
   color: #cad7e6;
   margin-bottom: 16px;
@@ -449,10 +466,11 @@ body {
 
 .community-illustration img {
   width: 100%;
-  max-width: 460px;
+  max-width: 850px;
   display: block;
   filter: drop-shadow(0 0 35px rgba(0, 200, 255, 0.35));
   animation: pulseGlow 3s ease-in-out infinite;
+  margin-left: 83px;
 }
 
 @keyframes pulseGlow {
@@ -465,6 +483,7 @@ body {
 
 /* ICONO DE COMUNIDAD SOBRE EL TÍTULO */
 .community-icon {
+  margin-left: -60px;
   width: 85px;              
   height: auto;
   margin-bottom: 12px;     
@@ -614,11 +633,11 @@ body {
 
 /* izquierda */
 .footer-col-left {
-  max-width: 220px;
+  max-width: 510px;
 }
 
 .footer-logo {
-  height: 68px;
+  height: 90px;
   width: auto;
   margin-bottom: 8px;
 }
@@ -670,13 +689,28 @@ body {
 }
 
 .footer-social a {
-  width: 42px;
+width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #ffffff;
+  background: #ffffff; /* Fondo inicial blanco */
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.footer-social a[aria-label="Instagram"]:hover {
+  /* Degradado oficial de Instagram */
+  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
+  box-shadow: 0 4px 15px rgba(214, 36, 159, 0.4);
+  transform: translateY(-3px);
+}
+
+/* --- Efecto para Facebook --- */
+.footer-social a[aria-label="Facebook"]:hover {
+  background: #1877F2;
+  box-shadow: 0 4px 15px rgba(24, 119, 242, 0.4);
+  transform: translateY(-3px);
 }
 
 .footer-social img {
