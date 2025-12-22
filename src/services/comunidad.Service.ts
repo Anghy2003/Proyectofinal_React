@@ -1,26 +1,31 @@
-// src/services/comunidadService.ts
+// src/services/comunidad.Service.ts
 
 const BASE_URL = "http://localhost:8080/api";
 
 // 👇 Estados tal como en el enum del backend
 export type EstadoComunidad = "SOLICITADA" | "ACTIVA" | "RECHAZADA";
 
+// ✅ Type alineado a ComunidadDTO (con campos nuevos)
 export type Comunidad = {
   id: number;
   nombre: string;
+  direccion?: string | null;
+
   codigoAcceso: string | null;
   estado: EstadoComunidad;
-  fechaCreacion: string; // ISO en texto
+  fechaCreacion: string; // ISO
 
-  // campos extra que vienen del backend (opcionales por si acaso)
-  direccion?: string;
-  activa?: boolean;
+  activa?: boolean | null;
+  miembrosCount?: number | null;
+
+  // ✅ nuevos
+  fotoUrl?: string | null;
+  centroLat?: number | null;
+  centroLng?: number | null;
+  radioKm?: number | null; // si backend manda BigDecimal -> llega number
 };
 
-//
-// 🔹 NUEVO: traer TODAS las comunidades (es el endpoint que sí tienes)
-//   GET /api/comunidades
-//
+// ===================== GET TODAS =====================
 export async function getTodasComunidades(): Promise<Comunidad[]> {
   const resp = await fetch(`${BASE_URL}/comunidades`);
 
@@ -33,26 +38,7 @@ export async function getTodasComunidades(): Promise<Comunidad[]> {
   return resp.json();
 }
 
-// (Si más adelante creas los endpoints por estado, puedes dejar esto comentado)
-/*
-export async function getComunidadesPorEstado(
-  estado: EstadoComunidad
-): Promise<Comunidad[]> {
-  const resp = await fetch(`${BASE_URL}/comunidades/estado/${estado}`);
-
-  if (!resp.ok) {
-    const txt = await resp.text();
-    console.error("Error getComunidadesPorEstado:", txt);
-    throw new Error("No se pudieron cargar las comunidades");
-  }
-
-  return resp.json();
-}
-*/
-
-//
-// Sigue sirviendo para la pantalla de Códigos si ya tienes este endpoint:
-//
+// ===================== APROBAR (genera código + SMS en backend) =====================
 export async function aprobarComunidadApi(id: number): Promise<Comunidad> {
   const resp = await fetch(`${BASE_URL}/comunidades/${id}/aprobar`, {
     method: "POST",

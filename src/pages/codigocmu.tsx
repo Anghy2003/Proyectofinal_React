@@ -12,14 +12,9 @@ import iconEliminar from "../assets/icon_eliminar.svg";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-// 👉 TYPES: type-only import
+// ✅ TYPES + FUNCIONES desde el mismo archivo (nombre consistente)
 import type { Comunidad } from "../services/comunidad.Service";
-// 👉 FUNCIONES: import normal
-import {
-  getTodasComunidades,
-  aprobarComunidadApi,
-} from "../services/comunidad.Service";
-
+import { getTodasComunidades, aprobarComunidadApi } from "../services/comunidad.Service";
 
 type CodigoRow = {
   id: number;
@@ -43,41 +38,37 @@ export default function CodigoAcceso() {
     navigate("/login");
   };
 
-  // Cargar comunidades al entrar
   useEffect(() => {
     cargarComunidades();
   }, []);
 
   const cargarComunidades = async () => {
-  try {
-    // 👉 Traemos TODAS las comunidades del backend
-    const todas = await getTodasComunidades();
+    try {
+      const todas = await getTodasComunidades();
 
-    // Separar por estado en el FRONT
-    const dataPend = todas.filter((c) => c.estado === "SOLICITADA");
-    const dataAct = todas.filter((c) => c.estado === "ACTIVA");
+      const dataPend = todas.filter((c) => c.estado === "SOLICITADA");
+      const dataAct = todas.filter((c) => c.estado === "ACTIVA");
 
-    setPendientes(dataPend);
-    setActivas(dataAct);
+      setPendientes(dataPend);
+      setActivas(dataAct);
 
-    const rows: CodigoRow[] = dataAct
-      .filter((c) => c.codigoAcceso)
-      .map((c) => ({
-        id: c.id,
-        codigo: c.codigoAcceso as string,
-        comunidad: c.nombre,
-        fecha: new Date(c.fechaCreacion).toLocaleDateString("es-EC"),
-        estado: "Activo",
-      }));
+      const rows: CodigoRow[] = dataAct
+        .filter((c) => !!c.codigoAcceso)
+        .map((c) => ({
+          id: c.id,
+          codigo: c.codigoAcceso as string,
+          comunidad: c.nombre,
+          fecha: new Date(c.fechaCreacion).toLocaleDateString("es-EC"),
+          estado: "Activo",
+        }));
 
-    setListaCodigos(rows);
-  } catch (error) {
-    console.error(error);
-    alert("No se pudieron cargar las comunidades.");
-  }
-};
+      setListaCodigos(rows);
+    } catch (error) {
+      console.error(error);
+      alert("No se pudieron cargar las comunidades.");
+    }
+  };
 
-  // ✅ función bien cerrada
   const aprobarComunidad = async () => {
     if (typeof selectedId !== "number") {
       alert("Selecciona una comunidad en estado SOLICITADA.");
@@ -86,49 +77,38 @@ export default function CodigoAcceso() {
 
     setLoading(true);
     try {
+      // ✅ backend: aprueba + genera código + envía SMS al solicitante
       const comunidadActualizada = await aprobarComunidadApi(selectedId);
 
       if (!comunidadActualizada.codigoAcceso) {
-        alert(
-          "La comunidad se aprobó, pero el backend no devolvió un código de acceso."
-        );
+        alert("La comunidad se aprobó, pero el backend no devolvió un código de acceso.");
         return;
       }
 
-      // Mostrar en el cuadro grande
       setCodigoActual(comunidadActualizada.codigoAcceso);
 
-      // Quitar de pendientes
-      setPendientes((prev) =>
-        prev.filter((c) => c.id !== comunidadActualizada.id)
-      );
+      setPendientes((prev) => prev.filter((c) => c.id !== comunidadActualizada.id));
 
-      // Actualizar activas
       setActivas((prev) => {
         const rest = prev.filter((c) => c.id !== comunidadActualizada.id);
-        return [...rest, comunidadActualizada];
+        return [comunidadActualizada, ...rest];
       });
 
-      // Agregar fila a la tabla
       setListaCodigos((prev) => [
         {
           id: comunidadActualizada.id,
           codigo: comunidadActualizada.codigoAcceso ?? "",
           comunidad: comunidadActualizada.nombre,
-          fecha: new Date(
-            comunidadActualizada.fechaCreacion
-          ).toLocaleDateString("es-EC"),
+          fecha: new Date(comunidadActualizada.fechaCreacion).toLocaleDateString("es-EC"),
           estado: "Activo",
         },
         ...prev,
       ]);
 
-      alert("Comunidad aprobada y código generado correctamente.");
+      alert("Comunidad aprobada y código generado correctamente. Se envió el SMS al solicitante (si Twilio está OK).");
     } catch (error) {
       console.error(error);
-      alert(
-        "No se pudo aprobar la comunidad. Verifica el servidor o el endpoint /api/comunidades/{id}/aprobar."
-      );
+      alert("No se pudo aprobar la comunidad. Verifica el servidor o el endpoint /api/comunidades/{id}/aprobar.");
     } finally {
       setLoading(false);
     }
@@ -193,11 +173,7 @@ export default function CodigoAcceso() {
           </nav>
 
           <div className="sidebar-footer">
-            <button
-              id="btnSalir"
-              className="sidebar-logout"
-              onClick={handleLogout}
-            >
+            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
               Salir
             </button>
             <span className="sidebar-version">v1.0 - SafeZone</span>
@@ -214,12 +190,8 @@ export default function CodigoAcceso() {
               <div className="form-card">
                 <label>Selecciona una comunidad solicitada</label>
                 <select
-                  value={selectedId ?? ""} // null -> ""
-                  onChange={(e) =>
-                    setSelectedId(
-                      e.target.value === "" ? null : Number(e.target.value)
-                    )
-                  }
+                  value={selectedId ?? ""}
+                  onChange={(e) => setSelectedId(e.target.value === "" ? null : Number(e.target.value))}
                 >
                   <option value="">-- Selecciona --</option>
                   {pendientes.map((c) => (
@@ -230,10 +202,9 @@ export default function CodigoAcceso() {
                 </select>
 
                 <p className="codigo-msg" style={{ textAlign: "left" }}>
-                  Estas comunidades fueron enviadas desde la app en estado{" "}
-                  <strong>SOLICITADA</strong>. Al aprobar, SafeZone generará un
-                  código de acceso de 5 dígitos que se puede compartir con los
-                  vecinos.
+                  Estas comunidades fueron enviadas desde la app en estado <strong>SOLICITADA</strong>. Al aprobar,
+                  SafeZone generará un código de acceso de 5 dígitos y el backend enviará el código por SMS al usuario
+                  solicitante (si está configurado Twilio).
                 </p>
 
                 <button
@@ -248,29 +219,21 @@ export default function CodigoAcceso() {
 
               {/* Cuadro de código generado */}
               <div className="codigo-card">
-                <p className="codigo-label">
-                  Último código generado para comunidad
-                </p>
+                <p className="codigo-label">Último código generado para comunidad</p>
 
                 <div className="codigo-box">{codigoActual ?? "---"}</div>
 
                 <p className="codigo-msg">
-                  Comparte este código con los vecinos para que se unan desde la
-                  app SafeZone.
+                  Comparte este código con los vecinos para que se unan desde la app SafeZone. El solicitante lo recibe
+                  también por SMS.
                 </p>
 
-                <button
-                  className="copy-btn"
-                  type="button"
-                  onClick={copiarCodigo}
-                  disabled={!codigoActual}
-                >
+                <button className="copy-btn" type="button" onClick={copiarCodigo} disabled={!codigoActual}>
                   Copiar
                 </button>
               </div>
             </div>
 
-            {/* Tabla códigos generados */}
             <h2 className="subtitle">Comunidades activas con código</h2>
 
             <div className="table-wrapper">
@@ -301,9 +264,7 @@ export default function CodigoAcceso() {
                         <td>{item.comunidad}</td>
                         <td>{item.fecha}</td>
                         <td>
-                          <span className="badge badge-ok">
-                            {item.estado}
-                          </span>
+                          <span className="badge badge-ok">{item.estado}</span>
                         </td>
                         <td>
                           <img
