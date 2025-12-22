@@ -689,10 +689,11 @@ body {
 }
 
 .footer-social a {
-width: 42px;
+  width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: #ffffff; /* Fondo inicial blanco */
+  background: rgba(255,255,255,0.08); /* o transparente */
+  border: 1px solid rgba(255,255,255,0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -718,6 +719,17 @@ width: 42px;
   height: 22px;
 }
 
+.footer-social a[aria-label="Facebook"] img{
+  width: 50px;
+  height: 50px;
+  filter: brightness(0) invert(1);
+}
+
+.footer-social a[aria-label="Instagram"] img{
+  width: 46px;
+  height: 46px;
+  filter: brightness(0) invert(1);
+}
 /* línea que separa del texto final */
 .footer-divider {
   margin: 18px 0 10px;
