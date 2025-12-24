@@ -1,3 +1,4 @@
+// src/pages/Login.tsx
 import "../styles/login.css";
 
 import loginFrame from "../assets/login.svg";
@@ -8,27 +9,47 @@ import iconGoogle from "../assets/iconoGoogle.svg";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { authService } from "../services/auth.service";
+
 export default function Login() {
   const navigate = useNavigate();
 
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Aquí luego conectamos con tu backend Spring Boot (API login)
-    // Por ahora solo validamos que haya algo escrito y mandamos al dashboard
     if (!correo.trim() || !password.trim()) {
       alert("Ingresa correo y contraseña");
       return;
     }
 
-    navigate("/dashboard");
+    setLoading(true);
+    try {
+      const usuario = await authService.login(correo.trim(), password.trim());
+
+      // Guarda sesión para usar userId/rol en todo el panel admin
+      authService.saveSession(usuario);
+
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "No se pudo iniciar sesión. Verifica tus credenciales.";
+
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLoginGoogle = () => {
-    // Aquí luego integramos Firebase / OAuth, por ahora solo demo
     alert("Login con Google (pendiente integración)");
   };
 
@@ -53,6 +74,8 @@ export default function Login() {
                 placeholder="Correo Electrónico"
                 value={correo}
                 onChange={(e) => setCorreo(e.target.value)}
+                autoComplete="email"
+                disabled={loading}
               />
             </div>
 
@@ -67,11 +90,18 @@ export default function Login() {
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                disabled={loading}
               />
             </div>
 
-            <button type="submit" className="btn-primary" id="btnLogin">
-              Iniciar Sesión
+            <button
+              type="submit"
+              className="btn-primary"
+              id="btnLogin"
+              disabled={loading}
+            >
+              {loading ? "Ingresando..." : "Iniciar Sesión"}
             </button>
           </form>
 
@@ -81,12 +111,9 @@ export default function Login() {
             className="btn-google"
             type="button"
             onClick={handleLoginGoogle}
+            disabled={loading}
           >
-            <img
-              src={iconGoogle}
-              className="google-icon"
-              alt="Google icon"
-            />
+            <img src={iconGoogle} className="google-icon" alt="Google icon" />
             <span>Inicia sesión con Google</span>
           </button>
         </div>

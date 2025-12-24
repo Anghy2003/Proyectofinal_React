@@ -32,7 +32,10 @@ export const comunidadesService = {
     return apiClient.get<Comunidad>(`/comunidades/${id}`);
   },
 
-  aprobar: async (id: number): Promise<Comunidad> => {
-    return apiClient.post<Comunidad>(`/comunidades/${id}/aprobar`);
+  // ✅ Backend real: POST /api/comunidades/{id}/aprobar/usuario/{usuarioId}
+  aprobar: async (id: number, usuarioId: number): Promise<Comunidad> => {
+    return apiClient.post<Comunidad>(
+      `/comunidades/${id}/aprobar/usuario/${usuarioId}`
+    );
   },
 };

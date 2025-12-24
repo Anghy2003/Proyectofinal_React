@@ -18,6 +18,8 @@ import {
   type Comunidad,
 } from "../services/comunidad.Service";
 
+import { authService } from "../services/auth.service";
+
 type CodigoRow = {
   id: number;
   codigo: string;
@@ -39,6 +41,7 @@ export default function CodigoAcceso() {
   const [error, setError] = useState<string | null>(null);
 
   const handleLogout = () => {
+    authService.logout();
     navigate("/login");
   };
 
@@ -60,7 +63,6 @@ export default function CodigoAcceso() {
       const data = await comunidadesService.listar();
       setTodas(data);
 
-      // construir tabla de códigos (solo activas con código)
       const rows: CodigoRow[] = data
         .filter((c) => c.estado === "ACTIVA" && !!c.codigoAcceso)
         .map((c) => ({
@@ -74,13 +76,24 @@ export default function CodigoAcceso() {
       setListaCodigos(rows);
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || "No se pudieron cargar las comunidades.");
+      setError(
+        e?.response?.data?.message ||
+          e?.message ||
+          "No se pudieron cargar las comunidades."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    // opcional: si no hay sesión, no dejes entrar
+    const session = authService.getSession();
+    if (!session?.userId) {
+      navigate("/login");
+      return;
+    }
+
     cargarComunidades();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -91,10 +104,20 @@ export default function CodigoAcceso() {
       return;
     }
 
+    const session = authService.getSession();
+    if (!session?.userId) {
+      alert("Sesión no encontrada. Inicia sesión nuevamente.");
+      navigate("/login");
+      return;
+    }
+
     setLoading(true);
     try {
-      // ✅ backend: aprueba + genera código + (opcional) envía SMS
-      const comunidadActualizada = await comunidadesService.aprobar(selectedId);
+      // ✅ backend: /comunidades/{id}/aprobar/usuario/{usuarioId}
+      const comunidadActualizada = await comunidadesService.aprobar(
+        selectedId,
+        session.userId
+      );
 
       if (!comunidadActualizada.codigoAcceso) {
         alert(
@@ -105,13 +128,13 @@ export default function CodigoAcceso() {
 
       setCodigoActual(comunidadActualizada.codigoAcceso);
 
-      // refrescar data local sin volver a pedir todo (optimista)
+      // refrescar local
       setTodas((prev) => {
         const rest = prev.filter((c) => c.id !== comunidadActualizada.id);
         return [comunidadActualizada, ...rest];
       });
 
-      // agregar/actualizar en la tabla de códigos
+      // actualizar tabla códigos
       setListaCodigos((prev) => {
         const rest = prev.filter((r) => r.id !== comunidadActualizada.id);
         return [
@@ -119,14 +142,15 @@ export default function CodigoAcceso() {
             id: comunidadActualizada.id,
             codigo: comunidadActualizada.codigoAcceso ?? "",
             comunidad: comunidadActualizada.nombre,
-            fecha: new Date(comunidadActualizada.fechaCreacion).toLocaleDateString("es-EC"),
+            fecha: new Date(comunidadActualizada.fechaCreacion).toLocaleDateString(
+              "es-EC"
+            ),
             estado: "Activo",
           },
           ...rest,
         ];
       });
 
-      // limpiar selección
       setSelectedId(null);
 
       alert(
@@ -134,10 +158,13 @@ export default function CodigoAcceso() {
       );
     } catch (e: any) {
       console.error(e);
-      alert(
+
+      const msg =
+        e?.response?.data?.message ||
         e?.message ||
-          "No se pudo aprobar la comunidad. Verifica el endpoint /api/comunidades/{id}/aprobar."
-      );
+        "No se pudo aprobar la comunidad.";
+
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -154,8 +181,6 @@ export default function CodigoAcceso() {
   };
 
   const eliminarCodigo = (id: number) => {
-    // OJO: esto solo lo quita de la tabla frontend.
-    // Si quieres desactivar/borrar en backend, necesitas endpoint y llamar service.
     setListaCodigos((prev) => prev.filter((c) => c.id !== id));
   };
 
@@ -218,7 +243,13 @@ export default function CodigoAcceso() {
         {/* CONTENIDO PRINCIPAL */}
         <main className="main">
           <section className="panel">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <h1 className="title">Generar Código de Comunidad</h1>
 
               <button
@@ -244,7 +275,9 @@ export default function CodigoAcceso() {
                 <select
                   value={selectedId ?? ""}
                   onChange={(e) =>
-                    setSelectedId(e.target.value === "" ? null : Number(e.target.value))
+                    setSelectedId(
+                      e.target.value === "" ? null : Number(e.target.value)
+                    )
                   }
                 >
                   <option value="">-- Selecciona --</option>
@@ -274,7 +307,9 @@ export default function CodigoAcceso() {
 
               {/* Cuadro de código generado */}
               <div className="codigo-card">
-                <p className="codigo-label">Último código generado para comunidad</p>
+                <p className="codigo-label">
+                  Último código generado para comunidad
+                </p>
 
                 <div className="codigo-box">{codigoActual ?? "---"}</div>
 
