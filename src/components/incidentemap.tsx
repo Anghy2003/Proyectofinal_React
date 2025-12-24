@@ -36,12 +36,12 @@ function HeatLayer({ points }: { points: HeatPoint[] }) {
 export default function IncidentHeatmap() {
   const [points, setPoints] = useState<HeatPoint[]>([]);
 
-  useEffect(() => {
+ /* useEffect(() => {
     fetch("http://localhost:8080/api/mapacalor")
       .then((res) => res.json())
       .then((data) => setPoints(data))
       .catch(() => setPoints([]));
-  }, []);
+  }, []);*/
 
   return (
     <MapContainer
