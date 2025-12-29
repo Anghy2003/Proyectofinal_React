@@ -44,7 +44,6 @@ body {
 
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   gap: 10px;
 
   z-index: 10;
@@ -75,7 +74,6 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-
   padding: 12px 20px;
   color: #ffffff;
   text-decoration: none;
@@ -85,17 +83,15 @@ body {
 
 .sidebar-item span {
   color: #ffffff !important;
-  transition: all 0.3s ease;
 }
 
 .sidebar-item:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
 }
 
 .sidebar-item.active {
-  background: rgba(229, 60, 55, 0.15) !important;
-  border: 1px solid #e53c37 !important;
+  background: rgba(229, 60, 55, 0.15);
+  border: 1px solid #e53c37;
 }
 
 .sidebar-item.active span {
@@ -111,7 +107,6 @@ body {
 }
 
 .sidebar-logout {
-  align-self: flex-start;
   background: transparent;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -135,13 +130,34 @@ body {
   box-sizing: border-box;
 
   height: 100vh;
-  overflow: hidden;
+
+  /* ✅ ya no aplasta: scroll solo en el panel derecho */
+  overflow-y: auto;
+  overflow-x: hidden;
+
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  gap: 16px;
+  grid-template-rows: auto auto auto;
+  gap: 20px;
 }
 
-/* Base de las tarjetas (glass) */
+/* ✅ Scrollbar del panel derecho */
+.dashboard-main::-webkit-scrollbar {
+  width: 10px;
+}
+.dashboard-main::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ===== Base de tarjetas ===== */
+
 .card {
   background: rgba(255, 255, 255, 0);
   border-radius: 14px;
@@ -149,11 +165,11 @@ body {
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
-  padding: 14px 16px;
+  padding: 16px 18px;
   box-sizing: border-box;
 }
 
-/* ===== Fila superior: KPIs ===== */
+/* ===== KPIs ===== */
 
 .top-cards {
   display: grid;
@@ -161,59 +177,13 @@ body {
   gap: 14px;
 }
 
-.card-kpi {
-  padding: 14px 16px;
-}
-
-.card-kpi h3 {
-  font-size: 0.9rem;
-  margin: 0 0 8px;
-}
-
 .kpi-value {
   font-size: 2rem;
   font-weight: 600;
-  margin: 0;
 }
 
-.kpi-sub {
-  font-size: 0.8rem;
-  margin-top: 3px;
-}
+/* ===== SLA ===== */
 
-.kpi-warning {
-  color: #ff6b6b;
-}
-
-/* SLA card (ya la teníamos) */
-.card-sla {
-  padding: 14px 16px;
-}
-
-.card-sla-header {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.card-sla-title {
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.card-sla-subtitle {
-  font-size: 0.8rem;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.card-sla-body {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-}
-
-/* Gauge */
 .sla-gauge {
   position: relative;
   width: 140px;
@@ -252,8 +222,6 @@ body {
   left: 50%;
   bottom: -2px;
   transform-origin: bottom center;
-  transform: translateX(-50%) rotate(40deg);
-  border-radius: 999px;
 }
 
 .sla-gauge-center {
@@ -276,22 +244,18 @@ body {
   font-weight: 600;
 }
 
-/* ===== Fila media ===== */
+/* ===== Filas media e inferior ===== */
 
-.middle-cards {
+.middle-cards,
+.bottom-cards {
   display: grid;
   grid-template-columns: 1.3fr 1.7fr;
-  gap: 14px;
+  gap: 18px;
+  align-items: start; /* ✅ evita estirar y amontinar */
 }
 
-.card-header h3 {
-  margin: 0 0 20px 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  padding-left: 12px;
-}
+/* ===== Tablas ===== */
 
-/* Tablas */
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -304,18 +268,7 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.table th {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.78);
-  text-align: left;
-}
-
-.table tr:last-child td {
-  border-bottom: none;
-}
-
 .tag {
-  display: inline-block;
   padding: 3px 8px;
   border-radius: 999px;
   background: rgba(49, 119, 255, 0.18);
@@ -323,146 +276,52 @@ body {
   font-size: 0.72rem;
 }
 
-.link {
-  color: #9ec3ff;
-  text-decoration: none;
-  font-size: 0.78rem;
-}
+/* ===== Comunidades (scroll interno para evitar que empuje todo) ===== */
 
-/* Gráfica simple */
-.card-growth {
-  border-radius: 16px;
-  padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  color: white;
-  grid-template-columns: 1.3fr 1.7fr;
-  gap: 14px;
-}
-
-.growth-chart {
-  padding: 16px;
-}
-
-.growth-line {
-  position: relative;
-  height: 90px;
-  border-radius: 10px;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.02)
-  );
+.card-communities {
+  max-height: 360px;
+  overflow: hidden;
   display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  padding: 0 16px 12px;
+  flex-direction: column;
 }
 
-.point {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #3177ff;
-}
-
-.growth-footer {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.pill {
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 0.85rem;
-  border: none;
-  cursor: pointer;
-}
-.pill-outline {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ccc;
-}
-
-.pill-small {
-  font-size: 0.72rem;
-}
-
-.pill:not(.pill-outline) {
-  background-color: #3177ff;
-  color: white;
-}
-
-/* ===== Fila inferior ===== */
-
-.bottom-cards {
-  display: grid;
-  grid-template-columns: 1.3fr 1.7fr;
-  gap: 14px;
-}
-
-.card-alerts {
-  /* solo usa estilos base + tabla */
-}
-
-.status {
-  font-weight: 500;
-}
-
-.status-ok {
-  color: #4ade80;
-}
-
-.status-pending {
-  color: #facc15;
-}
-
-.status-progress {
-  color: #38bdf8;
-}
-
-.card-top {
-  display: grid;
-  grid-template-columns: 1.1fr 1.3fr;
-  border-spacing: 0;
-}
-
-.card-top-col {
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.card-top-col:first-child {
-  border-left: none;
-}
-
-.var {
-  font-weight: 500;
-}
-
-.var-up {
-  color: #4ade80;
-}
-
-.var-down {
-  color: #f97373;
-}
-.growth-chart-container {
-  padding: 16px;
-}
-
-.growth-chart-container canvas {
+.card-communities .table {
   width: 100%;
-  height: 180px;
 }
-/* ===== MAPA DE CALOR (REEMPLAZO DE LA GRÁFICA) ===== */
+
+/* Scroll solo dentro del tbody */
+.card-communities .table tbody {
+  display: block;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.card-communities .table thead,
+.card-communities .table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Scrollbar interno de comunidades */
+.card-communities .table tbody::-webkit-scrollbar {
+  width: 8px;
+}
+.card-communities .table tbody::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.card-communities .table tbody::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+/* ===== MAPA DE CALOR ===== */
 
 .card-heatmap {
   border-radius: 16px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  color: white;
+  overflow: hidden;
 }
 
 .heatmap-header {
@@ -471,39 +330,28 @@ body {
   gap: 4px;
 }
 
-.heatmap-sub {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
 .heatmap-map {
   position: relative;
   margin-top: 10px;
-  height: 320px;
+
+  /* ✅ clave: menos alto = menos “amontonado” */
+  height: 260px;
+
   border-radius: 14px;
   overflow: hidden;
 
-  /* fondo tipo “mapa nocturno” */
   background: linear-gradient(
       0deg,
       rgba(0, 10, 30, 0.65),
       rgba(0, 10, 30, 0.65)
     ),
-    radial-gradient(
-      circle at 30% 30%,
-      rgba(49, 119, 255, 0.15),
-      transparent 50%
-    ),
-    radial-gradient(
-      circle at 70% 50%,
-      rgba(49, 119, 255, 0.12),
-      transparent 55%
-    );
+    radial-gradient(circle at 30% 30%, rgba(49, 119, 255, 0.15), transparent 50%),
+    radial-gradient(circle at 70% 50%, rgba(49, 119, 255, 0.12), transparent 55%);
 
   border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
-/* líneas tipo calles */
+/* Decoración tipo calles */
 .heatmap-map::before {
   content: "";
   position: absolute;
@@ -515,66 +363,37 @@ body {
     linear-gradient(90deg, transparent 96%, rgba(120, 170, 255, 0.1) 96%);
   background-size: 140px 90px;
   opacity: 0.35;
+  pointer-events: none;
+  z-index: 1;
 }
 
-/* “mancha” heatmap (simulación) */
-.heat-blob {
-  position: absolute;
-  width: 220px;
-  height: 220px;
-  left: 55%;
-  top: 55%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  filter: blur(2px);
+/* ======== FIX Leaflet ======== */
 
-  background: radial-gradient(
-    circle,
-    rgba(255, 59, 59, 0.95) 0%,
-    rgba(255, 165, 0, 0.75) 35%,
-    rgba(34, 197, 94, 0.45) 65%,
-    rgba(34, 197, 94, 0) 78%
-  );
-  opacity: 0.95;
+.heatmap-map .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 14px;
+  z-index: 2;
+  background: transparent;
 }
 
-/* Leyenda */
-.heatmap-legend {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  padding: 12px 12px;
-  border-radius: 12px;
-  background: rgba(5, 16, 46, 0.88);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  backdrop-filter: blur(10px);
+.heatmap-map .leaflet-pane,
+.heatmap-map .leaflet-map-pane,
+.heatmap-map .leaflet-tile-pane,
+.heatmap-map .leaflet-overlay-pane,
+.heatmap-map .leaflet-shadow-pane,
+.heatmap-map .leaflet-marker-pane,
+.heatmap-map .leaflet-tooltip-pane,
+.heatmap-map .leaflet-popup-pane {
+  z-index: 2;
 }
 
-.legend-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.82rem;
-  margin: 6px 0;
+.heatmap-map .leaflet-control {
+  z-index: 3;
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
+/* ===== Filtros del mapa ===== */
 
-.dot-red {
-  background: #ff3b3b;
-}
-.dot-orange {
-  background: #ffb020;
-}
-.dot-green {
-  background: #22c55e;
-}
-
-/* Filtros */
 .heatmap-filters {
   position: absolute;
   left: 50%;
@@ -583,4 +402,475 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  z-index: 4;
+}
+
+/* ===== ESTADOS ===== */
+
+.status-ok {
+  color: #4ade80;
+}
+.status-pending {
+  color: #facc15;
+}
+.status-progress {
+  color: #38bdf8;
+}
+
+/* ===== Responsive: evita amontonado en pantallas medianas ===== */
+
+@media (max-width: 1200px) {
+  .top-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .middle-cards,
+  .bottom-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* En pantallas grandes, vuelve el mapa más alto */
+@media (min-width: 1400px) {
+  .heatmap-map {
+    height: 320px;
+  }
+}
+/* ===== Fondo general (mismo que login) ===== */
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+}
+
+.background {
+  position: fixed;
+  inset: 0;
+  background-image: url("../assets/Fondo_Admin.png") !important;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.55);
+  z-index: -1;
+}
+
+/* ===== Layout principal ===== */
+
+.dashboard {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  color: #ffffff;
+}
+
+/* ===== Sidebar ===== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  width: 240px;
+  padding: 20px 18px;
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 0 20px 20px 0;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  z-index: 10;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.sidebar-logo {
+  width: 48px;
+}
+
+.sidebar-title {
+  font-weight: 600;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-item span {
+  color: #ffffff !important;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-item.active {
+  background: rgba(229, 60, 55, 0.15);
+  border: 1px solid #e53c37;
+}
+
+.sidebar-item.active span {
+  color: #e53c37 !important;
+  font-weight: bold;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-logout {
+  background: transparent;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.sidebar-version {
+  color: #e3e3e3b3;
+  opacity: 0.7;
+}
+
+/* ===== Contenido principal ===== */
+
+.dashboard-main {
+  flex: 1;
+  margin-left: 260px;
+  padding: 20px 26px;
+  box-sizing: border-box;
+
+  height: 100vh;
+
+  /* ✅ ya no aplasta: scroll solo en el panel derecho */
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  display: grid;
+  grid-template-rows: auto auto auto;
+  gap: 20px;
+}
+
+/* ✅ Scrollbar del panel derecho */
+.dashboard-main::-webkit-scrollbar {
+  width: 10px;
+}
+.dashboard-main::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+.dashboard-main::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* ===== Base de tarjetas ===== */
+
+.card {
+  background: rgba(255, 255, 255, 0);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  padding: 16px 18px;
+  box-sizing: border-box;
+}
+
+/* ===== KPIs ===== */
+
+.top-cards {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.3fr 1.1fr;
+  gap: 14px;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+/* ===== SLA ===== */
+
+.sla-gauge {
+  position: relative;
+  width: 140px;
+  height: 80px;
+}
+
+.sla-gauge-arc {
+  position: absolute;
+  inset: 0;
+  border-radius: 140px 140px 0 0;
+  overflow: hidden;
+}
+
+.sla-gauge-arc::before {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  left: 0;
+  bottom: -60px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 180deg,
+    #3177ff 0deg,
+    #3177ff 150deg,
+    #263a69 150deg,
+    #263a69 360deg
+  );
+}
+
+.sla-gauge-indicator {
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background: #ffffff;
+  left: 50%;
+  bottom: -2px;
+  transform-origin: bottom center;
+}
+
+.sla-gauge-center {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(5, 16, 46, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sla-gauge-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ===== Filas media e inferior ===== */
+
+.middle-cards,
+.bottom-cards {
+  display: grid;
+  grid-template-columns: 1.3fr 1.7fr;
+  gap: 18px;
+  align-items: start; /* ✅ evita estirar y amontinar */
+}
+
+/* ===== Tablas ===== */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.table th,
+.table td {
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(49, 119, 255, 0.18);
+  border: 1px solid rgba(49, 119, 255, 0.5);
+  font-size: 0.72rem;
+}
+
+/* ===== Comunidades (scroll interno para evitar que empuje todo) ===== */
+
+.card-communities {
+  max-height: 360px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-communities .table {
+  width: 100%;
+}
+
+/* Scroll solo dentro del tbody */
+.card-communities .table tbody {
+  display: block;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.card-communities .table thead,
+.card-communities .table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Scrollbar interno de comunidades */
+.card-communities .table tbody::-webkit-scrollbar {
+  width: 8px;
+}
+.card-communities .table tbody::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.card-communities .table tbody::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+/* ===== MAPA DE CALOR ===== */
+
+.card-heatmap {
+  border-radius: 16px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.heatmap-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heatmap-map {
+  position: relative;
+  margin-top: 10px;
+
+  /* ✅ clave: menos alto = menos “amontonado” */
+  height: 260px;
+
+  border-radius: 14px;
+  overflow: hidden;
+
+  background: linear-gradient(
+      0deg,
+      rgba(0, 10, 30, 0.65),
+      rgba(0, 10, 30, 0.65)
+    ),
+    radial-gradient(circle at 30% 30%, rgba(49, 119, 255, 0.15), transparent 50%),
+    radial-gradient(circle at 70% 50%, rgba(49, 119, 255, 0.12), transparent 55%);
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Decoración tipo calles */
+.heatmap-map::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      transparent 96%,
+      rgba(120, 170, 255, 0.12) 96%
+    ),
+    linear-gradient(90deg, transparent 96%, rgba(120, 170, 255, 0.1) 96%);
+  background-size: 140px 90px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ======== FIX Leaflet ======== */
+
+.heatmap-map .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 14px;
+  z-index: 2;
+  background: transparent;
+}
+
+.heatmap-map .leaflet-pane,
+.heatmap-map .leaflet-map-pane,
+.heatmap-map .leaflet-tile-pane,
+.heatmap-map .leaflet-overlay-pane,
+.heatmap-map .leaflet-shadow-pane,
+.heatmap-map .leaflet-marker-pane,
+.heatmap-map .leaflet-tooltip-pane,
+.heatmap-map .leaflet-popup-pane {
+  z-index: 2;
+}
+
+.heatmap-map .leaflet-control {
+  z-index: 3;
+}
+
+/* ===== Filtros del mapa ===== */
+
+.heatmap-filters {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  z-index: 4;
+}
+
+/* ===== ESTADOS ===== */
+
+.status-ok {
+  color: #4ade80;
+}
+.status-pending {
+  color: #facc15;
+}
+.status-progress {
+  color: #38bdf8;
+}
+
+/* ===== Responsive: evita amontonado en pantallas medianas ===== */
+
+@media (max-width: 1200px) {
+  .top-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .middle-cards,
+  .bottom-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* En pantallas grandes, vuelve el mapa más alto */
+@media (min-width: 1400px) {
+  .heatmap-map {
+    height: 320px;
+  }
 }

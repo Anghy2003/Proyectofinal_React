@@ -1,4 +1,6 @@
-/* Reset básico */
+/* ===========================================================
+   RESET
+=========================================================== */
 *,
 *::before,
 *::after {
@@ -9,180 +11,443 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
-    sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter",
+    "Segoe UI", sans-serif;
+  background: #050507;
+  color: #ffffff;
 }
 
-/* Fondo SOLO para el Home */
+/* Para que el root ocupe todo */
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* Contenedor general de la página (fondo global) */
+.page-root {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #141318 0%, #06060a 45%, #040306 100%);
+  color: #ffffff;
+}
+
+/* ===========================================================
+   HERO
+=========================================================== */
+
 .hero {
   min-height: 100vh;
   width: 100%;
-  padding: 40px 120px 60px; 
-  background-color: #020814;
+  padding: 16px 60px 60px;
+  /* Sin bloque azul; se ve el fondo global + la imagen del slider */
+  background: transparent;
   color: #ffffff;
   position: relative;
   overflow: hidden;
 }
 
-#root {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  max-width: none;
+/* Fondo animado (lo maneja Motion en React) */
+.hero-bg-slider {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
 }
 
-/* ================= HEADER ================= */
+.hero-bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.05);
+  /* Más clara y menos saturada */
+  filter: brightness(0.98) contrast(1.05) saturate(1.05);
+}
+
+/* Overlay MUCHO más suave y casi sin azul */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(5, 5, 10, 0.78) 0%,
+    rgba(6, 6, 11, 0.74) 26%,
+    rgba(9, 8, 14, 0.62) 50%,
+    rgba(26, 13, 15, 0.42) 76%,
+    rgba(255, 118, 96, 0.08) 96%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ===========================================================
+   HEADER
+=========================================================== */
 
 .hero-header {
   position: relative;
+  z-index: 2;
   display: flex;
-  justify-content: center; 
+  justify-content: space-between;
   align-items: center;
-  margin-bottom: 72px;
+  margin-bottom: 55px;
 }
 
-/* Logo en esquina superior izquierda */
 .hero-logo {
-  position: absolute;
-  left: -110px;
-  top: 0;
+  position: relative;
+  flex-shrink: 0;
 }
 
 .hero-logo img {
-  height: 160px;  
+  height: 102px;
   width: auto;
-  margin-top: -39px;
+  transition: transform 0.3s ease;
 }
 
-/* Nav centrado */
+.hero-logo img:hover {
+  transform: scale(1.04);
+}
+
+/* NAV centrado */
 .hero-nav {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   gap: 56px;
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: 0.04em;
 }
 
-/* links con blanco en opacidad */
 .hero-nav a {
-  color: rgba(255, 255, 255, 0.6); 
-  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.78);
   text-decoration: none;
-  transition: color 0.25s ease;
+  position: relative;
+  padding-bottom: 4px;
+  transition: color 0.2s ease, text-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.hero-nav a::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff6c5e, #ff9477);
+  transform: translateX(-50%);
+  transition: width 0.3s ease;
 }
 
 .hero-nav a:hover {
-  color: rgba(255, 255, 255, 0.95);
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 150, 130, 0.7);
+  transform: translateY(-1px);
 }
 
-/* Botón login a la derecha */
+.hero-nav a:hover::after {
+  width: 120%;
+}
+
+/* BOTÓN LOGIN */
 .hero-login-btn {
-  position: absolute;
-  right: 0;
-  top: -6px;
-  display: inline-block;
-  padding: 12px 32px;
+  padding: 11px 30px;
   border-radius: 40px;
-  background: linear-gradient(90deg, #00a7ff, #00d1ff);
+  background: linear-gradient(120deg, #ff5a4e, #b3222b);
+  border: 1px solid rgba(255, 180, 160, 0.7);
   color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 163, 255, 0.45);
   text-decoration: none;
-  right: -55px;
+  box-shadow: 0 8px 24px rgba(255, 96, 84, 0.5);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
-/* Elemento oculto al inicio */
-.reveal {
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity 0.8s ease, transform 0.8s ease;
-  will-change: opacity, transform;
+.hero-login-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(255, 96, 84, 0.8);
+  filter: brightness(1.05);
 }
 
-/* Cuando entra en pantalla */
-.reveal.active {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-
-/* ================= MAIN ================= */
+/* ===========================================================
+   HERO MAIN
+=========================================================== */
 
 .hero-main {
+  position: relative;
+  z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
   align-items: center;
-  column-gap: 60px;
+  column-gap: 80px;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
 /* --------- LADO IZQUIERDO --------- */
 
-.hero-left h1 {
-  font-size: 4.8rem;        
-  font-weight: 400;         
-  font-family: "Inter", sans-serif;
-  letter-spacing: 0.01em;   
-  max-width: 12ch; 
-  text-align: right;
-  margin-left: -95px;
+.hero-left {
+  position: relative;
 }
 
-/* Texto pequeño con flecha abajo */
+/* TARJETA PRINCIPAL TRANSPARENTE (solo bordes) */
+.hero-left-panel {
+  max-width: 520px;
+  padding: 32px 38px;
+  border-radius: 28px;
+
+  /* Sin color: totalmente transparente */
+  background: transparent;
+
+  /* Solo borde cálido + sombra suave */
+  border: 1px solid rgba(255, 180, 160, 0.7);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+
+  /* Ligero blur para legibilidad sobre el fondo */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Pastilla superior */
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 178, 162, 0.9);
+  background: linear-gradient(
+    90deg,
+    rgba(40, 18, 22, 0.96),
+    rgba(90, 25, 28, 0.88)
+  );
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffe8ea;
+}
+
+.hero-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffb7a9;
+  box-shadow: 0 0 12px rgba(255, 170, 140, 0.9);
+}
+
+/* Título principal */
+.hero-title {
+  font-size: 3.9rem;
+  font-weight: 750;
+  line-height: 1.08;
+  letter-spacing: 0.01em;
+  margin: 22px 0 20px;
+}
+
+/* Subtítulo */
+.hero-subtitle {
+  font-size: 0.98rem;
+  line-height: 1.8;
+  color: #e1e9ff;
+  max-width: 29rem;
+}
+
+/* Chips de features */
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.hero-tag {
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 150, 130, 0.38);
+  background: rgba(17, 17, 27, 0.96);
+  color: #f4dede;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.hero-tag:hover {
+  transform: translateY(-2px) scale(1.04);
+  background: rgba(32, 21, 30, 0.98);
+  box-shadow: 0 10px 26px rgba(255, 150, 130, 0.35);
+}
+
+/* Bloque de flecha "scroll" */
 .hero-bottom-copy {
-  position: absolute;
-  left: 96px;  
-  bottom: 40px;
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 14px;
-  color: #b3c5d8;
+  gap: 14px;
+  font-size: 12.5px;
+  color: #c2d5ec;
+  margin-top: 28px;
 }
 
 .hero-arrow {
-  height: 38px;
+  height: 34px;
+  animation: arrowBounce 1.6s infinite ease-in-out;
 }
 
-/* --------- LADO DERECHO --------- */
+@keyframes arrowBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* --------- LADO DERECHO (TELÉFONOS + PASTILLA) --------- */
 
 .hero-right {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.hero-phone-wrapper {
-  width: 780px;
-  max-width: 100%;
-  margin-top: 80px;
-  margin-left: -70px;
+/* Orbe de luz cálido */
+.hero-orbit {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(70px);
+  opacity: 0.28;
+  mix-blend-mode: screen;
+  pointer-events: none;
 }
 
-.hero-visual {
-  width: 800px;
-  max-width: 100%;
-  height: auto;
+.hero-orbit--blue {
+  width: 440px;
+  height: 440px;
+  right: -4%;
+  top: -2%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 118, 104, 0.6),
+    transparent 72%
+  );
+}
+
+/* Wrapper para teléfonos + pastilla */
+.hero-phones-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Contenedor 3D de los teléfonos */
+.hero-phone-stack {
+  position: relative;
+  width: 960px;
+  height: 700px;
+  transform-style: preserve-3d;
+  animation: phoneFloat 8s ease-in-out infinite;
+}
+
+.hero-phone {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: visible;
+  border: none;
+  border-radius: 0;
+}
+
+.hero-phone--front {
+  top: 0;
+  left: 0;
+}
+
+/* Contenido del teléfono (gif / mockup) */
+.hero-phone-media {
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: contain;
-  filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.8));
-    transform: scale(1.5);
-  transform-origin: center;
+  animation: phoneInnerParallax 10s ease-in-out infinite;
 }
 
-/* ================= RESPONSIVE ================= */
+@keyframes phoneFloat {
+  0% {
+    transform: translateY(0) rotateZ(-2deg);
+  }
+  50% {
+    transform: translateY(-14px) rotateZ(1deg);
+  }
+  100% {
+    transform: translateY(0) rotateZ(-2deg);
+  }
+}
+
+@keyframes phoneInnerParallax {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Pastilla SOS */
+.hero-sos-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ff5a4e 0%, #b3222b 100%);
+  border: 1px solid rgba(255, 160, 145, 0.9);
+  box-shadow: 0 14px 36px rgba(255, 96, 84, 0.7);
+  font-size: 0.9rem;
+  color: #ffffff;
+  margin-top: -170px;
+}
+
+.hero-sos-lottie {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-sos-lottie > * {
+  width: 100%;
+  height: 100%;
+}
+
+.hero-sos-caption {
+  font-size: 0.86rem;
+  color: #f4f7ff;
+  margin-top: -4px;
+}
+
+/* ===========================================================
+   RESPONSIVE HERO
+=========================================================== */
 
 @media (max-width: 980px) {
   .hero {
-    padding: 20px 24px 32px;
+    padding: 20px 24px 40px;
   }
 
   .hero-header {
-    justify-content: space-between;
-    margin-bottom: 40px;
+    margin-bottom: 32px;
   }
 
   .hero-nav {
@@ -191,47 +456,52 @@ body {
 
   .hero-main {
     grid-template-columns: 1fr;
-    row-gap: 40px;
+    row-gap: 32px;
   }
 
-  .hero-left h1 {
-    font-size: 3rem;
-    max-width: none;
+  .hero-left-panel {
+    padding: 22px 20px 22px;
+    margin: 0 auto;
+    max-width: 100%;
   }
 
-  .hero-bottom-copy {
-    position: static;
-    margin-top: 32px;
-    left: auto;
+  .hero-title {
+    font-size: 2.8rem;
   }
 
-  .hero-phone-wrapper {
-    width: 320px;
+  .hero-right {
+    margin-top: 18px;
+    justify-content: center;
   }
 
-  .hero-login-btn {
-    position: static;
+  .hero-phone-stack {
+    width: 420px;
+    height: 400px;
   }
 
-  .hero-logo {
-    position: static;
+  .hero-sos-pill {
+    margin-top: -32px;
+  }
+
+  .hero-sos-caption {
+    margin-top: 4px;
   }
 }
 
-
-/* ====== CONTENEDOR GENERAL DE LA SEGUNDA SECCIÓN ====== */
+/* ===========================================================
+   SECCIÓN ¿QUÉ ES SAFEZONE?
+=========================================================== */
 
 .about-section {
   position: relative;
   width: 100%;
   min-height: 100vh;
   overflow: hidden;
-  display: flex;               
-  align-items: center;          
+  display: flex;
+  align-items: center;
+  background: radial-gradient(circle at center, #111323 0%, #05060a 60%);
 }
 
-
-/* Imagen de fondo ocupando toda la sección */
 .about-bg {
   position: absolute;
   inset: 0;
@@ -242,212 +512,255 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+  filter: brightness(0.72) contrast(1.08);
 }
 
-/* Oscurecer un poco para que el texto se lea bien */
+/* Overlay con foco en la izquierda y glow cálido a la derecha */
 .about-section::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(
-    circle at 30% 40%,
-    transparent 0,
-    transparent 40%,
-    rgba(0, 0, 0, 0.55) 100%
-  );
+  background:
+    radial-gradient(
+      circle at 20% 32%,
+      rgba(0, 0, 0, 0.9) 0,
+      rgba(0, 0, 0, 0.95) 26%,
+      rgba(0, 0, 0, 0.7) 48%,
+      transparent 70%
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgba(255, 118, 104, 0.38) 0,
+      rgba(255, 118, 104, 0.16) 28%,
+      transparent 60%
+    );
   z-index: 1;
 }
 
-/* Contenido encima de la imagen */
+/* Contenido de texto */
 .about-content {
   position: relative;
   z-index: 2;
   max-width: 520px;
-  padding-left: 120px; 
-  color: #f2f6fa;       
+  padding-left: 120px;
+  color: #f3f6ff;
 }
 
-/* Título y texto */
-.about-content h2 {
-  color: #ffffff;
-  font-size: 2.9rem;
-  font-weight: 700;
-  margin-bottom: 20px;
+.about-title {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  margin-bottom: 18px;
+  text-shadow: 0 12px 32px rgba(0, 0, 0, 0.9);
 }
 
-.about-content p {
-  color: rgba(255, 255, 255, 0.85); 
-  font-size: 1.15rem;
-  line-height: 1.7;
+.about-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.08rem;
+  line-height: 1.8;
   max-width: 480px;
+  text-shadow: 0 10px 26px rgba(0, 0, 0, 0.85);
+  margin-bottom: 24px;
 }
 
-/* ==================== SECCIÓN PROYECTO ==================== */
+.about-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+  max-width: 460px;
+}
+
+.about-tag {
+  font-size: 0.82rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(236, 64, 62, 0.85);
+  background: linear-gradient(
+    135deg,
+    rgba(236, 64, 62, 0.96),
+    rgba(179, 34, 43, 0.98)
+  );
+  color: #ffecef;
+  box-shadow: 0 10px 28px rgba(236, 64, 62, 0.55);
+  white-space: nowrap;
+}
+
+.about-tagline {
+  margin-top: 28px;
+  font-size: 0.98rem;
+  color: #dde9ff;
+  line-height: 1.7;
+  text-shadow: 0 10px 26px rgba(0, 0, 0, 0.9);
+}
+
+@media (max-width: 980px) {
+  .about-section {
+    min-height: 80vh;
+    align-items: flex-end;
+  }
+
+  .about-content {
+    padding: 0 24px 48px;
+    max-width: 100%;
+  }
+
+  .about-title {
+    font-size: 2.4rem;
+  }
+
+  .about-text {
+    font-size: 1rem;
+  }
+
+  .about-tags {
+    max-width: 100%;
+  }
+}
+
+
+/* ===========================================================
+   SECCIÓN PROYECTO (alineado y centrado)
+=========================================================== */
+/* ===========================================================
+   SECCIÓN PROYECTO – TRANSICIÓN SUAVE DESDE EL HERO
+=========================================================== */
 
 .project-section {
   width: 100%;
-  padding: 60px 120px 120px;
-  background-color: #020814;
+  padding: 90px 120px 110px;
+
+  /* Quita la línea dura entre el hero y esta sección */
+  margin-top: -1px;
+
+  /* Capas:
+     1) Linear cálido que continúa el hero
+     2) Glow rojizo suave arriba
+     3) Glow turquesa muy suave alrededor de las tarjetas
+     4) Base azul oscuro del GIF (#00000e) */
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 9, 10, 0.96) 0%,
+      rgba(8, 8, 14, 0.98) 22%,
+      #00000e 60%,
+      #00000e 100%
+    ),
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(255, 118, 96, 0.28),
+      transparent 58%
+    ),
+    radial-gradient(
+      circle at 50% 70%,
+      rgba(0, 200, 255, 0.18),
+      transparent 70%
+    ),
+    #00000e;
+
   color: #ffffff;
+  text-align: center;
 }
 
 .project-title {
-  font-size: 3.8rem;
-  font-weight: 700;
-  margin-bottom: 80px;
+  font-size: 3.4rem;
+  font-weight: 800;
+  margin-bottom: 70px;
 }
 
-/* CONTENEDOR GENERAL DE TARJETAS */
 .project-cards {
   display: flex;
-  justify-content: space-between;
-  gap: 50px;
+  justify-content: center;
+  align-items: stretch;
+  gap: 48px;
 }
 
-/* TARJETA EXTERNA (GLOW) */
 .project-card {
-  width: 32%;
-  border-radius: 34px;
-  padding: 6px;                 
-  background: transparent;
+  width: 30%;
+  border-radius: 32px;
+  padding: 8px;
+  background: radial-gradient(circle at top, #0b0f1a, #05070d);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 60px rgba(0, 200, 255, 0.25);
 }
 
-/* Glow y borde por color */
-.project-card--red {
-  border: 2px solid #ff4f6a;
-  box-shadow: 0 0 45px rgba(255, 79, 106, 0.55);
-}
-
-.project-card--teal {
-  border: 2px solid #11f6ff;
-  box-shadow: 0 0 45px rgba(17, 246, 255, 0.55);
-}
-
-.project-card--blue {
-  border: 2px solid #00caff;
-  box-shadow: 0 0 45px rgba(0, 202, 255, 0.55);
-}
-
-/* CONTENEDOR INTERNO (FONDO OSCURO) */
 .project-card-inner {
-  background: #050c16;
-  border-radius: 28px;
-  padding: 56px 40px 48px;
-
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  border-radius: 26px;
+  background: radial-gradient(circle at top, #0c101d, #04060c);
+  padding: 52px 38px 48px;
   text-align: center;
-
-  min-height: 520px;       
 }
 
-/* ICONO */
 .project-icon-wrapper {
-  height: 150px;            
+  height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .project-icon {
-  width: 140px;
-  height: auto;
-}
-
-/* TÍTULO CON ALTURA FIJA PARA ALINEAR PÁRRAFOS */
-.project-title-wrapper {
-  height: 90px;              
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 16px;
+  width: 120px;
 }
 
 .project-title-wrapper h3 {
-  font-size: 1.9rem;
-  font-weight: 700;
-  line-height: 1.3;
-  margin: 0;
-}
-
-/* PÁRRAFO CON ALTURA FIJA → ALINEADOS ARRIBA Y ABAJO */
-.project-text {
-  height: 170px;           
-  display: flex;
-  align-items: flex-start;   
-  justify-content: center;
+  font-size: 1.8rem;
+  margin: 0 0 12px 0;
+  font-weight: 800;
 }
 
 .project-text p {
-  margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.06rem;
   line-height: 1.7;
-  max-width: 290px;
-}
-
-/* HOVER SUAVE EN TODA LA TARJETA */
-/*.project-card-inner:hover {
-  transform: translateY(-6px);
-  transition: transform 0.25s ease;
-}*/
-
-/* RESPONSIVE */
-@media (max-width: 980px) {
-  .project-section {
-    padding: 40px 24px 80px;
-  }
-
-  .project-title {
-    font-size: 2.8rem;
-    margin-bottom: 40px;
-  }
-
-  .project-cards {
-    flex-direction: column;
-    gap: 40px;
-  }
-
-  .project-card {
-    width: 100%;
-     perspective: 1000px;
-  }
-
-  .project-card-inner {
-    min-height: 0;
-  }
-
-  .project-text {
-    height: auto;
-  }
+  color: #d6e7ff;
 }
 
 
-/* ===== EFECTO 3D PARA TARJETAS ===== */
-.tilt-card {
-  transform-style: preserve-3d;
-  transition: transform 0.2s ease-out;
-  will-change: transform;
-}
-
-
-/* ============= SECCIÓN COMUNIDAD ============= */
+/* ===========================================================
+   SECCIÓN COMUNIDAD – ESTILO SAFEZONE / #00000e
+=========================================================== */
 
 .community-section {
-  background-color: #020814;
-  padding: 80px 120px;
+  width: 100%;
+  padding: 80px 120px 110px;
+
+  background: radial-gradient(
+      circle at 8% 15%,
+      rgba(0, 200, 255, 0.22),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 92% 90%,
+      rgba(234, 66, 63, 0.2),
+      transparent 60%
+    ),
+    #00000e;
+
   color: #ffffff;
+  display: flex;
+  justify-content: center;
 }
 
 .community-inner {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   column-gap: 60px;
   align-items: center;
+}
+
+/* columna texto */
+
+.community-icon {
+  margin-left: -60px;
+  width: 85px;
+  height: auto;
+  margin-bottom: 12px;
+  opacity: 0.95;
 }
 
 .community-text h2 {
@@ -458,12 +771,13 @@ body {
 
 .community-text p {
   margin-left: -60px;
-  font-size: 1.20rem;
+  font-size: 1.15rem;
   line-height: 1.8;
   color: #cad7e6;
   margin-bottom: 16px;
 }
 
+/* Imagen de comunidad */
 .community-illustration img {
   width: 100%;
   max-width: 850px;
@@ -474,28 +788,48 @@ body {
 }
 
 @keyframes pulseGlow {
-  0% { filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.2)); }
-  50% { filter: drop-shadow(0 0 35px rgba(0, 200, 255, 0.5)); }
-  100% { filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.2)); }
+  0% {
+    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.18));
+  }
+  50% {
+    filter: drop-shadow(0 0 35px rgba(0, 200, 255, 0.55));
+  }
+  100% {
+    filter: drop-shadow(0 0 12px rgba(0, 200, 255, 0.18));
+  }
 }
 
+/* responsive */
 
+@media (max-width: 980px) {
+  .community-section {
+    padding: 60px 24px 80px;
+  }
 
-/* ICONO DE COMUNIDAD SOBRE EL TÍTULO */
-.community-icon {
-  margin-left: -60px;
-  width: 85px;              
-  height: auto;
-  margin-bottom: 12px;     
-  opacity: 0.9;          
+  .community-inner {
+    grid-template-columns: 1fr;
+    row-gap: 40px;
+  }
+
+  .community-text h2,
+  .community-text p,
+  .community-icon {
+    margin-left: 0;
+  }
+
+  .community-illustration img {
+    margin-left: 0;
+  }
 }
 
-/* ============= FRANJA DEL PATRÓN GEOMÉTRICO ============= */
+/* ===========================================================
+   FRANJA PATRÓN
+=========================================================== */
 
 .download-pattern-block {
-  background-color: #020814;
+  background: #05060b;
   overflow: hidden;
-  margin-bottom: 0; 
+  margin-bottom: 0;
 }
 
 .download-pattern-block img {
@@ -503,117 +837,190 @@ body {
   display: block;
 }
 
-/* ============= SECCIÓN DESCARGA APK ============= */
+
+
+
+/* ===========================================================
+   SECCIÓN DESCARGA APK – FONDO #00000e ESTILO HERO
+=========================================================== */
 
 .download-section {
-  background-color: #020814;
-  padding: 20px 120px 100px;  
+  width: 100%;
+  padding: 80px 120px 110px;
+
+  /* mismo tono base que el GIF */
+  background: radial-gradient(
+      circle at 10% 0%,
+      rgba(234, 66, 63, 0.18),
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 90% 100%,
+      rgba(234, 66, 63, 0.12),
+      transparent 60%
+    ),
+    #00000e;
+
   color: #ffffff;
+  display: flex;
+  justify-content: center;
 }
 
+/* contenedor principal, sin caja azul gigante */
 .download-inner {
-  max-width: 1200px;
-  margin: -40px auto 0;
+  width: 100%;
+  max-width: 1320px;
+
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr);
-  column-gap: 60px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  column-gap: 72px;
   align-items: center;
 }
 
-/* ===== TEXTO ===== */
+/* -------- TEXTO IZQUIERDA -------- */
 
-.download-text h2 {
-  font-size: 3.2rem;
-  margin-bottom: 20px;
+.download-text h1 {
+  font-size: 3.1rem;
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .download-text p {
-  font-size: 1rem;
-  color: #cad7e6;
-  margin-bottom: 26px;
+  margin-top: 20px;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: #e1e7ff;
   max-width: 520px;
 }
 
-/* ===== BOTÓN SIN GLOW CELESTE A LA IZQUIERDA ===== */
-
+/* botón tipo “store”, en el mismo verde que ya usabas */
 .download-btn {
+  margin-top: 32px;
+
   display: inline-flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 
-  padding: 16px 42px;
+  padding: 17px 44px;
   border-radius: 999px;
 
   border: 1px solid rgba(0, 224, 200, 0.6);
-  background: rgba(4, 30, 35, 0.9); 
-  color: #ffffff;
+  background: linear-gradient(120deg, #0b4745, #0ea5a3);
 
-  font-size: 1rem;
-  font-weight: 500;
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, filter 0.22s ease;
 }
 
 .download-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 25px rgba(0, 224, 200, 0.4);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 18px 40px rgba(0, 224, 200, 0.27);
+  filter: brightness(1.05);
 }
-
-/* ICONO DEL BOTÓN MÁS GRANDE */
 
 .download-btn-icon img {
-  width: 30px;   
-  height: 30px;   
-  filter: brightness(1.2); 
+  width: 28px;
+  height: 28px;
+  filter: brightness(1.2);
 }
 
-/* ===== CELULAR ===== */
+/* -------- MOCKUP DERECHA -------- */
 
 .download-phone {
-  text-align: right;
+  text-align: center;
 }
 
-.download-phone img {
-  width: 330px;
+/* panel donde vive el GIF – mismísimo #00000e */
+.download-phone-3d {
   display: inline-block;
 
-  transform: none;
-  filter: drop-shadow(0 25px 55px rgba(0, 0, 0, 0.9));
+  width: 480px;
+  height: 580px;
+
+  padding: 0;
+  border: none;
+  border-radius: 40px;
+  overflow: hidden;
+
+  background: radial-gradient(
+      circle at 20% 0%,
+      rgba(234, 66, 63, 0.22),
+      transparent 55%
+    ),
+    #00000e;
+
+  box-shadow:
+    0 40px 90px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+
+  cursor: pointer;
+  transform: rotate3d(0.18, -0.4, 0, 8deg);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
 
+.download-phone-3d:hover {
+  transform: rotate3d(0.1, -0.25, 0, 5deg) translateY(-6px);
+  box-shadow:
+    0 48px 110px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.spline-frame {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* texto pequeño */
 .download-note {
-  margin-top: 16px;
-  font-size: 1.2rem;
-  color: #cad7e6;
+  margin-top: 14px;
+  font-size: 0.95rem;
+  color: #cfd7ff;
 }
 
-/* ===== RESPONSIVE ===== */
+/* -------- RESPONSIVE DESCARGA -------- */
 
 @media (max-width: 980px) {
   .download-section {
-    padding: 40px 24px 80px;
+    padding: 60px 24px 80px;
   }
 
   .download-inner {
     grid-template-columns: 1fr;
     row-gap: 40px;
-    margin-top: 0;
-  }
-
-  .download-phone {
     text-align: center;
   }
 
-  .download-phone img {
-    width: 260px;
+  .download-text h1 {
+    font-size: 2.5rem;
+  }
+
+  .download-text p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .download-phone-3d {
+    width: 320px;
+    height: 410px;
+    transform: rotate3d(0.16, -0.32, 0, 7deg);
   }
 }
 
-/* ============= FOOTER ============= */
+
+
+/* ===========================================================
+   FOOTER
+=========================================================== */
 
 .footer {
-  background: linear-gradient(to bottom, #071b2b, #020814);
+  background: linear-gradient(to bottom, #09121c, #05060a);
   color: #ffffff;
   padding: 32px 120px 20px;
   font-size: 0.95rem;
@@ -670,10 +1077,12 @@ body {
   color: #e5f1ff;
   font-size: 0.95rem;
   text-decoration: none;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
 }
 
 .footer-nav a:hover {
-  text-decoration: underline;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(160, 200, 255, 0.7);
 }
 
 /* derecha */
@@ -692,26 +1101,12 @@ body {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.08); /* o transparente */
-  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.footer-social a[aria-label="Instagram"]:hover {
-  /* Degradado oficial de Instagram */
-  background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);
-  box-shadow: 0 4px 15px rgba(214, 36, 159, 0.4);
-  transform: translateY(-3px);
-}
-
-/* --- Efecto para Facebook --- */
-.footer-social a[aria-label="Facebook"]:hover {
-  background: #1877F2;
-  box-shadow: 0 4px 15px rgba(24, 119, 242, 0.4);
-  transform: translateY(-3px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .footer-social img {
@@ -719,17 +1114,33 @@ body {
   height: 22px;
 }
 
-.footer-social a[aria-label="Facebook"] img{
-  width: 50px;
-  height: 50px;
-  filter: brightness(0) invert(1);
+/* Efectos específicos */
+.footer-social a[aria-label="Instagram"]:hover {
+  background: radial-gradient(
+    circle at 30% 107%,
+    #fdf497 0%,
+    #fdf497 5%,
+    #fd5949 45%,
+    #d6249f 60%,
+    #285aeb 90%
+  );
+  box-shadow: 0 4px 18px rgba(214, 36, 159, 0.55);
+  transform: translateY(-3px) scale(1.05);
 }
 
-.footer-social a[aria-label="Instagram"] img{
-  width: 46px;
-  height: 46px;
-  filter: brightness(0) invert(1);
+.footer-social a[aria-label="Facebook"]:hover {
+  background: #1877f2;
+  box-shadow: 0 4px 18px rgba(24, 119, 242, 0.55);
+  transform: translateY(-3px) scale(1.05);
 }
+
+.footer-social a[aria-label="Facebook"] img,
+.footer-social a[aria-label="Instagram"] img {
+  filter: brightness(0) invert(1);
+  width: 26px;
+  height: 26px;
+}
+
 /* línea que separa del texto final */
 .footer-divider {
   margin: 18px 0 10px;
@@ -749,7 +1160,7 @@ body {
   color: #aabed3;
 }
 
-/* ===== Responsive ===== */
+/* Responsive footer */
 @media (max-width: 980px) {
   .footer {
     padding: 28px 24px 18px;

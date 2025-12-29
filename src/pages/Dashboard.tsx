@@ -23,22 +23,20 @@ function pad2(n: number) {
 function formatHoraFromISO(iso?: string | null) {
   if (!iso) return "--:--";
   const d = new Date(iso);
-  // Mostramos hora local del navegador (admin)
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
 function mapEstadoToLabel(estado?: string | null, fechaResolucion?: string | null) {
   const e = (estado || "").toLowerCase().trim();
 
-  // Si ya hay fechaResolucion, prioriza "Atendido"
   if (fechaResolucion) return { label: "Atendido", cls: "status status-ok" };
 
   if (e === "resuelto" || e === "atendido") return { label: "Atendido", cls: "status status-ok" };
   if (e === "en_curso" || e === "encurso" || e === "proceso" || e === "en proceso")
     return { label: "En curso", cls: "status status-progress" };
-  if (e === "pendiente" || e === "nuevo" || e === "reportado") return { label: "Pendiente", cls: "status status-pending" };
+  if (e === "pendiente" || e === "nuevo" || e === "reportado")
+    return { label: "Pendiente", cls: "status status-pending" };
 
-  // Fallback
   return { label: estado || "Pendiente", cls: "status status-pending" };
 }
 
@@ -52,8 +50,6 @@ export default function Dashboard() {
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
 
   const handleLogout = () => {
-    // Si manejas token en localStorage/sessionStorage, bórralo aquí.
-    // localStorage.removeItem("token");
     navigate("/login");
   };
 
@@ -74,20 +70,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     cargarDashboard();
-    // Si quieres refresco automático:
-    // const t = setInterval(cargarDashboard, 30000);
-    // return () => clearInterval(t);
   }, []);
 
   const sla = kpis?.slaPct ?? 0;
 
-  // Rotación del indicador (0..100) -> (aprox) -90..+90 (semicírculo)
   const slaRotationDeg = useMemo(() => {
     const clamped = Math.max(0, Math.min(100, sla));
     return -90 + (clamped * 180) / 100;
   }, [sla]);
 
-  // Nuevos reportes: últimos 3 (para tu tabla inferior derecha)
   const nuevosReportes = useMemo(() => {
     const sorted = [...incidentes]
       .filter((i) => i.fechaCreacion)
@@ -100,7 +91,6 @@ export default function Dashboard() {
       <div className="background" />
 
       <div className="dashboard">
-        {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
@@ -147,12 +137,10 @@ export default function Dashboard() {
           </div>
         </aside>
 
-        {/* CONTENIDO PRINCIPAL */}
         <main className="dashboard-main">
-          {/* Mensaje de estado */}
           {errorMsg && (
-            <div style={{ padding: 12, marginBottom: 12, borderRadius: 12, background: "rgba(255,255,255,.08)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+            <div className="top-error">
+              <div className="top-error-row">
                 <span>{errorMsg}</span>
                 <button className="pill pill-outline" onClick={cargarDashboard}>
                   Reintentar
@@ -161,7 +149,6 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* FILA SUPERIOR: KPIs */}
           <section className="top-cards">
             <article className="card card-kpi">
               <h3>Reportes hoy</h3>
@@ -171,8 +158,6 @@ export default function Dashboard() {
             <article className="card card-kpi">
               <h3>Falsos positivos (IA)</h3>
               <p className="kpi-value">{isLoading ? "…" : (kpis?.falsosIA ?? 0)}</p>
-              {/* Si quieres variación real (+/-), hay que calcularlo contra periodo anterior */}
-              {/* <p className="kpi-sub kpi-warning">+2 casos</p> */}
             </article>
 
             <article className="card card-sla">
@@ -184,12 +169,9 @@ export default function Dashboard() {
               <div className="card-sla-body">
                 <div className="sla-gauge">
                   <div className="sla-gauge-arc">
-                    {/* Indicador dinámico */}
                     <div
                       className="sla-gauge-indicator"
-                      style={{
-                        transform: `rotate(${slaRotationDeg}deg)`,
-                      }}
+                      style={{ transform: `rotate(${slaRotationDeg}deg)` }}
                       aria-label={`SLA ${sla}%`}
                     />
                   </div>
@@ -206,10 +188,9 @@ export default function Dashboard() {
             </article>
           </section>
 
-          {/* FILA MEDIA: COMUNIDADES + MAPA */}
           <section className="middle-cards">
             <article className="card card-communities">
-              <header className="card-header" style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              <header className="card-header card-header-row">
                 <h3>Comunidades</h3>
                 <button className="pill pill-outline" onClick={cargarDashboard} disabled={isLoading}>
                   {isLoading ? "Cargando…" : "Actualizar"}
@@ -237,7 +218,6 @@ export default function Dashboard() {
                   {(kpis?.topComunidades7d ?? []).map((c) => (
                     <tr key={c.comunidadNombre}>
                       <td>{c.comunidadNombre}</td>
-                      {/* No hay miembros en dashboardService -> dejamos placeholder realista */}
                       <td>—</td>
                       <td>
                         <span className="tag">{c.reportes} reportes (7d)</span>
@@ -253,7 +233,6 @@ export default function Dashboard() {
               </table>
             </article>
 
-            {/* MAPA DE CALOR */}
             <article className="card card-heatmap">
               <header className="card-header heatmap-header">
                 <h3>Mapa de calor de incidentes</h3>
@@ -261,7 +240,9 @@ export default function Dashboard() {
               </header>
 
               <div className="heatmap-map">
-                <IncidentHeatmap />
+                {/* ✅ PASAMOS LOS INCIDENTES */}
+                <IncidentHeatmap incidentes={incidentes} />
+
                 <div className="heatmap-filters">
                   <button className="pill">Últimos 7 días</button>
                   <button className="pill pill-outline">Tipo</button>
@@ -271,7 +252,6 @@ export default function Dashboard() {
             </article>
           </section>
 
-          {/* FILA INFERIOR */}
           <section className="bottom-cards">
             <article className="card card-alerts">
               <header className="card-header">
@@ -338,8 +318,6 @@ export default function Dashboard() {
                       <tr key={c.comunidadNombre}>
                         <td>{c.comunidadNombre}</td>
                         <td>{c.reportes}</td>
-                        {/* Variación requiere comparar vs periodo anterior (7d previos).
-                            Por ahora dejamos "—" para no inventar. */}
                         <td className="var">—</td>
                       </tr>
                     ))}
