@@ -16,28 +16,75 @@ import IncidentHeatmap from "../components/incidentemap";
 import { dashboardService, type DashboardKpis } from "../services/dashboardService";
 import type { IncidenteResponseDTO } from "../services/incidentesService";
 
-function pad2(n: number) {
-  return String(n).padStart(2, "0");
+type SessionUser = {
+  nombre?: string;
+  rol?: string;
+  fotoUrl?: string;
+  email?: string;
+};
+
+function timeAgo(iso?: string | null) {
+  if (!iso) return "—";
+  const diff = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(diff) || diff < 0) return "—";
+
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "hace 1 min";
+  if (min < 60) return `hace ${min} min`;
+
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} h`;
+
+  const d = Math.floor(h / 24);
+  return `hace ${d} d`;
 }
 
-function formatHoraFromISO(iso?: string | null) {
-  if (!iso) return "--:--";
-  const d = new Date(iso);
-  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+function getInitials(name?: string) {
+  const s = (name || "").trim();
+  if (!s) return "SZ";
+  const parts = s.split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase()).join("");
 }
 
-function mapEstadoToLabel(estado?: string | null, fechaResolucion?: string | null) {
-  const e = (estado || "").toLowerCase().trim();
+function getSessionUser(): SessionUser {
+  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+  for (const k of candidates) {
+    const raw = localStorage.getItem(k);
+    if (!raw) continue;
+    try {
+      const obj = JSON.parse(raw);
+      return {
+        nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
+        rol: obj?.rol ?? obj?.role ?? "Admin",
+        fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
+        email: obj?.email,
+      };
+    } catch {
+      // ignore
+    }
+  }
+  return { nombre: "Equipo SafeZone", rol: "Admin" };
+}
 
-  if (fechaResolucion) return { label: "Atendido", cls: "status status-ok" };
+function priorityBadge(i: IncidenteResponseDTO) {
+  const anyI = i as any;
+  const p = (
+    anyI.prioridad ??
+    anyI.nivel ??
+    anyI.severidad ??
+    anyI.aiPrioridad ??
+    anyI.aiSeveridad ??
+    anyI.aiNivel ??
+    ""
+  )
+    .toString()
+    .toLowerCase()
+    .trim();
 
-  if (e === "resuelto" || e === "atendido") return { label: "Atendido", cls: "status status-ok" };
-  if (e === "en_curso" || e === "encurso" || e === "proceso" || e === "en proceso")
-    return { label: "En curso", cls: "status status-progress" };
-  if (e === "pendiente" || e === "nuevo" || e === "reportado")
-    return { label: "Pendiente", cls: "status status-pending" };
-
-  return { label: estado || "Pendiente", cls: "status status-pending" };
+  if (p.includes("crit")) return { label: "Crítica", cls: "pill-badge badge-crit" };
+  if (p.includes("alta") || p.includes("high")) return { label: "Alta", cls: "pill-badge badge-high" };
+  if (p.includes("media") || p.includes("mid")) return { label: "Media", cls: "pill-badge badge-med" };
+  return { label: "Baja", cls: "pill-badge badge-low" };
 }
 
 export default function Dashboard() {
@@ -49,9 +96,9 @@ export default function Dashboard() {
   const [incidentes, setIncidentes] = useState<IncidenteResponseDTO[]>([]);
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
 
-  const handleLogout = () => {
-    navigate("/login");
-  };
+  const [me, setMe] = useState<SessionUser>(() => getSessionUser());
+
+  const handleLogout = () => navigate("/login");
 
   async function cargarDashboard() {
     setIsLoading(true);
@@ -60,6 +107,7 @@ export default function Dashboard() {
       const data = await dashboardService.cargar();
       setIncidentes(data.incidentes);
       setKpis(data.kpis);
+      setMe(getSessionUser());
     } catch (e: any) {
       console.error("Error cargando dashboard:", e);
       setErrorMsg(e?.message || "No se pudo cargar el dashboard");
@@ -72,72 +120,134 @@ export default function Dashboard() {
     cargarDashboard();
   }, []);
 
-  const sla = kpis?.slaPct ?? 0;
+  const alertas = useMemo(() => kpis?.ultimasAlertas ?? [], [kpis]);
 
-  const slaRotationDeg = useMemo(() => {
-    const clamped = Math.max(0, Math.min(100, sla));
-    return -90 + (clamped * 180) / 100;
-  }, [sla]);
-
-  const nuevosReportes = useMemo(() => {
-    const sorted = [...incidentes]
-      .filter((i) => i.fechaCreacion)
-      .sort((a, b) => new Date(b.fechaCreacion!).getTime() - new Date(a.fechaCreacion!).getTime());
-    return sorted.slice(0, 3);
-  }, [incidentes]);
+  const heroText = useMemo(() => {
+    const pct = (kpis as any)?.mejoraResolucionPct ?? 0;
+    if (!pct) return "Las alertas se están resolviendo con un mejor rendimiento que la semana pasada.";
+    if (pct > 0) return `Las alertas se están resolviendo un ${pct}% más rápido que la semana pasada.`;
+    return `Las alertas se están resolviendo un ${Math.abs(pct)}% más lento que la semana pasada.`;
+  }, [kpis]);
 
   return (
-    <>
-      <div className="background" />
+    <div className="dash-page">
+      <div className="dash-bg" />
 
-      <div className="dashboard">
-        <aside className="sidebar">
-          <div className="sidebar-header">
-            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
-            <div className="sidebar-title">SafeZone Admin</div>
+      <div className="dash-shell">
+        <aside className="side">
+          <div className="side-top">
+            <div className="brand">
+              <img src={logoSafeZone} alt="SafeZone" className="brand-logo" />
+              <div className="brand-txt">
+                <div className="brand-name">SafeZone</div>
+                <div className="brand-sub">Admin</div>
+              </div>
+            </div>
           </div>
 
-          <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item active">
-              <img src={iconDashboard} className="nav-icon" alt="Dashboard" />
-              <span>Dashboard</span>
+          <nav className="side-nav">
+            <Link to="/dashboard" className="nav-item active">
+              <img src={iconDashboard} className="nav-ico" alt="Panel" />
+              <span>Panel</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item">
-              <img src={iconUsuario} alt="Usuarios" />
-              <span>Usuarios</span>
-            </Link>
-
-            <Link to="/comunidades" className="sidebar-item">
-              <img src={iconComu} alt="Comunidades" />
+            <Link to="/comunidades" className="nav-item">
+              <img src={iconComu} className="nav-ico" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item">
-              <img src={iconRepo} alt="Reportes" />
+            <Link to="/reportes" className="nav-item">
+              <img src={iconRepo} className="nav-ico" alt="Incidentes" />
+              <span>Incidentes</span>
+            </Link>
+
+            <Link to="/usuarios" className="nav-item">
+              <img src={iconUsuario} className="nav-ico" alt="Usuarios" />
+              <span>Usuarios</span>
+            </Link>
+
+            <div className="nav-sep" />
+            <div className="nav-section">MANAGEMENT</div>
+
+            <Link to="/analisis" className="nav-item">
+              <img src={iconIa} className="nav-ico" alt="Alertas" />
+              <span>Alertas</span>
+            </Link>
+
+            <Link to="/reportes" className="nav-item">
+              <img src={iconRepo} className="nav-ico" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/analisis" className="sidebar-item">
-              <img src={iconIa} alt="IA Análisis" />
-              <span>IA Análisis</span>
-            </Link>
-
-            <Link to="/codigo-acceso" className="sidebar-item">
-              <img src={iconAcceso} alt="Código Acceso" />
-              <span>Código Acceso</span>
+            <Link to="/codigo-acceso" className="nav-item">
+              <img src={iconAcceso} className="nav-ico" alt="Ajustes" />
+              <span>Ajustes</span>
             </Link>
           </nav>
 
-          <div className="sidebar-footer">
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
+          <div className="side-bottom">
+            <div className="connected">
+              <div className="connected-title">Conectado como</div>
+              <div className="connected-name">{me?.rol ?? "Admin"}</div>
+            </div>
+
+            <button className="btn-logout" onClick={handleLogout}>
               Salir
             </button>
-            <span className="sidebar-version">v1.0 - SafeZone</span>
+            <div className="ver">v1.0 — SafeZone</div>
           </div>
         </aside>
 
-        <main className="dashboard-main">
+        <main className="main">
+          <div className="topbar">
+            <div className="topbar-left">
+              <button className="icon-btn" aria-label="Menú">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+              <div className="topbar-title">All</div>
+            </div>
+
+            <div className="topbar-right">
+              <button className="icon-btn" aria-label="Buscar">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  />
+                  <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+
+              <button className="icon-btn" aria-label="Notificaciones">
+                <span className="notif-dot">{((kpis as any)?.criticas24h ?? 0) > 0 ? "!" : ""}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M15 17H9m9 0 1-2V11a7 7 0 1 0-14 0v4l1 2h12Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+
+              <div className="me">
+                {me?.fotoUrl ? (
+                  <img className="me-avatar" src={me.fotoUrl} alt="Usuario" />
+                ) : (
+                  <div className="me-avatar me-fallback">{getInitials(me?.nombre)}</div>
+                )}
+                <div className="me-meta">
+                  <div className="me-name">{me?.nombre ?? "Equipo SafeZone"}</div>
+                  <div className="me-role">{me?.rol ?? "Admin"}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {errorMsg && (
             <div className="top-error">
               <div className="top-error-row">
@@ -149,220 +259,125 @@ export default function Dashboard() {
             </div>
           )}
 
-          <section className="top-cards">
-            <article className="card card-kpi">
-              <h3>Reportes hoy</h3>
-              <p className="kpi-value">{isLoading ? "…" : (kpis?.reportesHoy ?? 0)}</p>
-            </article>
+          <section className="hero-row">
+            <article className="glass hero-card">
+              <div className="hero-content">
+                <h2>
+                  Buen trabajo, <span>Equipo SafeZone</span>
+                </h2>
+                <p>{heroText}</p>
 
-            <article className="card card-kpi">
-              <h3>Falsos positivos (IA)</h3>
-              <p className="kpi-value">{isLoading ? "…" : (kpis?.falsosIA ?? 0)}</p>
-            </article>
-
-            <article className="card card-sla">
-              <header className="card-sla-header">
-                <h3 className="card-sla-title">SLA de atención (meta trimestral)</h3>
-                <p className="card-sla-subtitle">Objetivo &gt; 80%</p>
-              </header>
-
-              <div className="card-sla-body">
-                <div className="sla-gauge">
-                  <div className="sla-gauge-arc">
-                    <div
-                      className="sla-gauge-indicator"
-                      style={{ transform: `rotate(${slaRotationDeg}deg)` }}
-                      aria-label={`SLA ${sla}%`}
-                    />
-                  </div>
-                  <div className="sla-gauge-center">
-                    <span className="sla-gauge-value">{isLoading ? "…" : `${sla}%`}</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-            <article className="card card-kpi">
-              <h3>Usuarios activos</h3>
-              <p className="kpi-value">{isLoading ? "…" : (kpis?.usuariosActivos ?? 0)}</p>
-            </article>
-          </section>
-
-          <section className="middle-cards">
-            <article className="card card-communities">
-              <header className="card-header card-header-row">
-                <h3>Comunidades</h3>
-                <button className="pill pill-outline" onClick={cargarDashboard} disabled={isLoading}>
-                  {isLoading ? "Cargando…" : "Actualizar"}
+                <button className="btn-primary" onClick={() => navigate("/reportes")}>
+                  Ver incidentes en vivo
                 </button>
-              </header>
-
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Comunidad</th>
-                    <th>Miembros</th>
-                    <th>Activas</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!isLoading && (kpis?.topComunidades7d?.length ?? 0) === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ opacity: 0.8 }}>
-                        Sin datos de comunidades (últimos 7 días)
-                      </td>
-                    </tr>
-                  )}
-
-                  {(kpis?.topComunidades7d ?? []).map((c) => (
-                    <tr key={c.comunidadNombre}>
-                      <td>{c.comunidadNombre}</td>
-                      <td>—</td>
-                      <td>
-                        <span className="tag">{c.reportes} reportes (7d)</span>
-                      </td>
-                      <td>
-                        <Link to="/comunidades" className="link">
-                          Ver
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              </div>
             </article>
 
-            <article className="card card-heatmap">
-              <header className="card-header heatmap-header">
-                <h3>Mapa de calor de incidentes</h3>
-                <span className="heatmap-sub">Zonas con mayor concentración de emergencias</span>
-              </header>
-
-              <div className="heatmap-map">
-                {/* ✅ PASAMOS LOS INCIDENTES */}
-                <IncidentHeatmap incidentes={incidentes} />
-
-                <div className="heatmap-filters">
-                  <button className="pill">Últimos 7 días</button>
-                  <button className="pill pill-outline">Tipo</button>
-                  <button className="pill pill-outline">Comunidad</button>
-                </div>
-              </div>
+            <article className="glass crit-card">
+              <div className="crit-head">IA de priorización</div>
+              <div className="crit-title">Alertas críticas</div>
+              <div className="crit-num">{isLoading ? "…" : ((kpis as any)?.criticas24h ?? 0)}</div>
+              <div className="crit-sub">En las últimas 24 horas</div>
             </article>
           </section>
 
-          <section className="bottom-cards">
-            <article className="card card-alerts">
-              <header className="card-header">
-                <h3>Últimas alertas</h3>
-              </header>
-
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Hora</th>
-                    <th>Tipo</th>
-                    <th>Comunidad</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {!isLoading && (kpis?.ultimasAlertas?.length ?? 0) === 0 && (
-                    <tr>
-                      <td colSpan={4} style={{ opacity: 0.8 }}>
-                        No hay alertas recientes
-                      </td>
-                    </tr>
-                  )}
-
-                  {(kpis?.ultimasAlertas ?? []).map((i) => {
-                    const estado = mapEstadoToLabel(i.estado, i.fechaResolucion ?? null);
-                    return (
-                      <tr key={String(i.id ?? `${i.fechaCreacion}-${i.tipo}-${i.comunidadNombre}`)}>
-                        <td>{formatHoraFromISO(i.fechaCreacion)}</td>
-                        <td>{i.tipo || i.aiCategoria || "—"}</td>
-                        <td>{i.comunidadNombre || "Sin comunidad"}</td>
-                        <td className={estado.cls}>{estado.label}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <section className="kpi-row">
+            <article className="glass kpi-card">
+              <div className="kpi-title">Alertas totales</div>
+              <div className="kpi-value">
+                {isLoading ? "…" : (((kpis as any)?.alertasTotales ?? kpis?.reportesHoy ?? 0) as number).toLocaleString()}
+              </div>
+              <div className="kpi-mini">
+                <span className="kpi-dot kpi-up" />{" "}
+                <span>{isLoading ? "—" : `${kpis?.usuariosActivos ?? 0} usuarios activos`}</span>
+              </div>
+              <div className="kpi-spark" />
             </article>
 
-            <article className="card card-top">
-              <div className="card-top-col">
-                <header className="card-header">
-                  <h3>Top comunidades (últimos 7 días)</h3>
-                </header>
+            <article className="glass kpi-card">
+              <div className="kpi-title">Alertas resueltas</div>
+              <div className="kpi-value">
+                {isLoading ? "…" : (((kpis as any)?.alertasResueltas ?? 0) as number).toLocaleString()}
+              </div>
+              <div className="kpi-mini">
+                <span className="kpi-dot kpi-ok" />{" "}
+                <span>
+                  {isLoading
+                    ? "—"
+                    : `${Math.round(
+                        ((((kpis as any)?.alertasResueltas ?? 0) as number) /
+                          Math.max(1, (((kpis as any)?.alertasTotales ?? 1) as number))) *
+                          100
+                      )}% resueltas`}
+                </span>
+              </div>
+              <div className="kpi-spark" />
+            </article>
 
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Comunidad</th>
-                      <th>Reportes</th>
-                      <th>Var.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!isLoading && (kpis?.topComunidades7d?.length ?? 0) === 0 && (
-                      <tr>
-                        <td colSpan={3} style={{ opacity: 0.8 }}>
-                          Sin datos
-                        </td>
-                      </tr>
-                    )}
+            <article className="glass kpi-card">
+              <div className="kpi-title">Alertas falsas (IA)</div>
+              <div className="kpi-value">{isLoading ? "…" : (((kpis as any)?.alertasFalsasIA ?? kpis?.falsosIA ?? 0) as number).toLocaleString()}</div>
+              <div className="kpi-mini">
+                <span className="kpi-dot kpi-warn" /> <span>{isLoading ? "—" : "Revisión recomendada"}</span>
+              </div>
+              <div className="kpi-spark" />
+            </article>
+          </section>
 
-                    {(kpis?.topComunidades7d ?? []).map((c) => (
-                      <tr key={c.comunidadNombre}>
-                        <td>{c.comunidadNombre}</td>
-                        <td>{c.reportes}</td>
-                        <td className="var">—</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <section className="bottom-row">
+            <article className="glass heat-card">
+              <div className="card-head">
+                <div>
+                  <div className="card-title">Mapa de calor de incidentes</div>
+                  <div className="card-sub">Zonas con mayor concentración de emergencias</div>
+                </div>
+
+                <div className="tabs">
+                  <button className="tab active">Hoy</button>
+                  <button className="tab">Últimos 7 días</button>
+                  <button className="tab">30 días</button>
+                </div>
               </div>
 
-              <div className="card-top-col">
-                <header className="card-header">
-                  <h3>Nuevos reportes</h3>
-                </header>
+              <div className="heat-wrap">
+                <IncidentHeatmap incidentes={incidentes} />
+              </div>
+            </article>
 
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Usuario</th>
-                      <th>Tipo</th>
-                      <th>Comunidad</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {!isLoading && nuevosReportes.length === 0 && (
-                      <tr>
-                        <td colSpan={4} style={{ opacity: 0.8 }}>
-                          Sin reportes recientes
-                        </td>
-                      </tr>
-                    )}
+            <article className="glass last-card">
+              <div className="card-head row-between">
+                <div className="card-title">Últimas alertas</div>
+                <button className="mini-link" onClick={() => navigate("/reportes")}>
+                  Ver todas
+                </button>
+              </div>
 
-                    {nuevosReportes.map((r) => (
-                      <tr key={String(r.id ?? `${r.fechaCreacion}-${r.tipo}`)}>
-                        <td>{r.id ? `RPT-${r.id}` : "—"}</td>
-                        <td>{(r as any).usuarioNombre || (r as any).usuario?.nombre || "—"}</td>
-                        <td>{r.tipo || r.aiCategoria || "—"}</td>
-                        <td>{r.comunidadNombre || "Sin comunidad"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="alerts-list">
+                {!isLoading && alertas.length === 0 && <div className="empty">No hay alertas recientes</div>}
+
+                {(alertas ?? []).slice(0, 6).map((i) => {
+                  const badge = priorityBadge(i);
+                  const tipo = (i as any).tipo || (i as any).aiCategoria || "—";
+                  const comu = (i as any).comunidadNombre || "Sin comunidad";
+                  const fc = (i as any).fechaCreacion;
+
+                  return (
+                    <div className="alert-item" key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}>
+                      <div className="alert-main">
+                        <div className="alert-title">{tipo}</div>
+                        <div className="alert-sub">
+                          {comu} · {timeAgo(fc)}
+                        </div>
+                      </div>
+                      <div className={badge.cls}>{badge.label}</div>
+                    </div>
+                  );
+                })}
               </div>
             </article>
           </section>
         </main>
       </div>
-    </>
+    </div>
   );
 }
