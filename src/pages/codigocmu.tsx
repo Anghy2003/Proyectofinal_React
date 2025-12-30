@@ -366,7 +366,7 @@ export default function CodigoAcceso() {
             <h2 className="subtitle">Comunidades activas con código</h2>
 
             <div className="table-wrapper">
-              <table className="tabla">
+              <table className="tabla_codigos">
                 <thead>
                   <tr>
                     <th>Código</th>

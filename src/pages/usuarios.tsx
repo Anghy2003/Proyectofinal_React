@@ -223,7 +223,7 @@ export default function Usuarios() {
 
             {!loading && (
               <section className="usuarios-card">
-                <table className="usuarios-table">
+                <table className="usuarios-tabla">
                   <thead>
                     <tr>
                       <th>Foto</th>
