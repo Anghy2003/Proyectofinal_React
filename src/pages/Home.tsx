@@ -13,6 +13,7 @@ import {
 
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Lottie from "lottie-react";
+import SafeZoneAIChat from "../components/chatbotIA";
 
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -563,6 +564,7 @@ export default function Home() {
   const showScrollHint = activeSectionIdx < SNAP_SECTIONS.length - 1;
 
   return (
+
     <div ref={pageRef} className="page-root">
       {/* ===== overlay snap (sutil) ===== */}
       <AnimatePresence>
@@ -612,6 +614,9 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+
+      {/* CHAT IA FLOTANTE EN TODA LA HOME */}
+      <SafeZoneAIChat />
       {/* ================= HERO ================= */}
       <section className="hero has-grain" id="inicio">
         <div className="hero-bg-slider" aria-hidden="true">

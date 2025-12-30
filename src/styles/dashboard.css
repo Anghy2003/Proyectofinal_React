@@ -134,7 +134,364 @@ body {
 
 .sidebar-connected {
   border-radius: 14px;
+
   padding: 10px 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  padding: 16px 18px;
+  box-sizing: border-box;
+}
+
+/* ===== KPIs ===== */
+
+.top-cards {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.3fr 1.1fr;
+  gap: 14px;
+}
+
+.kpi-value {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+/* ===== SLA ===== */
+
+.sla-gauge {
+  position: relative;
+  width: 140px;
+  height: 80px;
+}
+
+.sla-gauge-arc {
+  position: absolute;
+  inset: 0;
+  border-radius: 140px 140px 0 0;
+  overflow: hidden;
+}
+
+.sla-gauge-arc::before {
+  content: "";
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  left: 0;
+  bottom: -60px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 180deg,
+    #3177ff 0deg,
+    #3177ff 150deg,
+    #263a69 150deg,
+    #263a69 360deg
+  );
+}
+
+.sla-gauge-indicator {
+  position: absolute;
+  width: 2px;
+  height: 18px;
+  background: #ffffff;
+  left: 50%;
+  bottom: -2px;
+  transform-origin: bottom center;
+}
+
+.sla-gauge-center {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  width: 70px;
+  height: 34px;
+  border-radius: 999px;
+  background: rgba(5, 16, 46, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sla-gauge-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+/* ===== Filas media e inferior ===== */
+
+.middle-cards,
+.bottom-cards {
+  display: grid;
+  grid-template-columns: 1.3fr 1.7fr;
+  gap: 18px;
+  align-items: start; /* ✅ evita estirar y amontinar */
+}
+
+/* ===== Tablas ===== */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.table th,
+.table td {
+  padding: 8px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tag {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(49, 119, 255, 0.18);
+  border: 1px solid rgba(49, 119, 255, 0.5);
+  font-size: 0.72rem;
+}
+
+/* ===== Comunidades (scroll interno para evitar que empuje todo) ===== */
+
+.card-communities {
+  max-height: 360px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-communities .table {
+  width: 100%;
+}
+
+/* Scroll solo dentro del tbody */
+.card-communities .table tbody {
+  display: block;
+  overflow-y: auto;
+  max-height: 220px;
+}
+
+.card-communities .table thead,
+.card-communities .table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* Scrollbar interno de comunidades */
+.card-communities .table tbody::-webkit-scrollbar {
+  width: 8px;
+}
+.card-communities .table tbody::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.card-communities .table tbody::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+/* ===== MAPA DE CALOR ===== */
+
+.card-heatmap {
+  border-radius: 16px;
+  padding: 20px;
+  overflow: hidden;
+}
+
+.heatmap-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heatmap-map {
+  position: relative;
+  margin-top: 10px;
+
+  /* ✅ clave: menos alto = menos “amontonado” */
+  height: 260px;
+
+  border-radius: 14px;
+  overflow: hidden;
+
+  background: linear-gradient(
+      0deg,
+      rgba(0, 10, 30, 0.65),
+      rgba(0, 10, 30, 0.65)
+    ),
+    radial-gradient(circle at 30% 30%, rgba(49, 119, 255, 0.15), transparent 50%),
+    radial-gradient(circle at 70% 50%, rgba(49, 119, 255, 0.12), transparent 55%);
+
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Decoración tipo calles */
+.heatmap-map::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      transparent 96%,
+      rgba(120, 170, 255, 0.12) 96%
+    ),
+    linear-gradient(90deg, transparent 96%, rgba(120, 170, 255, 0.1) 96%);
+  background-size: 140px 90px;
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ======== FIX Leaflet ======== */
+
+.heatmap-map .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 14px;
+  z-index: 2;
+  background: transparent;
+}
+
+.heatmap-map .leaflet-pane,
+.heatmap-map .leaflet-map-pane,
+.heatmap-map .leaflet-tile-pane,
+.heatmap-map .leaflet-overlay-pane,
+.heatmap-map .leaflet-shadow-pane,
+.heatmap-map .leaflet-marker-pane,
+.heatmap-map .leaflet-tooltip-pane,
+.heatmap-map .leaflet-popup-pane {
+  z-index: 2;
+}
+
+.heatmap-map .leaflet-control {
+  z-index: 3;
+}
+
+/* ===== Filtros del mapa ===== */
+
+.heatmap-filters {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  z-index: 4;
+}
+
+/* ===== ESTADOS ===== */
+
+.status-ok {
+  color: #4ade80;
+}
+.status-pending {
+  color: #facc15;
+}
+.status-progress {
+  color: #38bdf8;
+}
+
+/* ===== Responsive: evita amontonado en pantallas medianas ===== */
+
+@media (max-width: 1200px) {
+  .top-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .middle-cards,
+  .bottom-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* En pantallas grandes, vuelve el mapa más alto */
+@media (min-width: 1400px) {
+  .heatmap-map {
+    height: 320px;
+  }
+}
+/* ===== Fondo general (mismo que login) ===== */
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+}
+
+
+/* ===== Layout principal ===== */
+
+.dashboard {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  color: #ffffff;
+}
+
+/* ===== Sidebar ===== */
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
+  width: 240px;
+  padding: 20px 18px;
+  box-sizing: border-box;
+
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 0 20px 20px 0;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  z-index: 10;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.sidebar-logo {
+  width: 48px;
+}
+
+.sidebar-title {
+  font-weight: 600;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.sidebar-item span {
+  color: #ffffff !important;
+}
+
+.sidebar-item:hover {
+
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.25);
 }

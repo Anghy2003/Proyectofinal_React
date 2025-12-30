@@ -1,14 +1,20 @@
 // src/pages/Login.tsx
 import "../styles/login.css";
 
-import loginFrame from "../assets/login.svg";
+import loginFrame from "../assets/login_layout.png";
 import iconEmail from "../assets/mage_email.svg";
 import iconPassword from "../assets/password-icon.svg";
 import iconGoogle from "../assets/iconoGoogle.svg";
+import flechaBack from "../assets/flecha_salir.png";
+
+import { motion } from "framer-motion";
+
+/* 👇 IMÁGENES PERSONALIZADAS */
+import heroCommunity from "../assets/comunidad3.png";
+import logoSafezone from "../assets/logo_naranja.png";
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { authService } from "../services/auth.service";
 
 export default function Login() {
@@ -16,7 +22,6 @@ export default function Login() {
 
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -30,19 +35,14 @@ export default function Login() {
     setLoading(true);
     try {
       const usuario = await authService.login(correo.trim(), password.trim());
-
-      // Guarda sesión para usar userId/rol en todo el panel admin
       authService.saveSession(usuario);
-
       navigate("/dashboard");
     } catch (err: any) {
       console.error(err);
-
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         "No se pudo iniciar sesión. Verifica tus credenciales.";
-
       alert(msg);
     } finally {
       setLoading(false);
@@ -55,18 +55,90 @@ export default function Login() {
 
   return (
     <>
+      {/* 🌆 Fondo general */}
       <div className="login-background" />
 
+      {/*Botón volver al Home */}
+
+      <button className="back-home-btn" onClick={() => navigate("/")}>
+        <img src={flechaBack} alt="Volver" />
+      </button>
       <div className="login-wrapper">
-        {/* Imagen del recuadro */}
         <img src={loginFrame} className="login-frame" alt="Login Frame" />
 
-        {/* Contenido sobre la imagen */}
-        <div className="login-content">
+        <motion.div
+          className="hero-wrapper-community"
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: 1, 
+            y: [0, -6, 0],
+            scale: [1, 1.03, 1],
+          }}
+          transition={{
+            opacity: { duration: 0.8, ease: "easeOut" },
+            y: {
+              duration: 6,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            },
+            scale: {
+              duration: 6,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            },
+          }}
+        >
+          <img
+            src={heroCommunity}
+            className="login-hero-community"
+            alt="Comunidad SafeZone"
+          />
+        </motion.div>
+
+        {/* 📍 Logo — animación separada */}
+        <motion.div
+          className="hero-wrapper-logo"
+          initial={{ opacity: 0 }}
+          animate={{
+            opacity: 1, 
+            y: [0, -5, 0],
+            scale: [1, 1.05, 1],
+          }}
+          transition={{
+            opacity: { duration: 0.8, ease: "easeOut" }, 
+            y: {
+              duration: 6,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            },
+            scale: {
+              duration: 6,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+            },
+          }}
+        >
+          <img
+            src={logoSafezone}
+            className="login-hero-logo"
+            alt="Logo SafeZone"
+          />
+        </motion.div>
+
+        {/* 🧾 FORMULARIO */}
+        <motion.div
+          className="login-content"
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+        >
           <h1 className="title">Bienvenido</h1>
 
           <form onSubmit={handleLogin} style={{ width: "100%" }}>
-            {/* Campos */}
             <div className="input-group">
               <img src={iconEmail} className="input-icon" alt="Correo" />
               <input
@@ -80,11 +152,7 @@ export default function Login() {
             </div>
 
             <div className="input-group">
-              <img
-                src={iconPassword}
-                className="input-icon"
-                alt="Contraseña"
-              />
+              <img src={iconPassword} className="input-icon" alt="Contraseña" />
               <input
                 type="password"
                 placeholder="Contraseña"
@@ -116,7 +184,7 @@ export default function Login() {
             <img src={iconGoogle} className="google-icon" alt="Google icon" />
             <span>Inicia sesión con Google</span>
           </button>
-        </div>
+        </motion.div>
       </div>
     </>
   );
