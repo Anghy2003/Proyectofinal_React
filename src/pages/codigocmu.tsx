@@ -1,7 +1,7 @@
 // src/pages/CodigoAcceso.tsx
 import "../styles/codigocom.css";
 
-import logoSafeZone from "../assets/logo_naranja.png";
+import logoSafeZone from "../assets/logo_rojo.png";
 import iconDashboard from "../assets/dashboard.svg";
 import iconUsuario from "../assets/iconusuario.svg";
 import iconComu from "../assets/icon_comu.svg";

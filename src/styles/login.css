@@ -98,7 +98,7 @@ body {
   margin-top: 0.7rem;
   border: none;
   border-radius: 8px;
-  background: #e96c0d !important;
+  background: #f95150 !important;
   color:#ffffff;
   font-size: 1rem;
   font-weight: 600;
@@ -239,7 +239,7 @@ body {
   top: 22px;
   left: 22px;
   z-index: 30;
-  background: #e96c0d !important; 
+  background: #f95150 !important; 
   width: 75px;
   height: 75px;
   border: none;
