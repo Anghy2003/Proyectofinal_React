@@ -1,6 +1,6 @@
 import "../styles/reporte.css";
 
-import logoSafeZone from "../assets/logo-safe-zone.png";
+import logoSafeZone from "../assets/logo_naranja.png";
 import iconDashboard from "../assets/dashboard.svg";
 import iconUsuario from "../assets/iconusuario.svg";
 import iconComu from "../assets/icon_comu.svg";
