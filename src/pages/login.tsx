@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 
 /* 👇 IMÁGENES PERSONALIZADAS */
 import heroCommunity from "../assets/comunidad3.png";
-import logoSafezone from "../assets/logo_naranja.png";
+import logoSafezone from "../assets/logo_rojo.png";
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";

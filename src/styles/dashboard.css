@@ -70,7 +70,7 @@ body {
 }
 
 .sidebar-logo {
-  width: 48px;
+  width: 65px !important;
 }
 
 .sidebar-title {
@@ -103,12 +103,12 @@ body {
 }
 
 .sidebar-item.active {
-  background: rgba(219, 106, 41, 0.379) !important;
-  border: 1px solid #e53c37 !important;
+  background: #f95150 !important;
+  border: 1px solid #b82924 !important;
 }
 
 .sidebar-item.active span {
-  color: #d7641d !important;
+  color: #ffffff !important;
   font-weight: bold;
 }
 
@@ -796,8 +796,8 @@ height: 590px;
   padding: 10px 14px;
   border-radius: 12px;
   color: white;
-  background: #2563eb;
-  box-shadow: 0 12px 24px rgba(235, 123, 37, 0.45);
+  background: #f95150 !important;
+  box-shadow: 0 3px 18px #f95150;
   font-weight: 900;
 }
 
