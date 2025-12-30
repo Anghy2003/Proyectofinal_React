@@ -1,7 +1,7 @@
 // src/pages/Dashboard.tsx
 import "../styles/dashboard.css";
 
-import logoSafeZone from "../assets/logo-safe-zone.png";
+import logoSafeZone from "../assets/logo_naranja.png";
 import iconDashboard from "../assets/dashboard.svg";
 import iconUsuario from "../assets/iconusuario.svg";
 import iconComu from "../assets/icon_comu.svg";
@@ -60,7 +60,7 @@ function getSessionUser(): SessionUser {
         email: obj?.email,
       };
     } catch {
-      // ignore
+      // ignore parse error
     }
   }
   return { nombre: "Equipo SafeZone", rol: "Admin" };
@@ -130,75 +130,68 @@ export default function Dashboard() {
   }, [kpis]);
 
   return (
-    <div className="dash-page">
-      <div className="dash-bg" />
+    <>
+      {/* Fondo tipo login */}
+      <div className="background" />
 
-      <div className="dash-shell">
-        <aside className="side">
-          <div className="side-top">
-            <div className="brand">
-              <img src={logoSafeZone} alt="SafeZone" className="brand-logo" />
-              <div className="brand-txt">
-                <div className="brand-name">SafeZone</div>
-                <div className="brand-sub">Admin</div>
-              </div>
-            </div>
+      <div className="dashboard">
+        {/* ========== SIDEBAR (estructura del segundo, estilo del primero) ========== */}
+        <aside className="sidebar">
+          <div className="sidebar-header">
+            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
+            <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
-          <nav className="side-nav">
-            <Link to="/dashboard" className="nav-item active">
-              <img src={iconDashboard} className="nav-ico" alt="Panel" />
+          <nav className="sidebar-menu">
+            <Link to="/dashboard" className="sidebar-item active">
+              <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="nav-item">
-              <img src={iconComu} className="nav-ico" alt="Comunidades" />
+            <Link to="/comunidades" className="sidebar-item">
+              <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/reportes" className="nav-item">
-              <img src={iconRepo} className="nav-ico" alt="Incidentes" />
-              <span>Incidentes</span>
-            </Link>
-
-            <Link to="/usuarios" className="nav-item">
-              <img src={iconUsuario} className="nav-ico" alt="Usuarios" />
+            <Link to="/usuarios" className="sidebar-item">
+              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
-            <div className="nav-sep" />
-            <div className="nav-section">MANAGEMENT</div>
+            <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="nav-item">
-              <img src={iconIa} className="nav-ico" alt="Alertas" />
-              <span>Alertas</span>
+            <Link to="/analisis" className="sidebar-item">
+              <img src={iconIa} className="nav-icon" alt="Alertas" />
+              <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="nav-item">
-              <img src={iconRepo} className="nav-ico" alt="Reportes" />
+            <Link to="/reportes" className="sidebar-item">
+              <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="nav-item">
-              <img src={iconAcceso} className="nav-ico" alt="Ajustes" />
+            <Link to="/codigo-acceso" className="sidebar-item">
+              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
           </nav>
 
-          <div className="side-bottom">
-            <div className="connected">
-              <div className="connected-title">Conectado como</div>
-              <div className="connected-name">{me?.rol ?? "Admin"}</div>
+          <div className="sidebar-footer">
+            <div className="sidebar-connected">
+              <div className="sidebar-connected-title">Conectado como</div>
+              <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
             </div>
 
-            <button className="btn-logout" onClick={handleLogout}>
+            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
               Salir
             </button>
-            <div className="ver">v1.0 — SafeZone</div>
+            <span className="sidebar-version">v1.0 — SafeZone</span>
           </div>
         </aside>
 
-        <main className="main">
+        {/* ========== MAIN ========== */}
+        <main className="dashboard-main">
+          {/* Topbar tipo chips + usuario */}
           <div className="topbar">
             <div className="topbar-left">
               <button className="icon-btn" aria-label="Menú">
@@ -259,8 +252,10 @@ export default function Dashboard() {
             </div>
           )}
 
-          <section className="hero-row">
-            <article className="glass hero-card">
+          {/* GRID PRINCIPAL 2 COLUMNAS – con tarjetas del nuevo diseño */}
+          <div className="dash-layout">
+            {/* HERO */}
+            <article className="card hero-card">
               <div className="hero-content">
                 <h2>
                   Buen trabajo, <span>Equipo SafeZone</span>
@@ -273,59 +268,66 @@ export default function Dashboard() {
               </div>
             </article>
 
-            <article className="glass crit-card">
+            {/* ALERTAS CRÍTICAS */}
+            <article className="card crit-card">
               <div className="crit-head">IA de priorización</div>
               <div className="crit-title">Alertas críticas</div>
               <div className="crit-num">{isLoading ? "…" : ((kpis as any)?.criticas24h ?? 0)}</div>
               <div className="crit-sub">En las últimas 24 horas</div>
             </article>
-          </section>
 
-          <section className="kpi-row">
-            <article className="glass kpi-card">
-              <div className="kpi-title">Alertas totales</div>
-              <div className="kpi-value">
-                {isLoading ? "…" : (((kpis as any)?.alertasTotales ?? kpis?.reportesHoy ?? 0) as number).toLocaleString()}
-              </div>
-              <div className="kpi-mini">
-                <span className="kpi-dot kpi-up" />{" "}
-                <span>{isLoading ? "—" : `${kpis?.usuariosActivos ?? 0} usuarios activos`}</span>
-              </div>
-              <div className="kpi-spark" />
-            </article>
-
-            <article className="glass kpi-card">
-              <div className="kpi-title">Alertas resueltas</div>
-              <div className="kpi-value">
-                {isLoading ? "…" : (((kpis as any)?.alertasResueltas ?? 0) as number).toLocaleString()}
-              </div>
-              <div className="kpi-mini">
-                <span className="kpi-dot kpi-ok" />{" "}
-                <span>
+            {/* KPIs */}
+            <section className="kpi-row">
+              <article className="card kpi-card">
+                <div className="kpi-title">Alertas totales</div>
+                <div className="kpi-value">
                   {isLoading
-                    ? "—"
-                    : `${Math.round(
-                        ((((kpis as any)?.alertasResueltas ?? 0) as number) /
-                          Math.max(1, (((kpis as any)?.alertasTotales ?? 1) as number))) *
-                          100
-                      )}% resueltas`}
-                </span>
-              </div>
-              <div className="kpi-spark" />
-            </article>
+                    ? "…"
+                    : (((kpis as any)?.alertasTotales ?? kpis?.reportesHoy ?? 0) as number).toLocaleString()}
+                </div>
+                <div className="kpi-mini">
+                  <span className="kpi-dot kpi-up" />{" "}
+                  <span>{isLoading ? "—" : `${kpis?.usuariosActivos ?? 0} usuarios activos`}</span>
+                </div>
+                <div className="kpi-spark" />
+              </article>
 
-            <article className="glass kpi-card">
-              <div className="kpi-title">Alertas falsas (IA)</div>
-              <div className="kpi-value">{isLoading ? "…" : (((kpis as any)?.alertasFalsasIA ?? kpis?.falsosIA ?? 0) as number).toLocaleString()}</div>
-              <div className="kpi-mini">
-                <span className="kpi-dot kpi-warn" /> <span>{isLoading ? "—" : "Revisión recomendada"}</span>
-              </div>
-              <div className="kpi-spark" />
-            </article>
-          </section>
+              <article className="card kpi-card">
+                <div className="kpi-title">Alertas resueltas</div>
+                <div className="kpi-value">
+                  {isLoading ? "…" : (((kpis as any)?.alertasResueltas ?? 0) as number).toLocaleString()}
+                </div>
+                <div className="kpi-mini">
+                  <span className="kpi-dot kpi-ok" />{" "}
+                  <span>
+                    {isLoading
+                      ? "—"
+                      : `${Math.round(
+                          ((((kpis as any)?.alertasResueltas ?? 0) as number) /
+                            Math.max(1, (((kpis as any)?.alertasTotales ?? 1) as number))) *
+                            100
+                        )}% resueltas`}
+                  </span>
+                </div>
+                <div className="kpi-spark" />
+              </article>
 
-          <section className="bottom-row">
-            <article className="glass heat-card">
+              <article className="card kpi-card">
+                <div className="kpi-title">Alertas falsas (IA)</div>
+                <div className="kpi-value">
+                  {isLoading
+                    ? "…"
+                    : (((kpis as any)?.alertasFalsasIA ?? kpis?.falsosIA ?? 0) as number).toLocaleString()}
+                </div>
+                <div className="kpi-mini">
+                  <span className="kpi-dot kpi-warn" /> <span>{isLoading ? "—" : "Revisión recomendada"}</span>
+                </div>
+                <div className="kpi-spark" />
+              </article>
+            </section>
+
+            {/* MAPA DE CALOR */}
+            <article className="card heat-card">
               <div className="card-head">
                 <div>
                   <div className="card-title">Mapa de calor de incidentes</div>
@@ -344,7 +346,8 @@ export default function Dashboard() {
               </div>
             </article>
 
-            <article className="glass last-card">
+            {/* ÚLTIMAS ALERTAS */}
+            <article className="card last-card">
               <div className="card-head row-between">
                 <div className="card-title">Últimas alertas</div>
                 <button className="mini-link" onClick={() => navigate("/reportes")}>
@@ -362,7 +365,10 @@ export default function Dashboard() {
                   const fc = (i as any).fechaCreacion;
 
                   return (
-                    <div className="alert-item" key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}>
+                    <div
+                      className="alert-item"
+                      key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}
+                    >
                       <div className="alert-main">
                         <div className="alert-title">{tipo}</div>
                         <div className="alert-sub">
@@ -375,9 +381,9 @@ export default function Dashboard() {
                 })}
               </div>
             </article>
-          </section>
+          </div>
         </main>
       </div>
-    </div>
+    </>
   );
 }

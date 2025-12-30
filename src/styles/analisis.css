@@ -23,7 +23,13 @@ body {
 }
 
 /* ===== Sidebar ===== */
+
 .sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+
   width: 240px;
   padding: 20px 18px;
   box-sizing: border-box;
@@ -37,16 +43,10 @@ body {
 
   display: flex;
   flex-direction: column;
-
   justify-content: flex-start;
-
-  height: calc(100vh - 40px);
-  margin: 20px 0;
-
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
   gap: 10px;
+
+  z-index: 10;
 }
 
 .sidebar-header {
@@ -241,88 +241,112 @@ body {
   min-width: 0;
 }
 
-.tabla-inner {
+.tabla-anali {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  overflow-x: auto;
-  overflow-y: hidden;
+  max-height: 553px;
+  overflow-y: auto; 
+  overflow-x: hidden; 
+
+  /* Scrollbar para Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.70) rgba(255, 255, 255, 0.06);
 }
 
-.tabla-reportes {
+/* Scrollbar para navegadores WebKit (Chrome, Edge, etc.) */
+.tabla-anali::-webkit-scrollbar {
+  width: 10px;
+}
+
+.tabla-anali::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
+}
+
+.tabla-anali::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.85),
+    rgba(255, 255, 255, 0.55)
+  );
+  border: 2px solid rgba(0, 0, 0, 0.35);
+}
+
+.tabla-anali::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.75)
+  );
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
+}
+
+/* ==== TABLA IA (solo Analisis) ==== */
+
+.tabla-analisis {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
+  table-layout: fixed;      /* respeta los widths de las columnas */
   font-size: 0.82rem;
-  min-width: 0; /* ✅ antes 1200px */
 }
 
-.tabla-reportes th,
-.tabla-reportes td {
+.tabla-analisis th,
+.tabla-analisis td {
   padding: 10px 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: left;
-  vertical-align: middle;
+  vertical-align: top;      /* mejor para listas largas */
 }
 
-.tabla-reportes thead th {
+.tabla-analisis thead th {
   font-weight: 500;
   color: rgba(255, 255, 255, 0.88);
   background: rgba(255, 255, 255, 0.03);
 }
 
-.tabla-reportes tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* columnas específicas (ajusta para IA: 10 columnas) */
+/* === distribución de columnas (10 columnas) === */
 /* ID */
-.tabla-reportes th:nth-child(1),
-.tabla-reportes td:nth-child(1){ width: 4%; text-align:center; }
+.tabla-analisis th:nth-child(1),
+.tabla-analisis td:nth-child(1) { width: 4%; text-align: center; }
 
 /* Usuario */
-.tabla-reportes th:nth-child(2),
-.tabla-reportes td:nth-child(2){ width: 9%; }
+.tabla-analisis th:nth-child(2),
+.tabla-analisis td:nth-child(2) { width: 9%; }
 
 /* Comunidad */
-.tabla-reportes th:nth-child(3),
-.tabla-reportes td:nth-child(3){ width: 12%; }
+.tabla-analisis th:nth-child(3),
+.tabla-analisis td:nth-child(3) { width: 12%; }
 
 /* Categoría IA */
-.tabla-reportes th:nth-child(4),
-.tabla-reportes td:nth-child(4){ width: 12%; }
+.tabla-analisis th:nth-child(4),
+.tabla-analisis td:nth-child(4) { width: 12%; }
 
 /* Prioridad */
-.tabla-reportes th:nth-child(5),
-.tabla-reportes td:nth-child(5){ width: 7%; text-align:center; }
+.tabla-analisis th:nth-child(5),
+.tabla-analisis td:nth-child(5) { width: 6%; text-align: center; }
 
 /* Confianza */
-.tabla-reportes th:nth-child(6),
-.tabla-reportes td:nth-child(6){ width: 7%; text-align:center; }
+.tabla-analisis th:nth-child(6),
+.tabla-analisis td:nth-child(6) { width: 6%; text-align: center; }
 
 /* Falso */
-.tabla-reportes th:nth-child(7),
-.tabla-reportes td:nth-child(7){ width: 6%; text-align:center; }
+.tabla-analisis th:nth-child(7),
+.tabla-analisis td:nth-child(7) { width: 6%; text-align: center; }
 
-/* ✅ Motivos (más ancho sí o sí) */
-.tabla-reportes th:nth-child(8),
-.tabla-reportes td:nth-child(8){ width: 20%; }
+/* 🟡 MOTIVOS – bien ancha */
+.tabla-analisis th:nth-child(8),
+.tabla-analisis td:nth-child(8) { width: 24%; }
 
 /* Riesgos */
-.tabla-reportes th:nth-child(9),
-.tabla-reportes td:nth-child(9){ width: 15%; }
+.tabla-analisis th:nth-child(9),
+.tabla-analisis td:nth-child(9) { width: 15%; }
 
 /* Fecha */
-.tabla-reportes th:nth-child(10),
-.tabla-reportes td:nth-child(10){ width: 8%; text-align:center; }
+.tabla-analisis th:nth-child(10),
+.tabla-analisis td:nth-child(10) { width: 6%; text-align: center; }
 
-
-.tabla-reportes td:nth-child(2),
-.tabla-reportes td:nth-child(3),
-.tabla-reportes td:nth-child(4){
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 /* Estados / badges */
 .badge {
   display: inline-block;
@@ -356,9 +380,10 @@ body {
 
 /* ===== EXTRAS IA ===== */
 .cell-wrap {
-  white-space: normal;
-   word-break: break-word;
-  line-height: 1.35;
+  white-space: normal;       
+  overflow-wrap: break-word; 
+  word-break: normal;        
+  line-height: 1.35;          
 }
 
 .mini-list {
@@ -367,6 +392,7 @@ body {
 }
 
 .mini-list li {
-  margin: 3px 0;
-  opacity: 0.9;
+  margin: 2px 0;
+  line-height: 1.3;
+  font-size: 0.83rem;
 }

@@ -133,13 +133,11 @@ body {
 
   border-radius: 26px;
 
-  /* 🎯 FONDO GLASS */
   background: rgba(255, 255, 255, 0);
   border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(18px);
 
-  /* 🎯 SOMBRA GLASS */
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
 
   display: flex;
@@ -186,8 +184,12 @@ body {
   font-weight: 600;
 }
 
-.kpi-ok {
-  color: #22c55e;
+.kpi-card .kpi-value.kpi-ok {
+  background: transparent !important;  /* quita el rectángulo verde */
+  display: inline-block !important;    /* que ocupe solo el ancho del número */
+  padding: 0 !important;
+  border-radius: 0 !important;
+  color: #22c55e !important;           /* texto verde */
 }
 
 .kpi-bad {
@@ -231,8 +233,6 @@ body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   padding: 18px 20px;
   flex: 1;
-
-  /* ✅ evita que la tabla se salga del panel */
   overflow: hidden;
 }
 
@@ -270,30 +270,37 @@ body {
   transition: background 0.2s ease;
 }
 
-/* ✅ Con la nueva tabla:
-   1 = Foto, 2 = Código, 3 = Nombre, 4 = Miembros, 5 = Dirección, 6 = Estado, 7 = Acciones
-   Solo centramos "Miembros" (4)
-*/
+
+.tabla-comunidades th:nth-child(2),
+.tabla-comunidades td:nth-child(2) {
+width: 180px;
+}
+.tabla-comunidades th:nth-child(3),
+.tabla-comunidades td:nth-child(3) {
+width: 280px;
+}
 .tabla-comunidades th:nth-child(4),
 .tabla-comunidades td:nth-child(4) {
-  text-align: center;
+width: 100px;
 }
 
-/* ✅ Dirección larga: que no rompa la tabla */
 .tabla-comunidades th:nth-child(5),
 .tabla-comunidades td:nth-child(5) {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+width: 500px;
+
 }
 
-/* ✅ Foto columna compacta */
 .tabla-comunidades th:nth-child(1),
 .tabla-comunidades td:nth-child(1) {
-  width: 70px;
+  width: 90px;
 }
 
-/* ✅ Acciones compacta */
+.tabla-comunidades th:nth-child(6),
+.tabla-comunidades td:nth-child(6) {
+  text-align: right;
+}
+
 .tabla-comunidades th:nth-child(7),
 .tabla-comunidades td:nth-child(7) {
   width: 110px;

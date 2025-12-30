@@ -63,9 +63,6 @@ body {
 
 .sidebar-title {
   font-weight: 600;
-  font-size: 1rem; 
-  line-height: 1.1;
-  white-space: nowrap; 
 }
 
 .sidebar-menu {
@@ -227,9 +224,20 @@ body {
   text-align: center;
 }
 
+.usuarios-table th:nth-child(2),
+.usuarios-table td:nth-child(2) {
+  width: 200px;
+}
+
 .usuarios-table th:nth-child(3),
 .usuarios-table td:nth-child(3) {
-  width: 220px;
+  width: 300px;
+}
+
+.usuarios-table th:nth-child(10),
+.usuarios-table td:nth-child(10) {
+  width: 84px;
+  text-align: center;
 }
 
 .user-photo-icon {

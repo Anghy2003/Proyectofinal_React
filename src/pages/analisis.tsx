@@ -17,6 +17,13 @@ import {
   type IncidenteResponseDTO,
 } from "../services/incidentesService";
 
+type SessionUser = {
+  nombre?: string;
+  rol?: string;
+  fotoUrl?: string;
+  email?: string;
+};
+
 /* ===================== HELPERS ===================== */
 function parseJsonArrayString(value?: string | null): string[] {
   if (!value) return [];
@@ -48,6 +55,26 @@ function isoToYMD(iso?: string | null): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+  function getSessionUser(): SessionUser {
+  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+  for (const k of candidates) {
+    const raw = localStorage.getItem(k);
+    if (!raw) continue;
+    try {
+      const obj = JSON.parse(raw);
+      return {
+        nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
+        rol: obj?.rol ?? obj?.role ?? "Admin",
+        fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
+        email: obj?.email,
+      };
+    } catch {
+      // ignore parse error
+    }
+  }
+  return { nombre: "Equipo SafeZone", rol: "Admin" };
 }
 
 export default function Analisis() {
@@ -125,6 +152,8 @@ export default function Analisis() {
     [incidentes]
   );
 
+    const [me, setMe] = useState<SessionUser>(() => getSessionUser());
+
   // 🔹 FILTRADO (como Reportes)
   const incidentesFiltrados = useMemo(() => {
     return incidentes.filter((i) => {
@@ -162,7 +191,7 @@ export default function Analisis() {
       <div className="background" />
 
       <div className="dashboard">
-        {/* SIDEBAR */}
+        {/* ========== SIDEBAR (estructura del segundo, estilo del primero) ========== */}
         <aside className="sidebar">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
@@ -171,41 +200,52 @@ export default function Analisis() {
 
           <nav className="sidebar-menu">
             <Link to="/dashboard" className="sidebar-item">
-              <img src={iconDashboard} className="nav-icon" alt="Dashboard" />
-              <span>Dashboard</span>
-            </Link>
-
-            <Link to="/usuarios" className="sidebar-item">
-              <img src={iconUsuario} alt="Usuarios" />
-              <span>Usuarios</span>
+              <img src={iconDashboard} className="nav-icon" alt="Panel" />
+              <span>Panel</span>
             </Link>
 
             <Link to="/comunidades" className="sidebar-item">
-              <img src={iconComu} alt="Comunidades" />
+              <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item">
-              <img src={iconRepo} alt="Reportes" />
-              <span>Reportes</span>
+            <Link to="/usuarios" className="sidebar-item">
+              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
+              <span>Usuarios</span>
             </Link>
 
+            <div className="sidebar-section-label">MANAGEMENT</div>
+
             <Link to="/analisis" className="sidebar-item active">
-              <img src={iconIa} alt="IA Análisis" />
+              <img src={iconIa} className="nav-icon" alt="Alertas" />
               <span>IA Análisis</span>
             </Link>
 
+            <Link to="/reportes" className="sidebar-item">
+              <img src={iconRepo} className="nav-icon" alt="Reportes" />
+              <span>Reportes</span>
+            </Link>
+
             <Link to="/codigo-acceso" className="sidebar-item">
-              <img src={iconAcceso} alt="Código Acceso" />
-              <span>Código Acceso</span>
+              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
+              <span>Ajustes</span>
             </Link>
           </nav>
 
           <div className="sidebar-footer">
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
+            <div className="sidebar-connected">
+              <div className="sidebar-connected-title">Conectado como</div>
+              <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
+            </div>
+
+            <button
+              id="btnSalir"
+              className="sidebar-logout"
+              onClick={handleLogout}
+            >
               Salir
             </button>
-            <span className="sidebar-version">v1.0 - SafeZone</span>
+            <span className="sidebar-version">v1.0 — SafeZone</span>
           </div>
         </aside>
 
@@ -316,9 +356,9 @@ export default function Analisis() {
             </div>
 
             {/* TABLA (mismo contenedor) */}
-            <section className="tabla-panel">
-              <div className="tabla-inner">
-                <table className="tabla-reportes">
+            <section className="tabla-ia">
+              <div className="tabla-anali">
+                <table className="tabla-analisis">
                   <thead>
                     <tr>
                       <th>ID</th>
@@ -337,13 +377,13 @@ export default function Analisis() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={10} style={{ textAlign: "center", padding: "14px" }}>
+                        <td colSpan={10}>
                           Cargando análisis IA...
                         </td>
                       </tr>
                     ) : incidentesFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan={10} style={{ textAlign: "center", padding: "14px" }}>
+                        <td colSpan={10}>
                           No se encontraron incidentes con IA.
                         </td>
                       </tr>
@@ -358,15 +398,15 @@ export default function Analisis() {
                             <td>{i.usuarioNombre ?? "-"}</td>
                             <td>{i.comunidadNombre ?? "-"}</td>
                             <td>{i.aiCategoria ?? "-"}</td>
-                            <td style={{ textAlign: "center" }}>
+                            <td>
                               <span className={getBadgePrioridad(i.aiPrioridad)}>
                                 {i.aiPrioridad ?? "-"}
                               </span>
                             </td>
-                            <td style={{ textAlign: "center" }}>
+                            <td >
                               {i.aiConfianza == null ? "-" : i.aiConfianza.toFixed(2)}
                             </td>
-                            <td style={{ textAlign: "center" }}>
+                            <td >
                               <span className={i.aiPosibleFalso ? "badge badge-warning" : "badge badge-ok"}>
                                 {i.aiPosibleFalso ? "Sí" : "No"}
                               </span>
