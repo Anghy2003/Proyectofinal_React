@@ -1,6 +1,6 @@
 // src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home";       
+import Home from "./pages/HomeGenieNova";       
 import Login from "./pages/login";
 import Dashboard from "./pages/Dashboard";
 import Analisis from "./pages/analisis";
