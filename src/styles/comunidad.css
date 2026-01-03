@@ -354,3 +354,21 @@ width: 500px;
   margin: 4px 0 0;
   text-align: right;
 }
+
+/* ===== Exportar ===== */
+.export-option {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  color: #fff;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.export-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+

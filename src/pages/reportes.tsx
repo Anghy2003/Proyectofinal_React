@@ -1,3 +1,4 @@
+// src/pages/Reportes.tsx
 import "../styles/reporte.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
@@ -10,10 +11,14 @@ import iconAcceso from "../assets/icon_acceso.svg";
 import iconEliminar from "../assets/icon_eliminar.svg";
 
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
-
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { reportesService } from "../services/reportes.service";
+
+// ✅ Export libs
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type SessionUser = {
   nombre?: string;
@@ -40,7 +45,7 @@ function getBadgeClass(estado: EstadoReporte): string {
   return "badge badge-bad";
 }
 
-  function getSessionUser(): SessionUser {
+function getSessionUser(): SessionUser {
   const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
@@ -80,6 +85,10 @@ export default function Reportes() {
   const [filtroComunidad, setFiltroComunidad] = useState<string>("");
   const [filtroFecha, setFiltroFecha] = useState<string>(""); // yyyy-mm-dd
 
+  // ✅ Export dropdown
+  const [openExport, setOpenExport] = useState(false);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+
   const handleLogout = () => {
     navigate("/login");
   };
@@ -104,6 +113,24 @@ export default function Reportes() {
     cargarReportes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Cerrar dropdown al click fuera / ESC
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!openExport) return;
+      if (!exportRef.current) return;
+      if (!exportRef.current.contains(e.target as Node)) setOpenExport(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenExport(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [openExport]);
 
   // 🔹 LISTAS ÚNICAS PARA LOS SELECT (basadas en data real)
   const tiposUnicos = useMemo(
@@ -135,7 +162,7 @@ export default function Reportes() {
     });
   }, [reportes, filtroTipo, filtroEstado, filtroComunidad, filtroFecha]);
 
-      const [me, setMe] = useState<SessionUser>(() => getSessionUser()); 
+  const [me, setMe] = useState<SessionUser>(() => getSessionUser());
 
   // =====================
   // ELIMINAR
@@ -152,12 +179,103 @@ export default function Reportes() {
     }
   };
 
+  // =====================
+  // ✅ EXPORT (sin Ubicación ni Acciones)
+  // =====================
+  const buildExportRows = () =>
+    reportesFiltrados.map((r) => ({
+      ID: r.id ?? "—",
+      Usuario: r.usuario ?? "—",
+      Tipo: r.tipo ?? "—",
+      Comunidad: r.comunidad ?? "—",
+      Fecha: r.fecha ?? "—",
+      Estado: r.estado ?? "—",
+    }));
+
+  const exportExcel = () => {
+    const rows = buildExportRows();
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    ws["!cols"] = [
+      { wch: 10 }, // ID
+      { wch: 20 }, // Usuario
+      { wch: 22 }, // Tipo
+      { wch: 22 }, // Comunidad
+      { wch: 14 }, // Fecha
+      { wch: 16 }, // Estado
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Reportes");
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `reporte_reportes_${stamp}.xlsx`);
+  };
+
+  const toDataURL = async (url: string): Promise<string> => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const exportPDF = async () => {
+    const doc = new jsPDF("p", "mm", "a4");
+
+    // Logo centrado arriba
+    try {
+      const logo = await toDataURL(logoSafeZone);
+      doc.addImage(logo, "PNG", 95, 10, 20, 28); // x,y,w,h
+    } catch {}
+
+    doc.setFontSize(16);
+    doc.text("Reporte de Incidentes", 105, 45, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, 105, 52, {
+      align: "center",
+    });
+
+    autoTable(doc, {
+      startY: 60,
+      head: [["ID", "Usuario", "Tipo", "Comunidad", "Fecha", "Estado"]],
+      body: reportesFiltrados.map((r) => [
+        r.id ?? "—",
+        r.usuario ?? "—",
+        r.tipo ?? "—",
+        r.comunidad ?? "—",
+        r.fecha ?? "—",
+        r.estado ?? "—",
+      ]),
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [30, 30, 30] },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 14 }, // ID
+        1: { cellWidth: 30 }, // Usuario
+        2: { cellWidth: 42 }, // Tipo
+        3: { cellWidth: 40 }, // Comunidad
+        4: { cellWidth: 22 }, // Fecha
+        5: { cellWidth: 22 }, // Estado
+      },
+    });
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    doc.save(`reporte_reportes_${stamp}.pdf`);
+  };
+
+  const canExport = reportesFiltrados.length > 0;
+
   return (
     <>
       <div className="background" />
 
       <div className="dashboard">
-        {/* ========== SIDEBAR (estructura del segundo, estilo del primero) ========== */}
+        {/* ========== SIDEBAR ========== */}
         <aside className="sidebar">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
@@ -217,23 +335,76 @@ export default function Reportes() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h1 className="panel-title">Reportes Recientes</h1>
 
-              <button
-                className="filter-pill"
-                style={{ cursor: "pointer" }}
-                onClick={cargarReportes}
-                disabled={loading}
-                title="Recargar"
+              {/* ✅ Exportar a la izquierda de Recargar */}
+              <div
+                ref={exportRef}
+                style={{ display: "flex", gap: 10, alignItems: "center", position: "relative" }}
               >
-                {loading ? "Cargando..." : "Recargar"}
-              </button>
+                <button
+                  className="filter-pill"
+                  style={{
+                    cursor: canExport ? "pointer" : "not-allowed",
+                    opacity: canExport ? 1 : 0.6,
+                  }}
+                  onClick={() => setOpenExport((v) => !v)}
+                  disabled={!canExport}
+                  title="Exportar reporte"
+                >
+                  Exportar ▾
+                </button>
+
+                {openExport && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 44,
+                      right: 88, // para que el menú no tape el botón Recargar
+                      background: "rgba(20,20,20,0.95)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      borderRadius: 12,
+                      padding: 6,
+                      minWidth: 160,
+                      zIndex: 10,
+                      boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
+                    <button
+                      className="export-option"
+                      onClick={() => {
+                        exportExcel();
+                        setOpenExport(false);
+                      }}
+                    >
+                      Excel (.xlsx)
+                    </button>
+
+                    <button
+                      className="export-option"
+                      onClick={() => {
+                        exportPDF();
+                        setOpenExport(false);
+                      }}
+                    >
+                      PDF
+                    </button>
+                  </div>
+                )}
+
+                <button
+                  className="filter-pill"
+                  style={{ cursor: "pointer" }}
+                  onClick={cargarReportes}
+                  disabled={loading}
+                  title="Recargar"
+                >
+                  {loading ? "Cargando..." : "Recargar"}
+                </button>
+              </div>
             </div>
 
             {/* Mensajes */}
-            {error && (
-              <div style={{ padding: "10px 0", color: "tomato" }}>
-                {error}
-              </div>
-            )}
+            {error && <div style={{ padding: "10px 0", color: "tomato" }}>{error}</div>}
 
             {/* KPI */}
             <div className="kpi-row">
@@ -246,11 +417,7 @@ export default function Reportes() {
             {/* FILTROS */}
             <div className="filters-row">
               {/* Tipo de reporte */}
-              <select
-                className="filter-pill"
-                value={filtroTipo}
-                onChange={(e) => setFiltroTipo(e.target.value)}
-              >
+              <select className="filter-pill" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
                 <option value="">Tipo de reporte</option>
                 {tiposUnicos.map((tipo) => (
                   <option key={tipo} value={tipo}>
@@ -260,11 +427,7 @@ export default function Reportes() {
               </select>
 
               {/* Estado */}
-              <select
-                className="filter-pill"
-                value={filtroEstado}
-                onChange={(e) => setFiltroEstado(e.target.value)}
-              >
+              <select className="filter-pill" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
                 <option value="">Estado</option>
                 {estadosUnicos.map((estado) => (
                   <option key={estado} value={estado}>
@@ -336,9 +499,7 @@ export default function Reportes() {
                           <td>{reporte.fecha}</td>
                           <td>{reporte.ubicacion}</td>
                           <td>
-                            <span className={getBadgeClass(reporte.estado)}>
-                              {reporte.estado}
-                            </span>
+                            <span className={getBadgeClass(reporte.estado)}>{reporte.estado}</span>
                           </td>
                           <td className="acciones">
                             <button
@@ -357,9 +518,7 @@ export default function Reportes() {
               </div>
             </section>
 
-            <p className="panel-update">
-              Última actualización: {new Date().toLocaleString()}
-            </p>
+            <p className="panel-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
           </section>
         </main>
       </div>

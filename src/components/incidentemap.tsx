@@ -6,10 +6,25 @@ import "leaflet.heat";
 import type { IncidenteResponseDTO } from "../services/incidentesService";
 
 /* ===============================
-   Helpers de coordenadas
+   Helpers de coordenadas (MEJORADO)
+   Soporta:
+   - lat/lng, latitud/longitud, latitude/longitude
+   - ubicacion.lat / ubicacion.lng
+   - GeoJSON: ubicacion.coordinates = [lng, lat]
+   - strings con coma decimal
    =============================== */
+function toNum(v: any) {
+  if (typeof v === "string") {
+    const cleaned = v.trim().replace(",", ".");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : NaN;
+  }
+  const n = Number(v);
+  return Number.isFinite(n) ? n : NaN;
+}
+
 function extractLatLng(i: any): [number, number] | null {
-  const lat =
+  const latDirect =
     i.lat ??
     i.latitud ??
     i.latitude ??
@@ -17,7 +32,7 @@ function extractLatLng(i: any): [number, number] | null {
     i?.ubicacion?.lat ??
     i?.ubicacion?.latitude;
 
-  const lng =
+  const lngDirect =
     i.lng ??
     i.longitud ??
     i.longitude ??
@@ -25,9 +40,24 @@ function extractLatLng(i: any): [number, number] | null {
     i?.ubicacion?.lng ??
     i?.ubicacion?.longitude;
 
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return [Number(lat), Number(lng)];
+  const lat1 = toNum(latDirect);
+  const lng1 = toNum(lngDirect);
+  if (Number.isFinite(lat1) && Number.isFinite(lng1)) return [lat1, lng1];
+
+  // GeoJSON MongoDB: [lng, lat]
+  const coords =
+    i?.ubicacion?.coordinates ??
+    i?.location?.coordinates ??
+    i?.geo?.coordinates ??
+    i?.coordenadas ??
+    i?.coordinates;
+
+  if (Array.isArray(coords) && coords.length >= 2) {
+    const lng2 = toNum(coords[0]);
+    const lat2 = toNum(coords[1]);
+    if (Number.isFinite(lat2) && Number.isFinite(lng2)) return [lat2, lng2];
   }
+
   return null;
 }
 
@@ -53,16 +83,24 @@ function HeatLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
       .filter(Boolean) as [number, number, number][];
   }, [incidentes]);
 
+  // ✅ LOG para ver si llegan puntos al mapa
   useEffect(() => {
-    if (!points.length) return;
+    console.log("=== HEATMAP DEBUG ===");
+    console.log("incidentes recibidos:", incidentes.length);
+    console.log("points generados:", points.length);
+    console.log("sample incidente:", incidentes[0]);
+  }, [incidentes, points]);
 
-    // 🔥 LIMPIA HEATMAP ANTERIOR
+  useEffect(() => {
+    // ✅ siempre limpia anterior
     if (layerRef.current) {
       map.removeLayer(layerRef.current);
       layerRef.current = null;
     }
 
-    // 🔥 CREA HEATMAP
+    // ✅ si no hay puntos, no dibuja heatmap
+    if (!points.length) return;
+
     // @ts-ignore
     const heat = L.heatLayer(points, {
       radius: 28,
@@ -72,7 +110,6 @@ function HeatLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
 
     layerRef.current = heat;
 
-    // 🔥 AUTO-CENTER + AUTO-ZOOM A LOS PUNTOS
     const bounds = L.latLngBounds(points.map((p) => [p[0], p[1]]));
     map.fitBounds(bounds, {
       padding: [40, 40],
@@ -83,6 +120,7 @@ function HeatLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
     return () => {
       if (layerRef.current) {
         map.removeLayer(layerRef.current);
+        layerRef.current = null;
       }
     };
   }, [map, points]);

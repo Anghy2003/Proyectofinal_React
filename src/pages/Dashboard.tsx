@@ -23,6 +23,32 @@ type SessionUser = {
   email?: string;
 };
 
+type RangeKey = "hoy" | "7d" | "30d";
+
+/* ===============================
+   Helpers fechas (LOCAL)
+================================ */
+function startOfDayLocal(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function endOfDayLocal(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+function parseDateSafe(iso?: string | null) {
+  if (!iso) return null;
+  const t = new Date(iso);
+  return Number.isFinite(t.getTime()) ? t : null;
+}
+
+/* ===============================
+   Helpers UI
+================================ */
 function timeAgo(iso?: string | null) {
   if (!iso) return "—";
   const diff = Date.now() - new Date(iso).getTime();
@@ -98,6 +124,9 @@ export default function Dashboard() {
 
   const [me, setMe] = useState<SessionUser>(() => getSessionUser());
 
+  // ✅ filtro del mapa
+  const [range, setRange] = useState<RangeKey>("hoy");
+
   const handleLogout = () => navigate("/login");
 
   async function cargarDashboard() {
@@ -129,13 +158,78 @@ export default function Dashboard() {
     return `Las alertas se están resolviendo un ${Math.abs(pct)}% más lento que la semana pasada.`;
   }, [kpis]);
 
+  // ✅ FILTRO real por calendario LOCAL
+  const incidentesFiltrados = useMemo(() => {
+    if (!incidentes?.length) return [];
+
+    const now = new Date();
+
+    if (range === "hoy") {
+      const start = startOfDayLocal(now).getTime();
+      const end = endOfDayLocal(now).getTime();
+      return incidentes.filter((i: any) => {
+        const d = parseDateSafe(i.fechaCreacion);
+        if (!d) return false;
+        const t = d.getTime();
+        return t >= start && t <= end;
+      });
+    }
+
+    if (range === "7d") {
+      const start = startOfDayLocal(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)).getTime();
+      const end = endOfDayLocal(now).getTime();
+      return incidentes.filter((i: any) => {
+        const d = parseDateSafe(i.fechaCreacion);
+        if (!d) return false;
+        const t = d.getTime();
+        return t >= start && t <= end;
+      });
+    }
+
+    // 30d
+    const start = startOfDayLocal(new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)).getTime();
+    const end = endOfDayLocal(now).getTime();
+    return incidentes.filter((i: any) => {
+      const d = parseDateSafe(i.fechaCreacion);
+      if (!d) return false;
+      const t = d.getTime();
+      return t >= start && t <= end;
+    });
+  }, [incidentes, range]);
+
+  /* ✅ LOGS para verificar datos/fechas/coords (temporal, puedes borrarlo después) */
+  useEffect(() => {
+    const sample = incidentesFiltrados.slice(0, 3);
+    const withCoords = incidentesFiltrados.filter((i: any) =>
+      i.lat ||
+      i.latitud ||
+      i.latitude ||
+      i.lng ||
+      i.longitud ||
+      i.longitude ||
+      i?.ubicacion?.lat ||
+      i?.ubicacion?.lng ||
+      i?.ubicacion?.latitude ||
+      i?.ubicacion?.longitude ||
+      i?.ubicacion?.coordinates ||
+      i?.location?.coordinates
+    );
+
+    console.log("=== DASHBOARD HEATMAP DEBUG ===");
+    console.log("RANGO:", range);
+    console.log("TOTAL INCIDENTES (API):", incidentes.length);
+    console.log("FILTRADOS:", incidentesFiltrados.length);
+    console.log("FILTRADOS CON COORDS (aprox):", withCoords.length);
+    console.log("SAMPLE FILTRADOS:", sample);
+  }, [range, incidentes.length, incidentesFiltrados, incidentes]);
+
   return (
     <>
       {/* Fondo tipo login */}
       <div className="background" />
 
       <div className="dashboard">
-        {/* ========== SIDEBAR (estructura del segundo, estilo del primero) ========== */}
+        {/* ========== SIDEBAR ========== */}
         <aside className="sidebar">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
@@ -252,7 +346,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* GRID PRINCIPAL 2 COLUMNAS – con tarjetas del nuevo diseño */}
+          {/* GRID PRINCIPAL 2 COLUMNAS */}
           <div className="dash-layout">
             {/* HERO */}
             <article className="card hero-card">
@@ -335,14 +429,34 @@ export default function Dashboard() {
                 </div>
 
                 <div className="tabs">
-                  <button className="tab active">Hoy</button>
-                  <button className="tab">Últimos 7 días</button>
-                  <button className="tab">30 días</button>
+                  <button
+                    type="button"
+                    className={`tab ${range === "hoy" ? "active" : ""}`}
+                    onClick={() => setRange("hoy")}
+                  >
+                    Hoy
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`tab ${range === "7d" ? "active" : ""}`}
+                    onClick={() => setRange("7d")}
+                  >
+                    Últimos 7 días
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`tab ${range === "30d" ? "active" : ""}`}
+                    onClick={() => setRange("30d")}
+                  >
+                    30 días
+                  </button>
                 </div>
               </div>
 
               <div className="heat-wrap">
-                <IncidentHeatmap incidentes={incidentes} />
+                <IncidentHeatmap incidentes={incidentesFiltrados} />
               </div>
             </article>
 
@@ -365,10 +479,7 @@ export default function Dashboard() {
                   const fc = (i as any).fechaCreacion;
 
                   return (
-                    <div
-                      className="alert-item"
-                      key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}
-                    >
+                    <div className="alert-item" key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}>
                       <div className="alert-main">
                         <div className="alert-title">{tipo}</div>
                         <div className="alert-sub">
