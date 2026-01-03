@@ -13,6 +13,7 @@
     "@gsap/react": "^2.1.2",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
     "gsap": "^3.14.2",
     "leaflet": "^1.9.4",

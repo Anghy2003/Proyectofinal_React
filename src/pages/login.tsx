@@ -24,6 +24,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // ================== LOGIN NORMAL ==================
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -49,8 +50,25 @@ export default function Login() {
     }
   };
 
-  const handleLoginGoogle = () => {
-    alert("Login con Google (pendiente integración)");
+  // ================== LOGIN GOOGLE ==================
+  const handleLoginGoogle = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    try {
+      const usuario = await authService.loginWithGoogle();
+      authService.saveSession(usuario);
+      navigate("/dashboard");
+    } catch (err: any) {
+      console.error(err);
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "No se pudo iniciar sesión con Google.";
+      alert(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,11 +76,11 @@ export default function Login() {
       {/* 🌆 Fondo general */}
       <div className="login-background" />
 
-      {/*Botón volver al Home */}
-
+      {/* Botón volver al Home */}
       <button className="back-home-btn" onClick={() => navigate("/")}>
         <img src={flechaBack} alt="Volver" />
       </button>
+
       <div className="login-wrapper">
         <img src={loginFrame} className="login-frame" alt="Login Frame" />
 
@@ -70,7 +88,7 @@ export default function Login() {
           className="hero-wrapper-community"
           initial={{ opacity: 0 }}
           animate={{
-            opacity: 1, 
+            opacity: 1,
             y: [0, -6, 0],
             scale: [1, 1.03, 1],
           }}
@@ -102,12 +120,12 @@ export default function Login() {
           className="hero-wrapper-logo"
           initial={{ opacity: 0 }}
           animate={{
-            opacity: 1, 
+            opacity: 1,
             y: [0, -5, 0],
             scale: [1, 1.05, 1],
           }}
           transition={{
-            opacity: { duration: 0.8, ease: "easeOut" }, 
+            opacity: { duration: 0.8, ease: "easeOut" },
             y: {
               duration: 6,
               repeat: Infinity,
