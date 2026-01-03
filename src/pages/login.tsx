@@ -198,6 +198,7 @@ export default function Login() {
             type="button"
             onClick={handleLoginGoogle}
             disabled={loading}
+            //holis
           >
             <img src={iconGoogle} className="google-icon" alt="Google icon" />
             <span>Inicia sesión con Google</span>
