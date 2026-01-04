@@ -1,8 +1,5 @@
 /* ===== Fondo general (mismo que login) ===== */
-body {
-  margin: 0;
-  font-family: "Inter", sans-serif;
-}
+
 
 .background {
   position: fixed;
@@ -119,31 +116,31 @@ body {
 .reportes-main {
   flex: 1;
   box-sizing: border-box;
-
   display: flex;
   margin-left: 260px;
   padding: 20px 26px;
-  height: 100vh;
+
+  height: 100%;        /* ✔ */
+  overflow: hidden;   /* ⛔ NO scroll aquí */
 }
 
 .reportes-panel {
   width: 100%;
-  height: calc(100vh - 40px);
+  flex: 1;            /* ✔ ocupa todo el espacio */
   padding: 20px;
   margin: 0;
 
   border-radius: 26px;
-
   background: rgba(8, 24, 63, 0.0);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
 
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  overflow: hidden;  /* ⛔ sin scroll */
 }
+
 
 .panel-title {
   font-size: 1.4rem;
@@ -246,6 +243,7 @@ body {
 
 .tabla-inner {
   margin-top: 8px;
+  flex: 1;
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.22);
   overflow-y: auto;   

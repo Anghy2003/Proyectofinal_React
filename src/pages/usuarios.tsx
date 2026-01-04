@@ -28,7 +28,8 @@ type SessionUser = {
   email?: string;
 };
 
-type EstadoUsuario = "Activo" | "Suspendido";
+type EstadoUsuarioCuenta = "Activo" | "Suspendido";
+type EstadoUsuarioOnline = "Activo" | "Inactivo";
 
 type UsuarioUI = {
   id: number;
@@ -37,11 +38,20 @@ type UsuarioUI = {
   telefono: string;
   comunidad: string;
   rol: string;
-  estado: EstadoUsuario;
+
+  // ✅ Cuenta (habilitado / suspendido)
+  estado: EstadoUsuarioCuenta;
+
+  // ✅ Presencia (aprox por último acceso)
+  estadoOnline: EstadoUsuarioOnline;
+
   fechaRegistro: string;
   horaRegistro: string;
   ultimoAcceso: string;
   fotoUrl?: string;
+
+  // guardo ISO original para calcular online con precisión local
+  ultimoAccesoIso?: string | null;
 };
 
 function pad2(n: number) {
@@ -77,6 +87,28 @@ function isoToFechaHora(iso?: string | null) {
   };
 }
 
+/**
+ * ✅ Presencia aproximada:
+ * - "Activo" si último acceso fue <= X minutos
+ * - "Inactivo" si no hay último acceso o fue hace más tiempo
+ *
+ * Ajusta ONLINE_THRESHOLD_MIN si quieres 2, 5, 10 minutos, etc.
+ */
+const ONLINE_THRESHOLD_MIN = 1;
+
+function minutesDiffFromNow(iso?: string | null) {
+  if (!iso) return Number.POSITIVE_INFINITY;
+  const last = new Date(iso).getTime();
+  if (Number.isNaN(last)) return Number.POSITIVE_INFINITY;
+  const now = Date.now();
+  return Math.floor((now - last) / 60000);
+}
+
+function getEstadoOnline(ultimoAccesoIso?: string | null): EstadoUsuarioOnline {
+  const mins = minutesDiffFromNow(ultimoAccesoIso);
+  return mins <= ONLINE_THRESHOLD_MIN ? "Activo" : "Inactivo";
+}
+
 export default function Usuarios() {
   const navigate = useNavigate();
 
@@ -89,8 +121,7 @@ export default function Usuarios() {
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Sidebar responsive
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [me] = useState<SessionUser>(() => getSessionUser());
 
   useEffect(() => {
     const fetchUsuarios = async () => {
@@ -111,6 +142,8 @@ export default function Usuarios() {
               ? "Administrador"
               : "Usuario";
 
+          const ultimoAccesoIso = u.ultimoAcceso ?? null;
+
           return {
             id: u.id,
             nombre: `${u.nombre ?? ""} ${u.apellido ?? ""}`.trim(),
@@ -118,11 +151,18 @@ export default function Usuarios() {
             telefono: u.telefono ?? "",
             comunidad,
             rol: rolUI,
+
+            // ✅ Estado de CUENTA
             estado: u.activo ? "Activo" : "Suspendido",
+
+            // ✅ Estado ONLINE (aprox)
+            estadoOnline: getEstadoOnline(ultimoAccesoIso),
+
             fechaRegistro: reg.fecha,
             horaRegistro: reg.hora,
             ultimoAcceso: acc.fecha ? `${acc.fecha} ${acc.hora}` : "—",
             fotoUrl: u.fotoUrl,
+            ultimoAccesoIso,
           };
         });
 
@@ -156,21 +196,10 @@ export default function Usuarios() {
     };
   }, [openExport]);
 
-  // ✅ cerrar sidebar al agrandar pantalla
-  useEffect(() => {
-    const onResize = () => {
-      if (window.innerWidth > 1024) setSidebarOpen(false);
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
   const handleLogout = () => navigate("/login");
 
   const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) =>
     setBusqueda(e.target.value);
-
-  const [me] = useState<SessionUser>(() => getSessionUser());
 
   const usuariosFiltrados = usuarios.filter((u) => {
     const term = busqueda.toLowerCase();
@@ -191,7 +220,11 @@ export default function Usuarios() {
       Telefono: u.telefono ?? "—",
       Comunidad: u.comunidad ?? "—",
       Rol: u.rol ?? "—",
-      Estado: u.estado ?? "—",
+
+      // ✅ Incluyo ambos estados
+      "Estado cuenta": u.estado ?? "—",
+      Online: u.estadoOnline ?? "—",
+
       Registro: `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
       "Ultimo acceso": u.ultimoAcceso ?? "—",
     }));
@@ -201,14 +234,15 @@ export default function Usuarios() {
     const ws = XLSX.utils.json_to_sheet(rows);
 
     ws["!cols"] = [
-      { wch: 26 },
-      { wch: 32 },
-      { wch: 16 },
-      { wch: 22 },
-      { wch: 16 },
-      { wch: 12 },
-      { wch: 18 },
-      { wch: 18 },
+      { wch: 26 }, // Nombre
+      { wch: 32 }, // Correo
+      { wch: 16 }, // Telefono
+      { wch: 22 }, // Comunidad
+      { wch: 16 }, // Rol
+      { wch: 14 }, // Estado cuenta
+      { wch: 10 }, // Online
+      { wch: 18 }, // Registro
+      { wch: 18 }, // Ultimo acceso
     ];
 
     const wb = XLSX.utils.book_new();
@@ -232,10 +266,13 @@ export default function Usuarios() {
   const exportPDF = async () => {
     const doc = new jsPDF("p", "mm", "a4");
 
+    // Logo centrado arriba
     try {
       const logo = await toDataURL(logoSafeZone);
       doc.addImage(logo, "PNG", 95, 10, 20, 28);
-    } catch {}
+    } catch {
+      // si falla el logo, igual genera el PDF
+    }
 
     doc.setFontSize(16);
     doc.text("Reporte de Usuarios", 105, 45, { align: "center" });
@@ -253,7 +290,8 @@ export default function Usuarios() {
         "Teléfono",
         "Comunidad",
         "Rol",
-        "Estado",
+        "Estado cuenta",
+        "Online",
         "Registro",
         "Último acceso",
       ]],
@@ -264,12 +302,24 @@ export default function Usuarios() {
         u.comunidad ?? "—",
         u.rol ?? "—",
         u.estado ?? "—",
+        u.estadoOnline ?? "—",
         `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
         u.ultimoAcceso ?? "—",
       ]),
       styles: { fontSize: 8.5, cellPadding: 2 },
       headStyles: { fillColor: [30, 30, 30] },
       margin: { left: 10, right: 10 },
+      columnStyles: {
+        0: { cellWidth: 26 }, // Nombre
+        1: { cellWidth: 42 }, // Correo
+        2: { cellWidth: 18 }, // Teléfono
+        3: { cellWidth: 18 }, // Comunidad
+        4: { cellWidth: 16 }, // Rol
+        5: { cellWidth: 18 }, // Estado cuenta
+        6: { cellWidth: 14 }, // Online
+        7: { cellWidth: 18 }, // Registro
+        8: { cellWidth: 20 }, // Último acceso
+      },
     });
 
     const stamp = new Date().toISOString().slice(0, 10);
@@ -282,52 +332,43 @@ export default function Usuarios() {
     <>
       <div className="background" />
 
-      {/* ✅ overlay móvil */}
-      {sidebarOpen && (
-        <button
-          className="sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-          aria-label="Cerrar menú"
-        />
-      )}
-
       <div className="dashboard">
         {/* ========== SIDEBAR ========== */}
-        <aside className={`sidebar ${sidebarOpen ? "is-open" : ""}`}>
+        <aside className="sidebar">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
+            <Link to="/dashboard" className="sidebar-item">
               <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
+            <Link to="/comunidades" className="sidebar-item">
               <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item active" onClick={() => setSidebarOpen(false)}>
+            <Link to="/usuarios" className="sidebar-item active">
               <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
             <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
+            <Link to="/analisis" className="sidebar-item">
               <img src={iconIa} className="nav-icon" alt="Alertas" />
               <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
+            <Link to="/reportes" className="sidebar-item">
               <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
+            <Link to="/codigo-acceso" className="sidebar-item">
               <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
@@ -348,18 +389,32 @@ export default function Usuarios() {
 
         <main className="usuarios-main">
           <div className="usuario-panel">
-            {/* ✅ Header desktop */}
-            <div className="usuarios-header">
-              <h1 className="usuarios-title desktop-title">Usuarios</h1>
+            {/* ✅ Header con Exportar */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <h1 className="usuarios-title">Usuarios</h1>
 
-              <div ref={exportRef} className="usuarios-actions">
+              <div
+                ref={exportRef}
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  position: "relative",
+                }}
+              >
                 <button
                   className="filter-pill"
                   style={{
                     cursor: canExport ? "pointer" : "not-allowed",
                     opacity: canExport ? 1 : 0.6,
-                  }
-              }
+                  }}
                   onClick={() => setOpenExport((v) => !v)}
                   disabled={!canExport}
                   title="Exportar reporte"
@@ -368,7 +423,21 @@ export default function Usuarios() {
                 </button>
 
                 {openExport && (
-                  <div className="export-dropdown">
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 44,
+                      right: 0,
+                      background: "rgba(20,20,20,0.95)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      borderRadius: 12,
+                      padding: 6,
+                      minWidth: 160,
+                      zIndex: 10,
+                      boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
                     <button
                       className="export-option"
                       onClick={() => {
@@ -395,7 +464,6 @@ export default function Usuarios() {
 
             <div className="usuarios-search">
               <input
-                className="usuarios-search-input"
                 type="text"
                 placeholder="Buscar por nombre, correo o comunidad..."
                 value={busqueda}
@@ -408,75 +476,89 @@ export default function Usuarios() {
 
             {!loading && (
               <section className="usuarios-card">
-                <div className="table-scroll">
-                  <table className="usuarios-tabla">
-                    <thead>
-                      <tr>
-                        <th>Foto</th>
-                        <th>Nombre</th>
-                        <th>Correo</th>
-                        <th>Teléfono</th>
-                        <th>Comunidad</th>
-                        <th>Rol</th>
-                        <th>Estado</th>
-                        <th>Registro</th>
-                        <th>Último acceso</th>
-                        <th>Acciones</th>
+                <table className="usuarios-tabla">
+                  <thead>
+                    <tr>
+                      <th>Foto</th>
+                      <th>Nombre</th>
+                      <th>Correo</th>
+                      <th>Teléfono</th>
+                      <th>Comunidad</th>
+                      <th>Rol</th>
+                      <th>Estado</th>
+
+                      <th>Registro</th>
+                      <th>Último acceso</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {usuariosFiltrados.map((u) => (
+                      <tr key={u.id}>
+                        <td>
+                          {u.fotoUrl ? (
+                            <img src={u.fotoUrl} alt="foto" className="user-photo-icon" />
+                          ) : (
+                            <img src={iconImagen} alt="foto" />
+                          )}
+                        </td>
+
+                        <td>{u.nombre}</td>
+                        <td>{u.email}</td>
+                        <td>{u.telefono}</td>
+                        <td>{u.comunidad}</td>
+                        <td>{u.rol}</td>
+
+
+                        {/* ✅ Estado online (aprox) */}
+                        <td>
+                          <span
+                            className={
+                              u.estadoOnline === "Activo"
+                                ? "badge badge-success"
+                                : "badge badge-danger"
+                            }
+                            title={
+                              u.ultimoAccesoIso
+                                ? `Último acceso ISO: ${u.ultimoAccesoIso}`
+                                : "Sin registro de acceso"
+                            }
+                          >
+                            {u.estadoOnline}
+                          </span>
+                        </td>
+
+                        <td>
+                          {u.fechaRegistro}
+                          <br />
+                          <span className="time">{u.horaRegistro}</span>
+                        </td>
+
+                        <td>{u.ultimoAcceso}</td>
+
+                        <td>
+                          <button
+                            className="icon-button"
+                            title="Eliminar"
+                            onClick={() => alert("Eliminar usuario: pendiente backend")}
+                          >
+                            <img src={iconEliminar} alt="Eliminar" />
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
+                    ))}
 
-                    <tbody>
-                      {usuariosFiltrados.map((u) => (
-                        <tr key={u.id}>
-                          <td>
-                            {u.fotoUrl ? (
-                              <img src={u.fotoUrl} alt="foto" className="user-photo-icon" />
-                            ) : (
-                              <img src={iconImagen} alt="foto" className="user-photo-icon" />
-                            )}
-                          </td>
-                          <td>{u.nombre}</td>
-                          <td className="td-email">{u.email}</td>
-                          <td>{u.telefono}</td>
-                          <td>{u.comunidad}</td>
-                          <td>{u.rol}</td>
-                          <td>
-                            <span
-                              className={
-                                u.estado === "Activo" ? "badge badge-success" : "badge badge-danger"
-                              }
-                            >
-                              {u.estado}
-                            </span>
-                          </td>
-                          <td>
-                            {u.fechaRegistro}
-                            <br />
-                            <span className="time">{u.horaRegistro}</span>
-                          </td>
-                          <td>{u.ultimoAcceso}</td>
-                          <td>
-                            <button
-                              className="icon-button"
-                              title="Eliminar"
-                              onClick={() => alert("Eliminar usuario: pendiente backend")}
-                            >
-                              <img src={iconEliminar} alt="Eliminar" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {usuariosFiltrados.length === 0 && (
-                        <tr>
-                          <td colSpan={10} style={{ textAlign: "center" }}>
-                            No se encontraron usuarios.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                    {usuariosFiltrados.length === 0 && (
+                      <tr>
+                        {/* ✅ ahora son 11 columnas */}
+                        <td colSpan={11} style={{ textAlign: "center" }}>
+                          No se encontraron usuarios.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </section>
             )}
 

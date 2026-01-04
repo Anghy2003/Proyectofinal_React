@@ -5,6 +5,8 @@ import iconEmail from "../assets/mage_email.svg";
 import iconPassword from "../assets/password-icon.svg";
 import iconGoogle from "../assets/iconoGoogle.svg";
 import flechaBack from "../assets/flecha_salir.png";
+import logoSafezone from "../assets/logo_rojo.png";
+
 
 import LiquidEther from "../components/backgrounds/LiquidEther";
 import { motion } from "framer-motion";
@@ -97,6 +99,10 @@ export default function Login() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.55, ease: "easeOut" }}
         >
+          {/* LOGO */}
+          <div className="login-logo">
+            <img src={logoSafezone} alt="SafeZone logo" />
+          </div>
           <h1 className="title">Bienvenido</h1>
           <p className="subtitle">Inicia sesión para continuar</p>
 
