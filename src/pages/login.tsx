@@ -1,17 +1,13 @@
 // src/pages/Login.tsx
 import "../styles/login.css";
 
-import loginFrame from "../assets/login_layout.png";
 import iconEmail from "../assets/mage_email.svg";
 import iconPassword from "../assets/password-icon.svg";
 import iconGoogle from "../assets/iconoGoogle.svg";
 import flechaBack from "../assets/flecha_salir.png";
 
+import LiquidEther from "../components/backgrounds/LiquidEther";
 import { motion } from "framer-motion";
-
-/* 👇 IMÁGENES PERSONALIZADAS */
-import heroCommunity from "../assets/comunidad3.png";
-import logoSafezone from "../assets/logo_rojo.png";
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -72,91 +68,39 @@ export default function Login() {
   };
 
   return (
-    <>
-      {/* 🌆 Fondo general */}
+    <div className="login-page">
+      {/* Fondo imagen */}
       <div className="login-background" />
 
-      {/* Botón volver al Home */}
+      {/* Fondo animado */}
+      <LiquidEther
+        style={{
+          position: "fixed",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          zIndex: 0,
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* Botón volver */}
       <button className="back-home-btn" onClick={() => navigate("/")}>
         <img src={flechaBack} alt="Volver" />
       </button>
 
+      {/* Contenido */}
       <div className="login-wrapper">
-        <img src={loginFrame} className="login-frame" alt="Login Frame" />
-
         <motion.div
-          className="hero-wrapper-community"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            y: [0, -6, 0],
-            scale: [1, 1.03, 1],
-          }}
-          transition={{
-            opacity: { duration: 0.8, ease: "easeOut" },
-            y: {
-              duration: 6,
-              repeat: Infinity,
-              repeatType: "mirror",
-              ease: "easeInOut",
-            },
-            scale: {
-              duration: 6,
-              repeat: Infinity,
-              repeatType: "mirror",
-              ease: "easeInOut",
-            },
-          }}
-        >
-          <img
-            src={heroCommunity}
-            className="login-hero-community"
-            alt="Comunidad SafeZone"
-          />
-        </motion.div>
-
-        {/* 📍 Logo — animación separada */}
-        <motion.div
-          className="hero-wrapper-logo"
-          initial={{ opacity: 0 }}
-          animate={{
-            opacity: 1,
-            y: [0, -5, 0],
-            scale: [1, 1.05, 1],
-          }}
-          transition={{
-            opacity: { duration: 0.8, ease: "easeOut" },
-            y: {
-              duration: 6,
-              repeat: Infinity,
-              repeatType: "mirror",
-              ease: "easeInOut",
-            },
-            scale: {
-              duration: 6,
-              repeat: Infinity,
-              repeatType: "mirror",
-              ease: "easeInOut",
-            },
-          }}
-        >
-          <img
-            src={logoSafezone}
-            className="login-hero-logo"
-            alt="Logo SafeZone"
-          />
-        </motion.div>
-
-        {/* 🧾 FORMULARIO */}
-        <motion.div
-          className="login-content"
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+          className="login-card"
+          initial={{ opacity: 0, y: 10, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
         >
           <h1 className="title">Bienvenido</h1>
+          <p className="subtitle">Inicia sesión para continuar</p>
 
-          <form onSubmit={handleLogin} style={{ width: "100%" }}>
+          <form onSubmit={handleLogin} className="login-form">
             <div className="input-group">
               <img src={iconEmail} className="input-icon" alt="Correo" />
               <input
@@ -191,20 +135,21 @@ export default function Login() {
             </button>
           </form>
 
-          <p className="text">Inicia sesión con</p>
+          <div className="divider">
+            <span>o</span>
+          </div>
 
           <button
             className="btn-google"
             type="button"
             onClick={handleLoginGoogle}
             disabled={loading}
-            //holis
           >
             <img src={iconGoogle} className="google-icon" alt="Google icon" />
             <span>Inicia sesión con Google</span>
           </button>
         </motion.div>
       </div>
-    </>
+    </div>
   );
 }

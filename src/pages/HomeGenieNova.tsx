@@ -6,29 +6,21 @@ import "../styles/home-genienova.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import {
-  ShieldAlert,
-  Users,
-  BrainCircuit,
-  Download,
-  Instagram,
-  Facebook,
-} from "lucide-react";
+import { ShieldAlert, Users, BrainCircuit, Download, Instagram, Facebook } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ASSETS - tus imágenes de celulares (ajusta si tus nombres cambian)
-const HERO_PHONE = "/src/assets/celular1.png";
-const FEATURE_1 = "/src/assets/celular2.png";
-const FEATURE_2 = "/src/assets/celular3.png";
-const FEATURE_3 = "/src/assets/celular4.png";
-const HOW_1 = "/src/assets/celular5.png";
-const HOW_2 = "/src/assets/celular6.png";
-const HOW_3 = "/src/assets/celular7.png";
-const HOW_4 = "/src/assets/celular8.png";
+// ✅ IMPORTS DE ASSETS (Vite-friendly)
+import HERO_PHONE from "../assets/celular1.png";
+import FEATURE_1 from "../assets/celular4.png";
+import FEATURE_2 from "../assets/celular2.png";
+import FEATURE_3 from "../assets/celular3.png";
+import HOW_1 from "../assets/celular5.png";
+import HOW_2 from "../assets/celular6.png";
+import HOW_3 from "../assets/celular7.png";
+import HOW_4 from "../assets/celular8.png";
 
-// Logo SafeZone
-const LOGO = "/src/assets/logo-safe-zone.png";
+import LOGO from "../assets/logo_rojo.png";
 
 type Tab = {
   key: string;
@@ -50,8 +42,6 @@ export default function HomeGenieNova() {
 
   const [activeTab, setActiveTab] = useState<string>("alerta");
   const [menuOpen, setMenuOpen] = useState(false);
-
-  // FAQ state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const PARTNERS = useMemo(
@@ -70,9 +60,7 @@ export default function HomeGenieNova() {
 
   const prefersReducedMotion = useMemo(() => {
     if (typeof window === "undefined") return false;
-    return (
-      window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
-    );
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
   }, []);
 
   const tabs: Tab[] = useMemo(
@@ -165,19 +153,53 @@ export default function HomeGenieNova() {
     setMenuOpen(false);
     const el = document.getElementById(id);
     if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY - 88;
+
+    const navH = navRef.current?.getBoundingClientRect().height ?? 88;
+    const y = el.getBoundingClientRect().top + window.scrollY - (navH + 14);
+
     window.scrollTo({ top: y, behavior: "smooth" });
   }
+
+  // ✅ Bloquear scroll del body cuando el menú móvil está abierto
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  // ✅ Si vuelve a desktop, cerrar menú móvil
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 900) setMenuOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // ===========================
   // GSAP: NAV + HERO pinned + reveal + HOW pinned step panel
   // ===========================
   useEffect(() => {
+  const nav = navRef.current;
+  if (!nav) return;
+
+  const onScroll = () => {
+    nav.classList.toggle("sz-nav--scrolled", window.scrollY > 10);
+  };
+
+  onScroll(); // aplica al cargar
+  window.addEventListener("scroll", onScroll, { passive: true });
+  return () => window.removeEventListener("scroll", onScroll);
+}, []);
+
+
+  useEffect(() => {
     if (!rootRef.current) return;
 
     const ctx = gsap.context(() => {
       // NAV glass al hacer scroll
-      ScrollTrigger.create({
+      /*ScrollTrigger.create({
         trigger: document.documentElement,
         start: "top top",
         end: "bottom bottom",
@@ -185,11 +207,10 @@ export default function HomeGenieNova() {
           if (!navRef.current) return;
           navRef.current.classList.toggle("sz-nav--scrolled", self.scroll() > 10);
         },
-      });
+      });*/
 
       const mm = gsap.matchMedia();
 
-      // HERO pinned timeline
       const buildHero = (opts: {
         end: string;
         head0: number;
@@ -231,7 +252,6 @@ export default function HomeGenieNova() {
         tl.set(".sz-phone__glow", { opacity: 0.55 }, 0);
         tl.set(".sz-phone__shine", { opacity: 0.32 }, 0);
 
-        // Ghost phones
         tl.set(".sz-phone__ghost", { autoAlpha: 0, y: 60 }, 0);
         tl.to(".sz-phone__ghost--1", { autoAlpha: 0.85, y: 0, ease: "none" }, 0.18);
         tl.to(".sz-phone__ghost--2", { autoAlpha: 0.65, y: -6, ease: "none" }, 0.22);
@@ -240,14 +260,9 @@ export default function HomeGenieNova() {
         tl.set(".sz-hero__fade", { opacity: 0 }, 0);
 
         if (heroEl) {
-          tl.set(
-            heroEl,
-            { "--spotOpacity": 0.82, "--spotSize": "920px", "--heroFade": 0 } as any,
-            0
-          );
+          tl.set(heroEl, { "--spotOpacity": 0.82, "--spotSize": "920px", "--heroFade": 0 } as any, 0);
         }
 
-        // A
         if (heroEl) {
           tl.to(heroEl, { "--spotOpacity": 0.95, "--spotSize": "980px", ease: "none" } as any, 0.15);
         }
@@ -256,12 +271,10 @@ export default function HomeGenieNova() {
         tl.to(".sz-phone__glow", { opacity: 0.62, ease: "none" }, 0.18);
         tl.to(".sz-phone__shine", { opacity: 0.38, ease: "none" }, 0.18);
 
-        // B
         tl.to(".sz-heroType__inner", { scale: opts.head2, y: opts.headY2, ease: "none" }, 0.45);
         tl.to(".sz-hero__phoneStageAnim", { y: opts.phoneY2, scale: opts.phoneS2, ease: "none" }, 0.45);
         tl.to(".sz-hero__inner", { autoAlpha: 0, y: -18, filter: "blur(10px)", ease: "none" }, 0.55);
 
-        // C
         if (heroEl) {
           tl.to(heroEl, { "--spotOpacity": 0.38, "--spotSize": "720px", "--heroFade": 1, ease: "none" } as any, 0.78);
         }
@@ -275,10 +288,8 @@ export default function HomeGenieNova() {
         tl.to(".sz-phone__glow", { opacity: 0.18, ease: "none" }, 0.78);
         tl.to(".sz-phone__shine", { opacity: 0.1, ease: "none" }, 0.78);
 
-        // Ghost out
         tl.to(".sz-phone__ghost", { autoAlpha: 0, y: -140, ease: "none" }, 0.78);
 
-        // D
         tl.to(".sz-hero__phoneStageAnim", { autoAlpha: 0, ease: "none" }, 0.92);
         tl.to(".sz-heroType", { opacity: 0.4, ease: "none" }, 0.92);
       };
@@ -352,16 +363,12 @@ export default function HomeGenieNova() {
         );
       });
 
-      // ===========================
-      // HOW (Step Panel) — pinned like reference
-      // ===========================
+      // HOW pinned (desktop)
       mm.add("(min-width: 900px)", () => {
         const steps = gsap.utils.toArray<HTMLElement>(".sz-howRefStep");
         const phones = gsap.utils.toArray<HTMLElement>(".sz-howRefPhone");
-        const metas = gsap.utils.toArray<HTMLElement>(".sz-howRefMetaBlock");
         const dots = gsap.utils.toArray<HTMLElement>(".sz-stepDot");
 
-        // metas ya están ocultas por CSS, pero dejamos la lógica intacta
         if (!steps.length || !phones.length) return;
 
         gsap.set(steps, { autoAlpha: 0, y: 22, filter: "blur(10px)" });
@@ -522,17 +529,21 @@ export default function HomeGenieNova() {
     );
   }, [activeTab]);
 
+  const onLogoKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") scrollToId("top");
+  };
+
   return (
     <div className="sz-page" ref={rootRef}>
       {/* NAV */}
       <header className="sz-nav" ref={navRef}>
         <div className="sz-container sz-nav__inner">
-          <div className="sz-logo" onClick={() => scrollToId("top")} role="button" tabIndex={0}>
+          <div className="sz-logo" onClick={() => scrollToId("top")} onKeyDown={onLogoKeyDown} role="button" tabIndex={0}>
             <img src={LOGO} alt="SafeZone" />
             <span className="sz-logo__text">SafeZone</span>
           </div>
 
-          <nav className="sz-links">
+          <nav className="sz-links" aria-label="Navegación principal">
             <button onClick={() => scrollToId("funciones")}>Funciones</button>
             <button onClick={() => scrollToId("como")}>Cómo Funciona</button>
             <button onClick={() => scrollToId("comunidad")}>Comunidad</button>
@@ -548,7 +559,8 @@ export default function HomeGenieNova() {
             <button
               className={`sz-burger ${menuOpen ? "is-open" : ""}`}
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Abrir menú"
+              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={menuOpen}
             >
               <span />
               <span />
@@ -559,29 +571,15 @@ export default function HomeGenieNova() {
       </header>
 
       {/* Backdrop + Menú móvil */}
-      <div
-        className={`sz-backdrop ${menuOpen ? "is-open" : ""}`}
-        onClick={() => setMenuOpen(false)}
-        aria-hidden
-      />
+      <div className={`sz-backdrop ${menuOpen ? "is-open" : ""}`} onClick={() => setMenuOpen(false)} aria-hidden />
 
-      <div className={`sz-mobileMenu ${menuOpen ? "is-open" : ""}`}>
+      <div className={`sz-mobileMenu ${menuOpen ? "is-open" : ""}`} role="dialog" aria-label="Menú móvil">
         <div className="sz-mobileMenu__inner">
-          <button className="sz-mobileMenu__item" onClick={() => scrollToId("funciones")}>
-            Funciones
-          </button>
-          <button className="sz-mobileMenu__item" onClick={() => scrollToId("como")}>
-            Cómo Funciona
-          </button>
-          <button className="sz-mobileMenu__item" onClick={() => scrollToId("comunidad")}>
-            Comunidad
-          </button>
-          <button className="sz-mobileMenu__item" onClick={() => scrollToId("descarga")}>
-            Descarga
-          </button>
-          <button className="sz-mobileMenu__item" onClick={() => scrollToId("faq")}>
-            Preguntas
-          </button>
+          <button className="sz-mobileMenu__item" onClick={() => scrollToId("funciones")}>Funciones</button>
+          <button className="sz-mobileMenu__item" onClick={() => scrollToId("como")}>Cómo Funciona</button>
+          <button className="sz-mobileMenu__item" onClick={() => scrollToId("comunidad")}>Comunidad</button>
+          <button className="sz-mobileMenu__item" onClick={() => scrollToId("descarga")}>Descarga</button>
+          <button className="sz-mobileMenu__item" onClick={() => scrollToId("faq")}>Preguntas</button>
 
           <a className="sz-btn sz-btn--primary sz-btn--full" href="/login" data-magnetic="true">
             Login Admin
@@ -609,28 +607,26 @@ export default function HomeGenieNova() {
             </div>
           </div>
 
+          {/* ✅ ahora SI va dentro de container para que sea responsivo */}
           <div className="sz-hero__inner">
-            <div className="sz-hero__copy">
-              <h1 className="sz-h1">
-                <span>Alerta</span> comunitaria con IA
-              </h1>
-              <p className="sz-hero__p">
-                SafeZone convierte a tu barrio en una red de apoyo: reporta
-                emergencias en segundos, ubica ayuda cercana y recibe
-                recomendaciones guiadas por inteligencia artificial.
-              </p>
+            <div className="sz-container sz-hero__innerGrid">
+              <div className="sz-hero__copy">
+                <h1 className="sz-h1">
+                  <span>Alerta</span> comunitaria con IA
+                </h1>
+                <p className="sz-hero__p">
+                  SafeZone convierte a tu barrio en una red de apoyo: reporta emergencias en segundos, ubica ayuda cercana y recibe
+                  recomendaciones guiadas por inteligencia artificial.
+                </p>
 
-              <div className="sz-hero__cta">
-                <a className="sz-btn sz-btn--primary" href="#descarga" data-magnetic="true">
-                  Descargar Ahora
-                </a>
-                <button
-                  className="sz-btn sz-btn--ghost"
-                  onClick={() => scrollToId("funciones")}
-                  data-magnetic="true"
-                >
-                  Ver Funciones
-                </button>
+                <div className="sz-hero__cta">
+                  <a className="sz-btn sz-btn--primary" href="#descarga" data-magnetic="true">
+                    Descargar Ahora
+                  </a>
+                  <button className="sz-btn sz-btn--ghost" onClick={() => scrollToId("funciones")} data-magnetic="true">
+                    Ver Funciones
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -679,9 +675,7 @@ export default function HomeGenieNova() {
         <div className="sz-container">
           <div className="sz-sectionHead" data-sz="reveal">
             <h2 className="sz-h2">Funciones Principales</h2>
-            <p className="sz-muted">
-              Todo lo que necesitas para estar seguro y conectado con tu comunidad.
-            </p>
+            <p className="sz-muted">Todo lo que necesitas para estar seguro y conectado con tu comunidad.</p>
           </div>
 
           <div className="sz-toolsGrid">
@@ -724,7 +718,7 @@ export default function HomeGenieNova() {
 
             <div className="sz-shot" data-sz="reveal">
               <div className="sz-shot__frame" ref={tabsImageRef}>
-                <img src={activeTabObj.image} alt={`${activeTabObj.title} preview`} />
+                <img src={activeTabObj.image} alt={`${activeTabObj.title} preview`} loading="lazy" />
               </div>
             </div>
           </div>
@@ -736,9 +730,7 @@ export default function HomeGenieNova() {
         <div className="sz-container">
           <div className="sz-sectionHead" data-sz="reveal">
             <h2 className="sz-h2">Cómo Funciona</h2>
-            <p className="sz-muted">
-              Scroll para avanzar paso a paso, como en el diseño de referencia.
-            </p>
+            <p className="sz-muted">Scroll para avanzar paso a paso, como en el diseño de referencia.</p>
           </div>
         </div>
 
@@ -789,7 +781,6 @@ export default function HomeGenieNova() {
                     ))}
                   </div>
 
-                  {/* Meta deshabilitado por CSS (no lo mostramos visualmente) */}
                   <div className="sz-howRefMeta" aria-hidden />
                 </div>
               </div>
@@ -820,7 +811,7 @@ export default function HomeGenieNova() {
         </div>
       </section>
 
-      {/* DESCARGA — estilo referencia (grid + 2 phones corners) */}
+      {/* DESCARGA */}
       <section className="sz-cta" id="descarga">
         <div className="sz-container">
           <div className="sz-cta__inner" data-sz="reveal">
@@ -836,18 +827,11 @@ export default function HomeGenieNova() {
             <div className="sz-cta__content">
               <h2 className="sz-cta__title">Descarga SafeZone</h2>
               <p className="sz-cta__subtitle">
-                Tu seguridad y la de tu barrio en la palma de tu mano. Descarga la APK oficial
-                para Android y mantente conectado con tu red de confianza.
+                Tu seguridad y la de tu barrio en la palma de tu mano. Descarga la APK oficial para Android y mantente conectado con tu red de confianza.
               </p>
 
               <div className="sz-cta__buttons">
-                <a
-                  className="sz-btn sz-btn--primary"
-                  href="/apk"
-                  target="_blank"
-                  rel="noreferrer"
-                  data-magnetic="true"
-                >
+                <a className="sz-btn sz-btn--primary" href="/apk" target="_blank" rel="noreferrer" data-magnetic="true">
                   <Download size={20} />
                   Descargar APK
                 </a>
@@ -857,7 +841,7 @@ export default function HomeGenieNova() {
         </div>
       </section>
 
-      {/* FAQ — estilo referencia */}
+      {/* FAQ */}
       <section className="sz-faq" id="faq">
         <div className="sz-container sz-faqGrid" data-sz="reveal">
           <div className="sz-faqLeft">
@@ -867,8 +851,7 @@ export default function HomeGenieNova() {
               Respondidas
             </div>
             <p className="sz-faqLead">
-              Dudas comunes sobre SafeZone: descarga, uso, comunidades y alertas.
-              Si necesitas algo más específico, escríbenos por redes.
+              Dudas comunes sobre SafeZone: descarga, uso, comunidades y alertas. Si necesitas algo más específico, escríbenos por redes.
             </p>
           </div>
 
@@ -898,11 +881,11 @@ export default function HomeGenieNova() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* FOOTER ✅ (arreglado, sin CSS pegado dentro) */}
       <footer className="sz-footer">
         <div className="sz-container sz-footer__inner">
           <div className="sz-footer__left">
-            <div className="sz-logo" onClick={() => scrollToId("top")} role="button" tabIndex={0}>
+            <div className="sz-logo" onClick={() => scrollToId("top")} onKeyDown={onLogoKeyDown} role="button" tabIndex={0}>
               <img src={LOGO} alt="SafeZone" />
               <span className="sz-logo__text">SafeZone</span>
             </div>
@@ -919,7 +902,7 @@ export default function HomeGenieNova() {
             </div>
           </div>
 
-          <div className="sz-footer__links">
+          <div className="sz-footer__links" aria-label="Links de pie de página">
             <button onClick={() => scrollToId("funciones")}>Funciones</button>
             <button onClick={() => scrollToId("como")}>Cómo Funciona</button>
             <button onClick={() => scrollToId("comunidad")}>Comunidad</button>

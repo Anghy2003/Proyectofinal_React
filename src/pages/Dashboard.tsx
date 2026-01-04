@@ -9,11 +9,16 @@ import iconRepo from "../assets/icon_repo.svg";
 import iconIa from "../assets/icon_ia.svg";
 import iconAcceso from "../assets/icon_acceso.svg";
 
-import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { motion, AnimatePresence } from "framer-motion";
 
 import IncidentHeatmap from "../components/incidentemap";
-import { dashboardService, type DashboardKpis } from "../services/dashboardService";
+import {
+  dashboardService,
+  type DashboardKpis,
+} from "../services/dashboardService";
 import type { IncidenteResponseDTO } from "../services/incidentesService";
 
 type SessionUser = {
@@ -24,6 +29,12 @@ type SessionUser = {
 };
 
 type RangeKey = "hoy" | "7d" | "30d";
+
+type NavItem = {
+  label: string;
+  path: string;
+  keywords: string[];
+};
 
 /* ===============================
    Helpers fechas (LOCAL)
@@ -86,7 +97,7 @@ function getSessionUser(): SessionUser {
         email: obj?.email,
       };
     } catch {
-      // ignore parse error
+      // ignore
     }
   }
   return { nombre: "Equipo SafeZone", rol: "Admin" };
@@ -107,25 +118,62 @@ function priorityBadge(i: IncidenteResponseDTO) {
     .toLowerCase()
     .trim();
 
-  if (p.includes("crit")) return { label: "Crítica", cls: "pill-badge badge-crit" };
-  if (p.includes("alta") || p.includes("high")) return { label: "Alta", cls: "pill-badge badge-high" };
-  if (p.includes("media") || p.includes("mid")) return { label: "Media", cls: "pill-badge badge-med" };
+  if (p.includes("crit"))
+    return { label: "Crítica", cls: "pill-badge badge-crit" };
+  if (p.includes("alta") || p.includes("high"))
+    return { label: "Alta", cls: "pill-badge badge-high" };
+  if (p.includes("media") || p.includes("mid"))
+    return { label: "Media", cls: "pill-badge badge-med" };
   return { label: "Baja", cls: "pill-badge badge-low" };
 }
 
+/* ===============================
+   ✅ Animaciones (pro, suaves)
+================================ */
+const pageIn = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.35, ease: "easeOut" } },
+};
+
+const staggerWrap = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.06, delayChildren: 0.05 },
+  },
+};
+
+const cardIn = {
+  hidden: { opacity: 0, y: 12, filter: "blur(4px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.38, ease: [0.2, 0.8, 0.2, 1] },
+  },
+};
+
+const hoverLift = {
+  y: -2,
+  transition: { duration: 0.18, ease: "easeOut" },
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [incidentes, setIncidentes] = useState<IncidenteResponseDTO[]>([]);
   const [kpis, setKpis] = useState<DashboardKpis | null>(null);
-
   const [me, setMe] = useState<SessionUser>(() => getSessionUser());
 
   // ✅ filtro del mapa
   const [range, setRange] = useState<RangeKey>("hoy");
+
+  // ✅ sidebar responsive (drawer)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => navigate("/login");
 
@@ -153,8 +201,10 @@ export default function Dashboard() {
 
   const heroText = useMemo(() => {
     const pct = (kpis as any)?.mejoraResolucionPct ?? 0;
-    if (!pct) return "Las alertas se están resolviendo con un mejor rendimiento que la semana pasada.";
-    if (pct > 0) return `Las alertas se están resolviendo un ${pct}% más rápido que la semana pasada.`;
+    if (!pct)
+      return "Las alertas se están resolviendo con un mejor rendimiento que la semana pasada.";
+    if (pct > 0)
+      return `Las alertas se están resolviendo un ${pct}% más rápido que la semana pasada.`;
     return `Las alertas se están resolviendo un ${Math.abs(pct)}% más lento que la semana pasada.`;
   }, [kpis]);
 
@@ -176,7 +226,9 @@ export default function Dashboard() {
     }
 
     if (range === "7d") {
-      const start = startOfDayLocal(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)).getTime();
+      const start = startOfDayLocal(
+        new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+      ).getTime();
       const end = endOfDayLocal(now).getTime();
       return incidentes.filter((i: any) => {
         const d = parseDateSafe(i.fechaCreacion);
@@ -187,7 +239,9 @@ export default function Dashboard() {
     }
 
     // 30d
-    const start = startOfDayLocal(new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)).getTime();
+    const start = startOfDayLocal(
+      new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)
+    ).getTime();
     const end = endOfDayLocal(now).getTime();
     return incidentes.filter((i: any) => {
       const d = parseDateSafe(i.fechaCreacion);
@@ -197,74 +251,144 @@ export default function Dashboard() {
     });
   }, [incidentes, range]);
 
-  /* ✅ LOGS para verificar datos/fechas/coords (temporal, puedes borrarlo después) */
-  useEffect(() => {
-    const sample = incidentesFiltrados.slice(0, 3);
-    const withCoords = incidentesFiltrados.filter((i: any) =>
-      i.lat ||
-      i.latitud ||
-      i.latitude ||
-      i.lng ||
-      i.longitud ||
-      i.longitude ||
-      i?.ubicacion?.lat ||
-      i?.ubicacion?.lng ||
-      i?.ubicacion?.latitude ||
-      i?.ubicacion?.longitude ||
-      i?.ubicacion?.coordinates ||
-      i?.location?.coordinates
-    );
+  /* ===============================
+     ✅ BUSCADOR TOPBAR
+  ================================ */
+  const NAV_ITEMS: NavItem[] = useMemo(
+    () => [
+      { label: "Panel", path: "/dashboard", keywords: ["panel", "dashboard", "inicio", "home"] },
+      { label: "Comunidades", path: "/comunidades", keywords: ["comunidades", "comunidad", "community", "comu"] },
+      { label: "Usuarios", path: "/usuarios", keywords: ["usuarios", "usuario", "user", "users"] },
+      { label: "IA Análisis", path: "/analisis", keywords: ["ia", "análisis", "analisis", "ai", "inteligencia"] },
+      { label: "Reportes", path: "/reportes", keywords: ["reportes", "reporte", "incidentes", "alerts", "alertas"] },
+      { label: "Ajustes", path: "/codigo-acceso", keywords: ["ajustes", "config", "configuración", "configuracion", "codigo", "acceso"] },
+    ],
+    []
+  );
 
-    console.log("=== DASHBOARD HEATMAP DEBUG ===");
-    console.log("RANGO:", range);
-    console.log("TOTAL INCIDENTES (API):", incidentes.length);
-    console.log("FILTRADOS:", incidentesFiltrados.length);
-    console.log("FILTRADOS CON COORDS (aprox):", withCoords.length);
-    console.log("SAMPLE FILTRADOS:", sample);
-  }, [range, incidentes.length, incidentesFiltrados, incidentes]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
+  const searchWrapRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  const normalizedQuery = useMemo(() => searchText.trim().toLowerCase(), [searchText]);
+
+  const results = useMemo(() => {
+    const q = normalizedQuery;
+    if (!q) return [];
+    const startsWith = (text: string) => text.toLowerCase().trim().startsWith(q);
+    return NAV_ITEMS.filter((item) => startsWith(item.label) || item.keywords.some(startsWith)).slice(0, 6);
+  }, [NAV_ITEMS, normalizedQuery]);
+
+  function openSearch() {
+    setSearchOpen(true);
+    setTimeout(() => editorRef.current?.focus(), 0);
+  }
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchText("");
+    setSelectedIdx(0);
+  }
+
+  function goTo(path: string) {
+    if (location.pathname !== path) navigate(path);
+    closeSearch();
+    setSidebarOpen(false);
+  }
+
+  // cerrar al click fuera (buscador)
+  useEffect(() => {
+    if (!searchOpen) return;
+
+    function onDown(e: MouseEvent) {
+      const el = searchWrapRef.current;
+      if (!el) return;
+      if (!el.contains(e.target as Node)) closeSearch();
+    }
+
+    window.addEventListener("mousedown", onDown);
+    return () => window.removeEventListener("mousedown", onDown);
+  }, [searchOpen]);
+
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [normalizedQuery]);
+
+  // ✅ cerrar sidebar con ESC
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSidebarOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sidebarOpen]);
 
   return (
     <>
-      {/* Fondo tipo login */}
       <div className="background" />
 
-      <div className="dashboard">
+      {/* overlay para móvil */}
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? "show" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden="true"
+      />
+
+      <motion.div
+        className={`dashboard ${sidebarOpen ? "sidebar-open" : ""}`}
+        initial="hidden"
+        animate="show"
+      >
         {/* ========== SIDEBAR ========== */}
-        <aside className="sidebar">
+        <aside className="sidebar" aria-label="Menú">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
+
+            {/* cerrar (solo móvil) */}
+            <button
+              type="button"
+              className="sidebar-close"
+              aria-label="Cerrar menú"
+              onClick={() => setSidebarOpen(false)}
+            >
+              ✕
+            </button>
           </div>
 
           <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item active">
+            <Link to="/dashboard" className="sidebar-item active" onClick={() => setSidebarOpen(false)}>
               <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="sidebar-item">
+            <Link to="/comunidades" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
               <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item">
+            <Link to="/usuarios" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
               <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
             <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="sidebar-item">
+            <Link to="/analisis" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
               <img src={iconIa} className="nav-icon" alt="Alertas" />
               <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item">
+            <Link to="/reportes" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
               <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="sidebar-item">
+            <Link to="/codigo-acceso" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
               <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
@@ -285,42 +409,152 @@ export default function Dashboard() {
 
         {/* ========== MAIN ========== */}
         <main className="dashboard-main">
-          {/* Topbar tipo chips + usuario */}
-          <div className="topbar">
-            <div className="topbar-left">
-              <button className="icon-btn" aria-label="Menú">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-              <div className="topbar-title">All</div>
-            </div>
+          {/* TOPBAR */}
+          <motion.div className="topbar"  initial="hidden" animate="show">
+            <button
+              type="button"
+              className="hamburger"
+              aria-label="Abrir menú"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
 
-            <div className="topbar-right">
-              <button className="icon-btn" aria-label="Buscar">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  />
-                  <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
+            <div className="topbar-right" ref={searchWrapRef}>
+              {/* Buscador */}
+              <div className={`top-search ${searchOpen ? "open" : ""}`}>
+                {!searchOpen ? (
+                  <button className="icon-btn" aria-label="Buscar" onClick={openSearch}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path
+                        d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M16.5 16.5 21 21"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  <>
+                    <div
+                      className="search-pill"
+                      role="search"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        editorRef.current?.focus();
+                      }}
+                    >
+                      <span className="search-ico" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path
+                            d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                          />
+                          <path
+                            d="M16.5 16.5 21 21"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
 
-              <button className="icon-btn" aria-label="Notificaciones">
-                <span className="notif-dot">{((kpis as any)?.criticas24h ?? 0) > 0 ? "!" : ""}</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path
-                    d="M15 17H9m9 0 1-2V11a7 7 0 1 0-14 0v4l1 2h12Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                  <path d="M10 20a2 2 0 0 0 4 0" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
+                      <div
+                        ref={editorRef}
+                        className="search-editor"
+                        tabIndex={0}
+                        role="textbox"
+                        aria-label="Buscar"
+                        onKeyDown={async (e) => {
+                          if (e.key === "Escape") {
+                            e.preventDefault();
+                            closeSearch();
+                            return;
+                          }
 
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault();
+                            setSelectedIdx((v) =>
+                              Math.min(v + 1, Math.max(0, results.length - 1))
+                            );
+                            return;
+                          }
+                          if (e.key === "ArrowUp") {
+                            e.preventDefault();
+                            setSelectedIdx((v) => Math.max(v - 1, 0));
+                            return;
+                          }
+
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            if (results.length > 0)
+                              goTo(results[Math.min(selectedIdx, results.length - 1)].path);
+                            return;
+                          }
+
+                          if (e.key === "Backspace") {
+                            e.preventDefault();
+                            setSearchText((prev) => prev.slice(0, -1));
+                            return;
+                          }
+
+                          if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+                            e.preventDefault();
+                            try {
+                              const text = await navigator.clipboard.readText();
+                              if (text) setSearchText((prev) => (prev + text).slice(0, 60));
+                            } catch {}
+                            return;
+                          }
+
+                          if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                            e.preventDefault();
+                            setSearchText((prev) => (prev + e.key).slice(0, 60));
+                          }
+                        }}
+                      >
+                        {searchText.length === 0 && <span className="search-placeholder"></span>}
+                        <span className="search-text">{searchText}</span>
+                        <span className="search-caret" />
+                      </div>
+
+                      <button className="search-close" aria-label="Cerrar" onClick={closeSearch}>
+                        ✕
+                      </button>
+                    </div>
+
+                    {searchText.trim() && (
+                      <div className="search-dropdown" role="listbox">
+                        {results.length > 0 ? (
+                          results.map((r, idx) => (
+                            <button
+                              key={r.path}
+                              type="button"
+                              className={`search-item ${idx === selectedIdx ? "active" : ""}`}
+                              onMouseEnter={() => setSelectedIdx(idx)}
+                              onClick={() => goTo(r.path)}
+                            >
+                              <span className="search-item-label">{r.label}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="search-empty">No se encontraron coincidencias.</div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Usuario */}
               <div className="me">
                 {me?.fotoUrl ? (
                   <img className="me-avatar" src={me.fotoUrl} alt="Usuario" />
@@ -333,7 +567,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {errorMsg && (
             <div className="top-error">
@@ -346,50 +580,70 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* GRID PRINCIPAL 2 COLUMNAS */}
-          <div className="dash-layout">
+          {/* GRID PRINCIPAL (stagger) */}
+          <motion.div
+            className="dash-layout"
+            variants={staggerWrap}
+            initial="hidden"
+            animate="show"
+          >
             {/* HERO */}
-            <article className="card hero-card">
+            <motion.article
+              className="card hero-card"
+
+            >
               <div className="hero-content">
                 <h2>
                   Buen trabajo, <span>Equipo SafeZone</span>
                 </h2>
                 <p>{heroText}</p>
-
                 <button className="btn-primary" onClick={() => navigate("/reportes")}>
                   Ver incidentes en vivo
                 </button>
               </div>
-            </article>
+            </motion.article>
 
             {/* ALERTAS CRÍTICAS */}
-            <article className="card crit-card">
+            <motion.article
+              className="card crit-card"
+
+            >
               <div className="crit-head">IA de priorización</div>
               <div className="crit-title">Alertas críticas</div>
-              <div className="crit-num">{isLoading ? "…" : ((kpis as any)?.criticas24h ?? 0)}</div>
+              <div className="crit-num">{isLoading ? "…" : (kpis as any)?.criticas24h ?? 0}</div>
               <div className="crit-sub">En las últimas 24 horas</div>
-            </article>
+            </motion.article>
 
             {/* KPIs */}
             <section className="kpi-row">
-              <article className="card kpi-card">
+              <motion.article
+                className="card kpi-card"
+
+              >
                 <div className="kpi-title">Alertas totales</div>
                 <div className="kpi-value">
                   {isLoading
                     ? "…"
-                    : (((kpis as any)?.alertasTotales ?? kpis?.reportesHoy ?? 0) as number).toLocaleString()}
+                    : (
+                        ((kpis as any)?.alertasTotales ?? kpis?.reportesHoy ?? 0) as number
+                      ).toLocaleString()}
                 </div>
                 <div className="kpi-mini">
                   <span className="kpi-dot kpi-up" />{" "}
                   <span>{isLoading ? "—" : `${kpis?.usuariosActivos ?? 0} usuarios activos`}</span>
                 </div>
                 <div className="kpi-spark" />
-              </article>
+              </motion.article>
 
-              <article className="card kpi-card">
+              <motion.article
+                className="card kpi-card"
+
+              >
                 <div className="kpi-title">Alertas resueltas</div>
                 <div className="kpi-value">
-                  {isLoading ? "…" : (((kpis as any)?.alertasResueltas ?? 0) as number).toLocaleString()}
+                  {isLoading
+                    ? "…"
+                    : (((kpis as any)?.alertasResueltas ?? 0) as number).toLocaleString()}
                 </div>
                 <div className="kpi-mini">
                   <span className="kpi-dot kpi-ok" />{" "}
@@ -398,30 +652,39 @@ export default function Dashboard() {
                       ? "—"
                       : `${Math.round(
                           ((((kpis as any)?.alertasResueltas ?? 0) as number) /
-                            Math.max(1, (((kpis as any)?.alertasTotales ?? 1) as number))) *
+                            Math.max(1, ((kpis as any)?.alertasTotales ?? 1) as number)) *
                             100
                         )}% resueltas`}
                   </span>
                 </div>
                 <div className="kpi-spark" />
-              </article>
+              </motion.article>
 
-              <article className="card kpi-card">
+              <motion.article
+                className="card kpi-card"
+
+              >
                 <div className="kpi-title">Alertas falsas (IA)</div>
                 <div className="kpi-value">
                   {isLoading
                     ? "…"
-                    : (((kpis as any)?.alertasFalsasIA ?? kpis?.falsosIA ?? 0) as number).toLocaleString()}
+                    : (
+                        ((kpis as any)?.alertasFalsasIA ?? kpis?.falsosIA ?? 0) as number
+                      ).toLocaleString()}
                 </div>
                 <div className="kpi-mini">
-                  <span className="kpi-dot kpi-warn" /> <span>{isLoading ? "—" : "Revisión recomendada"}</span>
+                  <span className="kpi-dot kpi-warn" />{" "}
+                  <span>{isLoading ? "—" : "Revisión recomendada"}</span>
                 </div>
                 <div className="kpi-spark" />
-              </article>
+              </motion.article>
             </section>
 
             {/* MAPA DE CALOR */}
-            <article className="card heat-card">
+            <motion.article
+              className="card heat-card"
+
+            >
               <div className="card-head">
                 <div>
                   <div className="card-title">Mapa de calor de incidentes</div>
@@ -436,7 +699,6 @@ export default function Dashboard() {
                   >
                     Hoy
                   </button>
-
                   <button
                     type="button"
                     className={`tab ${range === "7d" ? "active" : ""}`}
@@ -444,7 +706,6 @@ export default function Dashboard() {
                   >
                     Últimos 7 días
                   </button>
-
                   <button
                     type="button"
                     className={`tab ${range === "30d" ? "active" : ""}`}
@@ -458,10 +719,13 @@ export default function Dashboard() {
               <div className="heat-wrap">
                 <IncidentHeatmap incidentes={incidentesFiltrados} />
               </div>
-            </article>
+            </motion.article>
 
             {/* ÚLTIMAS ALERTAS */}
-            <article className="card last-card">
+            <motion.article
+              className="card last-card"
+
+            >
               <div className="card-head row-between">
                 <div className="card-title">Últimas alertas</div>
                 <button className="mini-link" onClick={() => navigate("/reportes")}>
@@ -470,7 +734,9 @@ export default function Dashboard() {
               </div>
 
               <div className="alerts-list">
-                {!isLoading && alertas.length === 0 && <div className="empty">No hay alertas recientes</div>}
+                {!isLoading && alertas.length === 0 && (
+                  <div className="empty">No hay alertas recientes</div>
+                )}
 
                 {(alertas ?? []).slice(0, 6).map((i) => {
                   const badge = priorityBadge(i);
@@ -479,7 +745,14 @@ export default function Dashboard() {
                   const fc = (i as any).fechaCreacion;
 
                   return (
-                    <div className="alert-item" key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}>
+                    <motion.div
+                      className="alert-item"
+                      key={String((i as any).id ?? `${fc}-${tipo}-${comu}`)}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      whileHover={{ y: -1 }}
+                    >
                       <div className="alert-main">
                         <div className="alert-title">{tipo}</div>
                         <div className="alert-sub">
@@ -487,14 +760,14 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <div className={badge.cls}>{badge.label}</div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
-            </article>
-          </div>
+            </motion.article>
+          </motion.div>
         </main>
-      </div>
+      </motion.div>
     </>
   );
 }

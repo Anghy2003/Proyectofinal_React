@@ -21,7 +21,7 @@ body {
   background-image: url("../assets/cupulas2.png") !important;
   background-size: cover;
   background-position: center;
-  filter: brightness(0.55);
+  filter: brightness(1) !important;
   z-index: -1;
 }
 
@@ -36,7 +36,25 @@ body {
 }
 
 /* ===========================
-   SIDEBAR (diseño original)
+   OVERLAY (MÓVIL)
+=========================== */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease;
+  z-index: 9;
+}
+.sidebar-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===========================
+   SIDEBAR (DESKTOP: fija)
 =========================== */
 .sidebar {
   position: fixed;
@@ -46,7 +64,6 @@ body {
 
   width: 240px;
   padding: 20px 18px;
-  box-sizing: border-box;
 
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -77,6 +94,19 @@ body {
   font-weight: 600;
 }
 
+/* botón cerrar (solo móvil) */
+.sidebar-close {
+  margin-left: auto;
+  display: none !important;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
+
 .sidebar-menu {
   display: flex;
   flex-direction: column;
@@ -91,7 +121,7 @@ body {
   color: #ffffff;
   text-decoration: none;
   border-radius: 50px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .sidebar-item span {
@@ -100,6 +130,7 @@ body {
 
 .sidebar-item:hover {
   background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .sidebar-item.active {
@@ -134,366 +165,11 @@ body {
 
 .sidebar-connected {
   border-radius: 14px;
-
-  padding: 10px 12px;
-
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
   padding: 16px 18px;
-  box-sizing: border-box;
-}
-
-/* ===== KPIs ===== */
-
-.top-cards {
-  display: grid;
-  grid-template-columns: 1.1fr 1.1fr 1.3fr 1.1fr;
-  gap: 14px;
-}
-
-.kpi-value {
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-/* ===== SLA ===== */
-
-.sla-gauge {
-  position: relative;
-  width: 140px;
-  height: 80px;
-}
-
-.sla-gauge-arc {
-  position: absolute;
-  inset: 0;
-  border-radius: 140px 140px 0 0;
-  overflow: hidden;
-}
-
-.sla-gauge-arc::before {
-  content: "";
-  position: absolute;
-  width: 140px;
-  height: 140px;
-  left: 0;
-  bottom: -60px;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 180deg,
-    #3177ff 0deg,
-    #3177ff 150deg,
-    #263a69 150deg,
-    #263a69 360deg
-  );
-}
-
-.sla-gauge-indicator {
-  position: absolute;
-  width: 2px;
-  height: 18px;
-  background: #ffffff;
-  left: 50%;
-  bottom: -2px;
-  transform-origin: bottom center;
-}
-
-.sla-gauge-center {
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  transform: translateX(-50%);
-  width: 70px;
-  height: 34px;
-  border-radius: 999px;
-  background: rgba(5, 16, 46, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sla-gauge-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-/* ===== Filas media e inferior ===== */
-
-.middle-cards,
-.bottom-cards {
-  display: grid;
-  grid-template-columns: 1.3fr 1.7fr;
-  gap: 18px;
-  align-items: start; /* ✅ evita estirar y amontinar */
-}
-
-/* ===== Tablas ===== */
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8rem;
-}
-
-.table th,
-.table td {
-  padding: 8px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.tag {
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(49, 119, 255, 0.18);
-  border: 1px solid rgba(49, 119, 255, 0.5);
-  font-size: 0.72rem;
-}
-
-/* ===== Comunidades (scroll interno para evitar que empuje todo) ===== */
-
-.card-communities {
-  max-height: 360px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-communities .table {
-  width: 100%;
-}
-
-/* Scroll solo dentro del tbody */
-.card-communities .table tbody {
-  display: block;
-  overflow-y: auto;
-  max-height: 220px;
-}
-
-.card-communities .table thead,
-.card-communities .table tbody tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
-
-/* Scrollbar interno de comunidades */
-.card-communities .table tbody::-webkit-scrollbar {
-  width: 8px;
-}
-.card-communities .table tbody::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 999px;
-}
-.card-communities .table tbody::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-}
-
-/* ===== MAPA DE CALOR ===== */
-
-.card-heatmap {
-  border-radius: 16px;
-  padding: 20px;
-  overflow: hidden;
-}
-
-.heatmap-header {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.heatmap-map {
-  position: relative;
-  margin-top: 10px;
-
-  /* ✅ clave: menos alto = menos “amontonado” */
-  height: 260px;
-
-  border-radius: 14px;
-  overflow: hidden;
-
-  background: linear-gradient(
-      0deg,
-      rgba(0, 10, 30, 0.65),
-      rgba(0, 10, 30, 0.65)
-    ),
-    radial-gradient(circle at 30% 30%, rgba(49, 119, 255, 0.15), transparent 50%),
-    radial-gradient(circle at 70% 50%, rgba(49, 119, 255, 0.12), transparent 55%);
-
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-/* Decoración tipo calles */
-.heatmap-map::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(
-      transparent 96%,
-      rgba(120, 170, 255, 0.12) 96%
-    ),
-    linear-gradient(90deg, transparent 96%, rgba(120, 170, 255, 0.1) 96%);
-  background-size: 140px 90px;
-  opacity: 0.35;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ======== FIX Leaflet ======== */
-
-.heatmap-map .leaflet-container {
-  width: 100% !important;
-  height: 100% !important;
-  border-radius: 14px;
-  z-index: 2;
-  background: transparent;
-}
-
-.heatmap-map .leaflet-pane,
-.heatmap-map .leaflet-map-pane,
-.heatmap-map .leaflet-tile-pane,
-.heatmap-map .leaflet-overlay-pane,
-.heatmap-map .leaflet-shadow-pane,
-.heatmap-map .leaflet-marker-pane,
-.heatmap-map .leaflet-tooltip-pane,
-.heatmap-map .leaflet-popup-pane {
-  z-index: 2;
-}
-
-.heatmap-map .leaflet-control {
-  z-index: 3;
-}
-
-/* ===== Filtros del mapa ===== */
-
-.heatmap-filters {
-  position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  z-index: 4;
-}
-
-/* ===== ESTADOS ===== */
-
-.status-ok {
-  color: #4ade80;
-}
-.status-pending {
-  color: #facc15;
-}
-.status-progress {
-  color: #38bdf8;
-}
-
-/* ===== Responsive: evita amontonado en pantallas medianas ===== */
-
-@media (max-width: 1200px) {
-  .top-cards {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .middle-cards,
-  .bottom-cards {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* En pantallas grandes, vuelve el mapa más alto */
-@media (min-width: 1400px) {
-  .heatmap-map {
-    height: 320px;
-  }
-}
-/* ===== Fondo general (mismo que login) ===== */
-body {
-  margin: 0;
-  font-family: "Inter", sans-serif;
-}
-
-
-/* ===== Layout principal ===== */
-
-.dashboard {
-  position: relative;
-  min-height: 100vh;
-  display: flex;
-  color: #ffffff;
-}
-
-/* ===== Sidebar ===== */
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-
-  width: 240px;
-  padding: 20px 18px;
-  box-sizing: border-box;
-
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-radius: 0 20px 20px 0;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  z-index: 10;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 26px;
-}
-
-.sidebar-logo {
-  width: 48px;
-}
-
-.sidebar-title {
-  font-weight: 600;
-}
-
-.sidebar-menu {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  color: #ffffff;
-  text-decoration: none;
-  border-radius: 50px;
-  transition: all 0.3s ease;
-}
-
-.sidebar-item span {
-  color: #ffffff !important;
-}
-
-.sidebar-item:hover {
-
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .sidebar-connected-title {
@@ -511,7 +187,7 @@ body {
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
-  padding: 6px 14px;
+  padding: 8px 14px;
   cursor: pointer;
   font-size: 0.85rem;
 }
@@ -527,25 +203,21 @@ body {
 }
 
 /* ===========================
-   CONTENIDO PRINCIPAL
+   MAIN
 =========================== */
 .dashboard-main {
   flex: 1;
   margin-left: 260px;
   padding: 20px 26px;
-  box-sizing: border-box;
-
   height: 100vh;
-
-  /* scroll solo en panel derecho */
   overflow-y: auto;
   overflow-x: hidden;
-
   display: flex;
   flex-direction: column;
+  
 }
 
-/* Scrollbar del panel derecho */
+/* Scrollbar */
 .dashboard-main::-webkit-scrollbar {
   width: 10px;
 }
@@ -565,14 +237,14 @@ body {
    BASE DE TARJETAS
 =========================== */
 .card {
-  background: rgba(255, 255, 255, 0);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.5); /* ✅ más blanco */
+  border: 1px solid rgba(255, 255, 255, 0.7); /* ✅ borde más visible */
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2); /* ✅ menos pesado */
+  border-radius: 14px;
   padding: 16px 18px;
-  box-sizing: border-box;
+  color: #000000 !important;
 }
 
 /* ===========================
@@ -583,24 +255,42 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+
   margin-bottom: 18px;
-}
 
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+  position: sticky;
+  top: 0;
+  z-index: 9999;
 
-.topbar-title {
-  font-weight: 900;
-  color: #ffffff;
+  padding-top: 4px;
+  
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* hamburguesa (solo tablet/móvil) */
+.hamburger {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  padding: 0;
+  place-items: center;
+}
+.hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  margin: 3px auto;
 }
 
 .icon-btn {
@@ -613,37 +303,21 @@ body {
   display: grid;
   place-items: center;
   color: #ffffff;
-  position: relative;
 }
 
 .icon-btn:hover {
   background: rgba(255, 255, 255, 0.28);
 }
 
-.notif-dot {
-  position: absolute;
-  top: 6px;
-  right: 7px;
-  width: 14px;
-  height: 14px;
-  border-radius: 999px;
-  background: #f97373;
-  color: white;
-  font-size: 10px;
-  display: grid;
-  place-items: center;
-  line-height: 1;
-}
-
 .me {
   display: flex;
   align-items: center;
   gap: 10px;
-
   padding: 7px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.35);
+  min-width: 0;
 }
 
 .me-avatar {
@@ -666,11 +340,16 @@ body {
   display: flex;
   flex-direction: column;
   line-height: 1.1;
+  min-width: 0;
 }
 
 .me-name {
   font-weight: 900;
   font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
 }
 
 .me-role {
@@ -679,7 +358,7 @@ body {
 }
 
 /* ===========================
-   BARRA DE ERROR
+   ERROR
 =========================== */
 .top-error {
   margin: 0 0 16px;
@@ -696,7 +375,6 @@ body {
   align-items: center;
 }
 
-/* pills reutilizadas */
 .pill {
   border-radius: 999px;
   padding: 8px 12px;
@@ -712,60 +390,57 @@ body {
 }
 
 /* ===========================
-   GRID PRINCIPAL 2 COLUMNAS
+   GRID PRINCIPAL (DESKTOP)
 =========================== */
 .dash-layout {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1.35fr);
   grid-template-areas:
     "hero crit"
     "kpis crit"
     "heat last";
   gap: 16px;
+  align-items: start;
 }
 
 /* Áreas */
 .hero-card {
   grid-area: hero;
 }
-
 .crit-card {
   grid-area: crit;
 }
-
 .kpi-row {
   grid-area: kpis;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-
 .heat-card {
   grid-area: heat;
 }
-
 .last-card {
   grid-area: last;
 }
 
-/* Todas llenan la celda */
 .hero-card,
 .crit-card,
-.kpi-card
- {
+.kpi-card {
   height: 100%;
+  
 }
 
+/* ✅ sin alturas fijas: más responsivo */
 .heat-card,
 .last-card {
-height: 590px;
+  min-height: 520px;
 }
 
 /* ===========================
    HERO
 =========================== */
 .hero-card {
-  padding: 18px 18px;
+  padding: 18px;
   min-height: 132px;
   display: flex;
   align-items: center;
@@ -842,6 +517,9 @@ height: 590px;
   padding: 16px 16px 14px;
   position: relative;
   overflow: hidden;
+  background: rgba(255, 255, 255, 0.015) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.18) !important;
 }
 
 .kpi-title {
@@ -873,9 +551,15 @@ height: 590px;
   display: inline-block;
 }
 
-.kpi-up { background: rgba(249, 81, 80, 0.95); }
-.kpi-ok { background: rgba(34, 197, 94, 0.95); }
-.kpi-warn { background: rgba(245, 158, 11, 0.95); }
+.kpi-up {
+  background: rgba(249, 81, 80, 0.95);
+}
+.kpi-ok {
+  background: rgba(34, 197, 94, 0.95);
+}
+.kpi-warn {
+  background: rgba(245, 158, 11, 0.95);
+}
 
 .kpi-spark {
   position: absolute;
@@ -884,15 +568,18 @@ height: 590px;
   width: 110px;
   height: 40px;
   opacity: 0.35;
-  background:
-    radial-gradient(circle at 15% 60%, rgba(249, 81, 80, 0.6), transparent 58%),
+  background: radial-gradient(
+      circle at 15% 60%,
+      rgba(249, 81, 80, 0.6),
+      transparent 58%
+    ),
     radial-gradient(circle at 55% 20%, rgba(249, 81, 80, 0.4), transparent 58%),
     radial-gradient(circle at 85% 65%, rgba(249, 81, 80, 0.3), transparent 58%);
   filter: blur(1px);
 }
 
 /* ===========================
-   MAPA DE CALOR
+   MAPA
 =========================== */
 .card-head {
   padding: 16px 16px 12px;
@@ -900,6 +587,7 @@ height: 590px;
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .row-between {
@@ -920,6 +608,7 @@ height: 590px;
 .tabs {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .tab {
@@ -935,7 +624,6 @@ height: 590px;
 .tab.active {
   border-color: rgba(255, 255, 255, 0.9);
   background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
 }
 
 .heat-card {
@@ -943,7 +631,7 @@ height: 590px;
 }
 
 .heat-wrap {
-  height: 320px;
+  height: clamp(240px, 38vh, 360px); /* ✅ se adapta */
   margin: 0 16px 16px;
   border-radius: 16px;
   overflow: hidden;
@@ -951,7 +639,6 @@ height: 590px;
   background: rgba(0, 0, 0, 0.35);
 }
 
-/* Leaflet */
 .heat-wrap .leaflet-container {
   width: 100% !important;
   height: 100% !important;
@@ -991,7 +678,6 @@ height: 590px;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-
   padding: 12px 12px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.14);
@@ -1051,26 +737,162 @@ height: 590px;
 }
 
 /* ===========================
-   RESPONSIVE
+   BUSCADOR TOPBAR
 =========================== */
+.top-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  z-index: 10000;
+}
+
+/* pill del buscador */
+.search-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+
+  /* ✅ más responsivo */
+  width: clamp(220px, 34vw, 360px);
+
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.search-ico {
+  color: #fff;
+  opacity: 0.9;
+  flex: 0 0 auto;
+}
+
+.search-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 0 !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0.9;
+}
+
+.search-close:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+
+  width: clamp(260px, 38vw, 380px);
+
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(10, 10, 10, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  z-index: 10001;
+}
+
+.search-item {
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  color: #fff;
+}
+
+.search-item:hover,
+.search-item.active {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.search-item-label {
+  font-weight: 900;
+}
+
+.search-empty {
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+}
+
+/* editor buscador */
+.search-editor {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: text;
+  width: 100%;
+}
+
+.search-placeholder {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.search-text {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-caret {
+  width: 2px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 2px;
+  animation: caretBlink 1s steps(1) infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes caretBlink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ===========================
+   RESPONSIVE BREAKPOINTS
+=========================== */
+
+/* ✅ Laptop/Tablet grande: KPIs auto-fit para no apretar */
 @media (max-width: 1200px) {
-  .dashboard {
-    flex-direction: column;
+  .kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .sidebar {
-    position: static;
-    width: 100%;
-    border-radius: 0 0 20px 20px;
-    flex-direction: row;
-    overflow-x: auto;
-  }
-
-  .dashboard-main {
-    margin-left: 0;
-    height: auto;
-  }
-
+/* ✅ Tablet: layout cambia para que no se “rompa” */
+@media (max-width: 992px) {
   .dash-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -1082,16 +904,200 @@ height: 590px;
   }
 
   .kpi-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   }
 
-  .heat-wrap {
-    height: 280px;
+  .heat-card,
+  .last-card {
+    min-height: auto;
   }
 }
 
-@media (min-width: 1400px) {
-  .heat-wrap {
-    height: 340px;
+/* ✅ Móvil/Tablet: sidebar se vuelve drawer */
+@media (max-width: 900px) {
+  .hamburger {
+    display: grid;
   }
+
+  .sidebar-close {
+    display: grid;
+    place-items: center;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+
+    width: min(86vw, 320px);
+    border-radius: 0 18px 18px 0;
+
+    transform: translateX(-110%);
+    transition: transform 240ms ease;
+  }
+
+  .dashboard.sidebar-open .sidebar {
+    transform: translateX(0);
+  }
+
+  .dashboard-main {
+    margin-left: 0;
+    padding: 16px 14px;
+  }
+
+  .me-name {
+    max-width: 140px;
+  }
+}
+
+/* ✅ Móvil pequeño: topbar compacta */
+@media (max-width: 520px) {
+  .me-meta {
+    display: none;
+  } /* deja solo avatar */
+  .icon-btn {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+/* =========================================
+   TOPBAR: TODO A LA DERECHA (solo CSS)
+   - Mantiene: botón lupa + buscador + cuadro usuario a la derecha
+   - En móvil sigue ordenado (no se rompe)
+========================================= */
+
+/* topbar igual que antes: contenido alineado a la derecha */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* ✅ todo a la derecha */
+  gap: 14px;
+  margin-bottom: 18px;
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+}
+
+/* contenedor de la derecha: también a la derecha */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end; /* ✅ */
+  gap: 10px;
+  width: 100%;
+}
+
+/* el buscador y el usuario juntos al final */
+.top-search {
+  display: flex;
+  align-items: center;
+}
+
+/* el pill del buscador responsivo SIN romperse */
+.search-pill {
+  width: 340px; /* desktop como antes */
+}
+
+/* en pantallas medianas se reduce el pill */
+@media (max-width: 900px) {
+  .search-pill {
+    width: 280px;
+  }
+
+  /* en móvil, el texto del usuario puede recortarse para no empujar */
+  .me-meta {
+    max-width: 160px;
+  }
+
+  .me-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* en pantallas pequeñas: pill más corto */
+@media (max-width: 520px) {
+  .search-pill {
+    width: 240px;
+  }
+
+  /* opcional: si se ve apretado, ocultamos texto del usuario y queda solo avatar */
+  .me-meta {
+    display: none;
+  }
+}
+
+
+/* ===========================
+   FIX DEFINITIVO KPIs (los 3 cuadros)
+   PÉGALO AL FINAL DEL ARCHIVO
+=========================== */
+.dashboard .dash-layout .kpi-row > .card.kpi-card{
+  background: rgba(255, 255, 255, 0.5) !important; /* más blanco */
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(22px) saturate(1.1) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.1) !important;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.16) !important;
+  color: #0f172a !important;
+}
+
+/* texto negro dentro del KPI */
+.dashboard .dash-layout .kpi-row > .card.kpi-card .kpi-title,
+.dashboard .dash-layout .kpi-row > .card.kpi-card .kpi-value,
+.dashboard .dash-layout .kpi-row > .card.kpi-card .kpi-mini{
+  color: #000000 !important;
+}
+
+/* el "spark" puede oscurecer; lo suavizamos */
+.dashboard .dash-layout .kpi-row > .card.kpi-card .kpi-spark{
+  opacity: 0.20 !important;
+}
+
+
+/* =========================================
+   TEXTO NEGRO EN TODOS LOS RECUADROS
+   Respeta negrita / normal
+========================================= */
+
+/* texto general dentro de cards */
+.dashboard .card,
+.dashboard .card * {
+  color: #0f172a !important; /* negro elegante */
+}
+
+/* títulos fuertes */
+.dashboard .card h1,
+.dashboard .card h2,
+.dashboard .card h3,
+.dashboard .card h4,
+.dashboard .card h5,
+.dashboard .card h6,
+.dashboard .card .card-title,
+.dashboard .card .hero-content h2,
+.dashboard .card .crit-title,
+.dashboard .card .kpi-title,
+.dashboard .card .alert-title {
+  color: #020617 !important;
+  font-weight: 900;
+}
+
+/* textos secundarios */
+.dashboard .card p,
+.dashboard .card .card-sub,
+.dashboard .card .crit-sub,
+.dashboard .card .kpi-mini,
+.dashboard .card .alert-sub,
+.dashboard .card .empty {
+  color: rgba(15, 23, 42, 0.75) !important;
+  font-weight: 600;
+}
+
+/* números grandes (KPIs, críticos) */
+.dashboard .card .kpi-value,
+.dashboard .card .crit-num {
+  color: #020617 !important;
+  font-weight: 950;
 }

@@ -25,6 +25,9 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// ✅ Animaciones (sidebar overlay + entrada suave)
+import { AnimatePresence, motion } from "framer-motion";
+
 type SessionUser = {
   nombre?: string;
   rol?: string;
@@ -39,6 +42,9 @@ export default function Comunidades() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // ✅ Sidebar (móvil)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ✅ Dropdown export
   const [openExport, setOpenExport] = useState(false);
@@ -68,13 +74,12 @@ export default function Comunidades() {
     return { nombre: "Equipo SafeZone", rol: "Admin" };
   }
 
-  const [me, setMe] = useState<SessionUser>(() => getSessionUser());
+  const [me] = useState<SessionUser>(() => getSessionUser());
 
   const cargarComunidades = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const data = await comunidadesService.listar();
       setComunidades(data);
     } catch (e) {
@@ -89,7 +94,16 @@ export default function Comunidades() {
     cargarComunidades();
   }, []);
 
-  // Cerrar dropdown al click fuera / ESC
+  // ✅ Cerrar sidebar al agrandar pantalla (evita quedar abierto)
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 901) setSidebarOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // ✅ Cerrar dropdown al click fuera / ESC
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (!openExport) return;
@@ -159,7 +173,6 @@ export default function Comunidades() {
     const rows = buildExportRows();
     const ws = XLSX.utils.json_to_sheet(rows);
 
-    // anchos
     ws["!cols"] = [
       { wch: 14 }, // Codigo
       { wch: 28 }, // Nombre
@@ -189,12 +202,11 @@ export default function Comunidades() {
   const exportPDF = async () => {
     const doc = new jsPDF("p", "mm", "a4");
 
-    // Logo centrado arriba (se ve pro)
     try {
       const logo = await toDataURL(logoSafeZone);
-      doc.addImage(logo, "PNG", 95, 10, 20, 28); // x,y,w,h
+      doc.addImage(logo, "PNG", 95, 10, 20, 28);
     } catch {
-      // si falla el logo, igual genera el PDF
+      // ignore
     }
 
     doc.setFontSize(16);
@@ -233,47 +245,66 @@ export default function Comunidades() {
 
   const canExport = comunidadesFiltradas.length > 0;
 
+  // ✅ helper: cerrar sidebar al navegar (solo en móvil)
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <>
       <div className="background" />
 
       <div className="dashboard">
+        {/* ✅ Overlay móvil (para cerrar sidebar al tocar fuera) */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              className="sidebar-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
         {/* ========== SIDEBAR ========== */}
-        <aside className="sidebar">
+        <motion.aside
+          className={`sidebar ${sidebarOpen ? "open" : ""}`}
+          initial={false}
+        >
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item">
+            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="sidebar-item active">
+            <Link to="/comunidades" className="sidebar-item active" onClick={closeSidebar}>
               <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item">
+            <Link to="/usuarios" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
             <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="sidebar-item">
+            <Link to="/analisis" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconIa} className="nav-icon" alt="Alertas" />
               <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item">
+            <Link to="/reportes" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="sidebar-item">
+            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
@@ -290,25 +321,32 @@ export default function Comunidades() {
             </button>
             <span className="sidebar-version">v1.0 — SafeZone</span>
           </div>
-        </aside>
+        </motion.aside>
 
         {/* CONTENIDO PRINCIPAL */}
         <main className="comunidades-main">
-          <div className="comunidades-panel">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <h1 className="panel-title">Comunidades registradas</h1>
+          <motion.div
+            className="comunidades-panel"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          >
+            {/* ✅ TOP: sandwich + título + acciones */}
+            <div className="panel-top">
+              <div className="panel-left">
+                <button
+                  className="menu-button"
+                  type="button"
+                  aria-label="Abrir menú"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  ☰
+                </button>
 
-              {/* ✅ Exportar (dropdown) + Recargar */}
-              <div
-                ref={exportRef}
-                style={{ display: "flex", gap: 10, alignItems: "center", position: "relative" }}
-              >
+                <h1 className="panel-title">Comunidades registradas</h1>
+              </div>
+
+              <div ref={exportRef} className="panel-actions">
                 <button
                   className="filter-pill"
                   style={{
@@ -323,21 +361,7 @@ export default function Comunidades() {
                 </button>
 
                 {openExport && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 44,
-                      right: 0,
-                      background: "rgba(20,20,20,0.95)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      borderRadius: 12,
-                      padding: 6,
-                      minWidth: 160,
-                      zIndex: 10,
-                      boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
+                  <div className="export-dropdown">
                     <button
                       className="export-option"
                       onClick={() => {
@@ -403,7 +427,7 @@ export default function Comunidades() {
               />
             </div>
 
-            {/* Tabla */}
+            {/* ✅ TABLA (desktop/tablet) */}
             <section className="tabla-panel">
               <div className="tabla-inner">
                 <table className="tabla-comunidades">
@@ -435,7 +459,6 @@ export default function Comunidades() {
                     ) : (
                       comunidadesFiltradas.map((c) => (
                         <tr key={c.id}>
-                          {/* ✅ Foto */}
                           <td>
                             {c.fotoUrl ? (
                               <img
@@ -462,24 +485,15 @@ export default function Comunidades() {
                             )}
                           </td>
 
-                          {/* ✅ Código */}
                           <td>{c.codigoAcceso ?? "—"}</td>
-
-                          {/* ✅ Nombre */}
                           <td>{c.nombre}</td>
-
-                          {/* ✅ Miembros */}
                           <td style={{ textAlign: "center" }}>{c.miembrosCount ?? 0}</td>
-
-                          {/* ✅ Dirección */}
                           <td title={c.direccion ?? ""}>{c.direccion ?? "—"}</td>
 
-                          {/* ✅ Estado */}
                           <td>
                             <span className={badgeClass(c.estado)}>{labelEstado(c.estado)}</span>
                           </td>
 
-                          {/* ✅ Acciones */}
                           <td className="acciones">
                             <button
                               className="icon-button"
@@ -505,10 +519,72 @@ export default function Comunidades() {
               </div>
             </section>
 
+            {/* ✅ VISTA MÓVIL (cards) */}
+            <div className="comunidades-cards">
+              {loading ? (
+                <div className="card-empty">Cargando comunidades...</div>
+              ) : comunidadesFiltradas.length === 0 ? (
+                <div className="card-empty">No se encontraron comunidades.</div>
+              ) : (
+                comunidadesFiltradas.map((c) => (
+                  <div className="comunidad-card" key={c.id}>
+                    <div className="card-top">
+                      <div className="card-left">
+                        {c.fotoUrl ? (
+                          <img className="card-avatar" src={c.fotoUrl} alt="foto comunidad" />
+                        ) : (
+                          <div className="card-avatar placeholder" />
+                        )}
+
+                        <div className="card-title">
+                          <div className="card-name">{c.nombre ?? "—"}</div>
+                          <div className="card-code">Código: {c.codigoAcceso ?? "—"}</div>
+                        </div>
+                      </div>
+
+                      <span className={badgeClass(c.estado)}>{labelEstado(c.estado)}</span>
+                    </div>
+
+                    <div className="card-grid">
+                      <div className="card-field">
+                        <span className="card-label">Miembros</span>
+                        <span className="card-value">{c.miembrosCount ?? 0}</span>
+                      </div>
+
+                      <div className="card-field wide">
+                        <span className="card-label">Dirección</span>
+                        <span className="card-value address" title={c.direccion ?? ""}>
+                          {c.direccion ?? "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="card-actions">
+                      <button
+                        className="icon-button"
+                        onClick={() => alert("Editar comunidad (pendiente)")}
+                        title="Editar"
+                      >
+                        <img src={iconEdit} alt="Editar" />
+                      </button>
+
+                      <button
+                        className="icon-button"
+                        onClick={() => alert("Eliminar / desactivar (pendiente)")}
+                        title="Eliminar"
+                      >
+                        <img src={iconEliminar} alt="Eliminar" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
             <p className="panel-update">
               Última actualización: {new Date().toLocaleString("es-EC")}
             </p>
-          </div>
+          </motion.div>
         </main>
       </div>
     </>

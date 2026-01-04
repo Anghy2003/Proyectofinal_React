@@ -133,7 +133,7 @@ body {
 
   border-radius: 26px;
 
-  background: rgba(255, 255, 255, 0);
+  background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(18px);
@@ -162,7 +162,7 @@ body {
 .kpi-card {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.02) !important;
+  background: rgba(255, 255, 255, 0) !important;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   padding: 16px 18px;
@@ -208,10 +208,10 @@ body {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0) !important;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  color: #ffffff;
+  color: #000000;
   font-size: 0.9rem;
   outline: none;
 }
@@ -225,28 +225,46 @@ body {
 .tabla-panel {
   margin-top: 8px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.01) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0) !important;
+  border: 1px solid rgba(255, 255, 255, 0.40) !important;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   padding: 18px 20px;
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
+
+.tabla-panel::-webkit-scrollbar {
+  width: 8px;
+}
+.tabla-panel::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+}
+.tabla-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 
 .tabla-inner {
   border-radius: 18px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
   background: transparent !important;
+
+  /* ✅ evita cualquier desborde horizontal */
+  width: 100%;
 }
 
 .tabla-comunidades {
   width: 100%;
   border-collapse: collapse;
+
+  /* ✅ esto hace que TODO quepa */
   table-layout: fixed;
+
   font-size: 0.9rem;
 }
 
@@ -271,40 +289,50 @@ body {
 }
 
 
-.tabla-comunidades th:nth-child(2),
-.tabla-comunidades td:nth-child(2) {
-width: 180px;
-}
-.tabla-comunidades th:nth-child(3),
-.tabla-comunidades td:nth-child(3) {
-width: 280px;
-}
-.tabla-comunidades th:nth-child(4),
-.tabla-comunidades td:nth-child(4) {
-width: 100px;
-}
-
-.tabla-comunidades th:nth-child(5),
-.tabla-comunidades td:nth-child(5) {
-
-width: 500px;
-
-}
-
+/* Foto */
 .tabla-comunidades th:nth-child(1),
 .tabla-comunidades td:nth-child(1) {
-  width: 90px;
+  width: 70px;
 }
 
+/* Código */
+.tabla-comunidades th:nth-child(2),
+.tabla-comunidades td:nth-child(2) {
+  width: 120px;
+}
+
+/* Nombre */
+.tabla-comunidades th:nth-child(3),
+.tabla-comunidades td:nth-child(3) {
+  width: 190px;
+}
+
+/* Miembros */
+.tabla-comunidades th:nth-child(4),
+.tabla-comunidades td:nth-child(4) {
+  width: 95px;
+  text-align: center;
+}
+
+/* Estado */
 .tabla-comunidades th:nth-child(6),
 .tabla-comunidades td:nth-child(6) {
-  text-align: right;
+  width: 120px;
 }
 
+/* Acciones */
 .tabla-comunidades th:nth-child(7),
 .tabla-comunidades td:nth-child(7) {
   width: 110px;
 }
+
+/* Dirección (la más larga) */
+/* ✅ Esta columna se adapta: ocupa lo que queda y hace wrap (saltos de línea) */
+.tabla-comunidades th:nth-child(5),
+.tabla-comunidades td:nth-child(5) {
+  width: auto;
+}
+
 
 /* Estados */
 
@@ -372,3 +400,518 @@ width: 500px;
   background: rgba(255, 255, 255, 0.08);
 }
 
+
+/* =========================
+   TOP BAR (titulo + acciones)
+========================= */
+.panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  position: relative;
+}
+
+/* Botón menú (solo móvil) */
+.menu-button {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 18px;
+}
+
+/* =========================
+   SIDEBAR RESPONSIVE (drawer)
+========================= */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9;
+}
+
+/* =========================
+   CONTENIDO PRINCIPAL
+========================= */
+.comunidades-main {
+  flex: 1;
+  box-sizing: border-box;
+  display: flex;
+  margin-left: 260px;
+  padding: 20px 26px;
+  height: 100vh;
+  min-width: 0; /* clave para que no rompa */
+}
+
+.comunidades-panel {
+  width: 100%;
+  height: calc(100vh - 40px);
+  min-width: 0;
+}
+
+/* Tabla: solo scroll vertical, nada horizontal */
+.tabla-panel {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tabla-inner {
+  width: 100%;
+  min-width: 0;
+}
+
+.tabla-comunidades {
+  width: 100%;
+  table-layout: fixed; /* hace que siempre quepa */
+}
+
+/* Dirección en multi-línea (para que nunca desborde) */
+.tabla-comunidades td:nth-child(5) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+/* =========================
+   BREAKPOINTS
+========================= */
+
+/* Laptops/Tablet grande */
+@media (max-width: 1100px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .search-input {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  /* Compacta paddings de tabla */
+  .tabla-comunidades th,
+  .tabla-comunidades td {
+    padding: 10px 12px;
+  }
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .comunidades-main {
+    margin-left: 0;
+    padding: 16px;
+    height: 100vh;
+  }
+
+  .comunidades-panel {
+    height: calc(100vh - 32px);
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  /* Sidebar como drawer */
+  .menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-110%);
+    transition: transform 0.28s ease;
+    z-index: 10;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Acciones a la derecha pero que no rompa */
+  .panel-title {
+    font-size: 1.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .panel-actions {
+    gap: 8px;
+  }
+
+  /* Tabla un poco más compacta */
+  .tabla-comunidades {
+    font-size: 0.85rem;
+  }
+}
+
+/* Móvil */
+@media (max-width: 600px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .kpi-card {
+    min-height: 82px;
+    padding: 14px;
+  }
+
+  .panel-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-actions {
+    justify-content: flex-end;
+  }
+
+  /* En móvil: oculta columnas “pesadas” para que todo quepa SIN scroll horizontal */
+  /* Oculta Dirección y Acciones (recomendado) */
+  .tabla-comunidades th:nth-child(5),
+  .tabla-comunidades td:nth-child(5),
+  .tabla-comunidades th:nth-child(7),
+  .tabla-comunidades td:nth-child(7) {
+    display: none;
+  }
+
+  /* Ajusta anchos restantes */
+  .tabla-comunidades th:nth-child(1),
+  .tabla-comunidades td:nth-child(1) { width: 64px; }
+
+  .tabla-comunidades th:nth-child(2),
+  .tabla-comunidades td:nth-child(2) { width: 110px; }
+
+  .tabla-comunidades th:nth-child(4),
+  .tabla-comunidades td:nth-child(4) { width: 90px; }
+
+  .tabla-comunidades th,
+  .tabla-comunidades td {
+    padding: 10px 10px;
+  }
+}
+
+/* =========================
+   TEXTOS NEGROS EN CUADROS
+========================= */
+
+/* Panel principal */
+.comunidades-panel {
+  color: #000;
+}
+
+/* KPIs */
+.kpi-card,
+.kpi-card * {
+  color: #000 !important;
+}
+
+/* Títulos y labels KPI */
+.kpi-label {
+  color: #000 !important;
+  opacity: 0.7; /* mantiene jerarquía visual */
+}
+
+.kpi-value {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+/* Tabla completa */
+.tabla-panel,
+.tabla-panel * {
+  color: #000 !important;
+}
+
+/* Encabezados de tabla */
+.tabla-comunidades thead th {
+  color: #000 !important;
+  font-weight: 600;
+}
+
+/* Filas */
+.tabla-comunidades td {
+  color: #000 !important;
+}
+
+/* Estados (se respetan colores) */
+.badge-success {
+  color: #fff !important;
+}
+.badge-danger {
+  color: #fff !important;
+}
+.badge-warning {
+  color: #fff !important;
+}
+
+/* Última actualización */
+.panel-update {
+  color: #000 !important;
+  opacity: 0.7;
+}
+
+/* Buscador */
+.search-input {
+  color: #000 !important;
+}
+
+.search-input::placeholder {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+/* =========================
+   TOP BAR
+========================= */
+.panel-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.panel-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  position: relative;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 6px;
+  min-width: 160px;
+  z-index: 20;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+}
+
+/* =========================
+   SIDEBAR MOBILE
+========================= */
+.menu-button {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.40);
+  color: #111;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 18px;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 9;
+}
+
+/* =========================
+   CARDS (MOBILE)
+========================= */
+.comunidades-cards {
+  display: none;
+  gap: 12px;
+  flex-direction: column;
+}
+
+.card-empty {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.55);
+  color: #111;
+}
+
+.comunidad-card {
+  border-radius: 18px;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.30);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 14px;
+  color: #111;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.card-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(0,0,0,0.10);
+}
+.card-avatar.placeholder {
+  background: rgba(0,0,0,0.06);
+}
+
+.card-title { min-width: 0; }
+
+.card-name {
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}
+
+.card-code {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.card-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-field.wide { grid-column: 1 / -1; }
+
+.card-label {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.card-value { font-size: 0.95rem; }
+
+.card-value.address {
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 2 líneas en móvil */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 900px) {
+  .comunidades-main {
+    margin-left: 0;
+    padding: 16px;
+    height: 100vh;
+  }
+
+  .menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar-overlay { display: block; }
+
+  .sidebar {
+    transform: translateX(-110%);
+    transition: transform 0.28s ease;
+    z-index: 10;
+  }
+
+  .sidebar.open { transform: translateX(0); }
+
+  .search-input {
+    width: 100%;
+    max-width: none;
+  }
+
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 650px) {
+  .kpi-row { grid-template-columns: 1fr; }
+
+  /* ✅ móvil: ocultamos tabla y usamos cards */
+  .tabla-panel { display: none; }
+  .comunidades-cards { display: flex; }
+
+  .panel-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .panel-actions { justify-content: flex-end; }
+}
+
+/* ✅ Evitar que se rompa letra por letra */
+.tabla-comunidades td:nth-child(5) {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  white-space: normal;
+}
+
+/* ✅ En pantallas pequeñas, Dirección con ellipsis (no letras verticales) */
+@media (max-width: 900px) {
+  .tabla-comunidades td:nth-child(5),
+  .tabla-comunidades th:nth-child(5) {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}

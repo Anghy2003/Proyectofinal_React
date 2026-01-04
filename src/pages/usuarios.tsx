@@ -347,17 +347,6 @@ export default function Usuarios() {
         </aside>
 
         <main className="usuarios-main">
-          {/* ✅ topbar solo móvil */}
-          <div className="usuarios-topbar">
-            <button className="hamburger" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú">
-              ☰
-            </button>
-            <div className="topbar-title">
-              <h1 className="usuarios-title">Usuarios</h1>
-              <span className="topbar-subtitle">Administración</span>
-            </div>
-          </div>
-
           <div className="usuario-panel">
             {/* ✅ Header desktop */}
             <div className="usuarios-header">
@@ -369,7 +358,8 @@ export default function Usuarios() {
                   style={{
                     cursor: canExport ? "pointer" : "not-allowed",
                     opacity: canExport ? 1 : 0.6,
-                  }}
+                  }
+              }
                   onClick={() => setOpenExport((v) => !v)}
                   disabled={!canExport}
                   title="Exportar reporte"
