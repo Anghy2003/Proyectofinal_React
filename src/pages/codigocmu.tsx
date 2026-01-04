@@ -13,11 +13,7 @@ import iconEliminar from "../assets/icon_eliminar.svg";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 
-import {
-  comunidadesService,
-  type Comunidad,
-} from "../services/comunidad.Service";
-
+import { comunidadesService, type Comunidad } from "../services/comunidad.Service";
 import { authService } from "../services/auth.service";
 
 type SessionUser = {
@@ -35,7 +31,7 @@ type CodigoRow = {
   estado: "Activo" | "Inactivo";
 };
 
-  function getSessionUser(): SessionUser {
+function getSessionUser(): SessionUser {
   const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
@@ -48,12 +44,11 @@ type CodigoRow = {
         fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
         email: obj?.email,
       };
-    } catch {
-      // ignore parse error
-    }
+    } catch {}
   }
   return { nombre: "Equipo SafeZone", rol: "Admin" };
 }
+
 export default function CodigoAcceso() {
   const navigate = useNavigate();
 
@@ -71,15 +66,8 @@ export default function CodigoAcceso() {
     navigate("/login");
   };
 
-  const pendientes = useMemo(
-    () => todas.filter((c) => c.estado === "SOLICITADA"),
-    [todas]
-  );
-
-  const activas = useMemo(
-    () => todas.filter((c) => c.estado === "ACTIVA"),
-    [todas]
-  );
+  const pendientes = useMemo(() => todas.filter((c) => c.estado === "SOLICITADA"), [todas]);
+  const activas = useMemo(() => todas.filter((c) => c.estado === "ACTIVA"), [todas]);
 
   const cargarComunidades = async () => {
     try {
@@ -102,24 +90,18 @@ export default function CodigoAcceso() {
       setListaCodigos(rows);
     } catch (e: any) {
       console.error(e);
-      setError(
-        e?.response?.data?.message ||
-          e?.message ||
-          "No se pudieron cargar las comunidades."
-      );
+      setError(e?.response?.data?.message || e?.message || "No se pudieron cargar las comunidades.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    // opcional: si no hay sesión, no dejes entrar
     const session = authService.getSession();
     if (!session?.userId) {
       navigate("/login");
       return;
     }
-
     cargarComunidades();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -139,28 +121,20 @@ export default function CodigoAcceso() {
 
     setLoading(true);
     try {
-      // ✅ backend: /comunidades/{id}/aprobar/usuario/{usuarioId}
-      const comunidadActualizada = await comunidadesService.aprobar(
-        selectedId,
-        session.userId
-      );
+      const comunidadActualizada = await comunidadesService.aprobar(selectedId, session.userId);
 
       if (!comunidadActualizada.codigoAcceso) {
-        alert(
-          "La comunidad se aprobó, pero el backend no devolvió un código de acceso."
-        );
+        alert("La comunidad se aprobó, pero el backend no devolvió un código de acceso.");
         return;
       }
 
       setCodigoActual(comunidadActualizada.codigoAcceso);
 
-      // refrescar local
       setTodas((prev) => {
         const rest = prev.filter((c) => c.id !== comunidadActualizada.id);
         return [comunidadActualizada, ...rest];
       });
 
-      // actualizar tabla códigos
       setListaCodigos((prev) => {
         const rest = prev.filter((r) => r.id !== comunidadActualizada.id);
         return [
@@ -168,9 +142,7 @@ export default function CodigoAcceso() {
             id: comunidadActualizada.id,
             codigo: comunidadActualizada.codigoAcceso ?? "",
             comunidad: comunidadActualizada.nombre,
-            fecha: new Date(
-              comunidadActualizada.fechaCreacion
-            ).toLocaleDateString("es-EC"),
+            fecha: new Date(comunidadActualizada.fechaCreacion).toLocaleDateString("es-EC"),
             estado: "Activo",
           },
           ...rest,
@@ -179,23 +151,17 @@ export default function CodigoAcceso() {
 
       setSelectedId(null);
 
-      alert(
-        "Comunidad aprobada y código generado correctamente. Si Twilio está configurado, se envió el SMS."
-      );
+      alert("Comunidad aprobada y código generado correctamente. Si Twilio está configurado, se envió el SMS.");
     } catch (e: any) {
       console.error(e);
-
-      const msg =
-        e?.response?.data?.message ||
-        e?.message ||
-        "No se pudo aprobar la comunidad.";
-
+      const msg = e?.response?.data?.message || e?.message || "No se pudo aprobar la comunidad.";
       alert(msg);
     } finally {
       setLoading(false);
     }
   };
-  const [me, setMe] = useState<SessionUser>(() => getSessionUser());
+
+  const [me] = useState<SessionUser>(() => getSessionUser());
 
   const copiarCodigo = async () => {
     if (!codigoActual) return;
@@ -216,7 +182,6 @@ export default function CodigoAcceso() {
       <div className="background" />
 
       <div className="dashboard">
-        {/* ========== SIDEBAR (estructura del segundo, estilo del primero) ========== */}
         <aside className="sidebar">
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
@@ -263,55 +228,35 @@ export default function CodigoAcceso() {
               <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
             </div>
 
-            <button
-              id="btnSalir"
-              className="sidebar-logout"
-              onClick={handleLogout}
-            >
+            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
               Salir
             </button>
             <span className="sidebar-version">v1.0 — SafeZone</span>
           </div>
         </aside>
 
-        {/* CONTENIDO PRINCIPAL */}
         <main className="main">
           <section className="panel">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+            <div className="panel-head">
               <h1 className="title">Generar Código de Comunidad</h1>
 
-              <button
-                className="filter-pill"
-                style={{ cursor: "pointer" }}
-                onClick={cargarComunidades}
-                disabled={loading}
-                title="Recargar"
-              >
+              <button className="action-pill action-pill-accent" onClick={cargarComunidades} disabled={loading}>
                 {loading ? "Cargando..." : "Recargar"}
               </button>
             </div>
 
-            {error && (
-              <div style={{ padding: "10px 0", color: "tomato" }}>{error}</div>
-            )}
+            {error && <div className="ui-error">{error}</div>}
 
             <div className="form-container">
-              {/* Seleccionar comunidad solicitada */}
               <div className="form-card">
                 <label>Selecciona una comunidad solicitada</label>
 
+                {/* mismo select, pero con clase para que herede el estilo */}
                 <select
+                  className="input-pill"
                   value={selectedId ?? ""}
                   onChange={(e) =>
-                    setSelectedId(
-                      e.target.value === "" ? null : Number(e.target.value)
-                    )
+                    setSelectedId(e.target.value === "" ? null : Number(e.target.value))
                   }
                 >
                   <option value="">-- Selecciona --</option>
@@ -323,10 +268,9 @@ export default function CodigoAcceso() {
                 </select>
 
                 <p className="codigo-msg" style={{ textAlign: "left" }}>
-                  Estas comunidades fueron enviadas desde la app en estado{" "}
-                  <strong>SOLICITADA</strong>. Al aprobar, SafeZone generará un
-                  código de acceso de 5 dígitos y el backend enviará el código
-                  por SMS al usuario solicitante (si Twilio está configurado).
+                  Estas comunidades fueron enviadas desde la app en estado <strong>SOLICITADA</strong>. Al aprobar,
+                  SafeZone generará un código de acceso de 5 dígitos y el backend enviará el código por SMS al usuario
+                  solicitante (si Twilio está configurado).
                 </p>
 
                 <button
@@ -339,25 +283,17 @@ export default function CodigoAcceso() {
                 </button>
               </div>
 
-              {/* Cuadro de código generado */}
               <div className="codigo-card">
-                <p className="codigo-label">
-                  Último código generado para comunidad
-                </p>
+                <p className="codigo-label">Último código generado para comunidad</p>
 
                 <div className="codigo-box">{codigoActual ?? "---"}</div>
 
                 <p className="codigo-msg">
-                  Comparte este código con los vecinos para que se unan desde la
-                  app SafeZone. El solicitante lo recibe también por SMS.
+                  Comparte este código con los vecinos para que se unan desde la app SafeZone. El solicitante lo recibe
+                  también por SMS.
                 </p>
 
-                <button
-                  className="copy-btn"
-                  type="button"
-                  onClick={copiarCodigo}
-                  disabled={!codigoActual}
-                >
+                <button className="copy-btn" type="button" onClick={copiarCodigo} disabled={!codigoActual}>
                   Copiar
                 </button>
               </div>
@@ -410,9 +346,7 @@ export default function CodigoAcceso() {
               </table>
             </div>
 
-            <p className="panel-update">
-              Última actualización: {new Date().toLocaleString("es-EC")}
-            </p>
+            <p className="panel-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
           </section>
         </main>
       </div>

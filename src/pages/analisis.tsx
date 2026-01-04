@@ -12,6 +12,27 @@ import iconAcceso from "../assets/icon_acceso.svg";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Search,
+  X,
+  RefreshCcw,
+  Brain,
+  Flame,
+  AlertTriangle,
+  BadgeCheck,
+} from "lucide-react";
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+
 import {
   incidentesService,
   type IncidenteResponseDTO,
@@ -35,7 +56,6 @@ function parseJsonArrayString(value?: string | null): string[] {
   }
 }
 
-// badge para prioridad IA
 type PrioridadIA = "ALTA" | "MEDIA" | "BAJA" | string;
 
 function getBadgePrioridad(prio?: PrioridadIA | null): string {
@@ -43,10 +63,9 @@ function getBadgePrioridad(prio?: PrioridadIA | null): string {
   if (p === "ALTA") return "badge badge-bad";
   if (p === "MEDIA") return "badge badge-warning";
   if (p === "BAJA") return "badge badge-ok";
-  return "badge"; // neutro
+  return "badge badge-neutral";
 }
 
-// helper para comparar fecha del filtro (yyyy-mm-dd) con fechaCreacion ISO
 function isoToYMD(iso?: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
@@ -57,7 +76,15 @@ function isoToYMD(iso?: string | null): string {
   return `${y}-${m}-${day}`;
 }
 
-  function getSessionUser(): SessionUser {
+function pad2(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function isValidDate(d: Date) {
+  return d instanceof Date && !Number.isNaN(d.getTime());
+}
+
+function getSessionUser(): SessionUser {
   const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
@@ -71,32 +98,85 @@ function isoToYMD(iso?: string | null): string {
         email: obj?.email,
       };
     } catch {
-      // ignore parse error
+      // ignore
     }
   }
   return { nombre: "Equipo SafeZone", rol: "Admin" };
 }
 
+/* =========================
+   Line Chart — incidentes 14d
+========================= */
+type DailyPoint = { key: string; label: string; incidentes: number };
+
+function toKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function fmtLabel(d: Date) {
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  return `${pad2(d.getDate())} ${meses[d.getMonth()]}`;
+}
+
+function buildDailyIncidentes(items: IncidenteResponseDTO[], days = 14): DailyPoint[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const base: DailyPoint[] = Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (days - 1 - i));
+    return { key: toKey(d), label: fmtLabel(d), incidentes: 0 };
+  });
+
+  const byKey = new Map(base.map((p) => [p.key, p]));
+  let hasRealDates = false;
+
+  for (const it of items) {
+    if (!it.fechaCreacion) continue;
+    const d = new Date(it.fechaCreacion);
+    if (!isValidDate(d)) continue;
+    hasRealDates = true;
+
+    d.setHours(0, 0, 0, 0);
+    const p = byKey.get(toKey(d));
+    if (!p) continue;
+    p.incidentes += 1;
+  }
+
+  // fallback suave si no hay fechas válidas
+  if (!hasRealDates && items.length > 0) {
+    items.forEach((_, idx) => {
+      base[idx % days].incidentes += 1;
+    });
+  }
+
+  return base;
+}
+
 export default function Analisis() {
   const navigate = useNavigate();
 
-  // 🔹 DATA REAL (Incidentes con IA)
+  // ✅ sidebar móvil
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // 🔹 DATA REAL
   const [incidentes, setIncidentes] = useState<IncidenteResponseDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // 🔹 FILTROS estilo Reportes
+  // 🔹 FILTROS (sin "posible falso")
+  const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("");
   const [filtroPrioridad, setFiltroPrioridad] = useState<string>("");
-  const [filtroFalso, setFiltroFalso] = useState<string>(""); // "", "true", "false"
   const [filtroComunidad, setFiltroComunidad] = useState<string>("");
   const [filtroFecha, setFiltroFecha] = useState<string>(""); // yyyy-mm-dd
 
+  const [me] = useState<SessionUser>(() => getSessionUser());
   const handleLogout = () => navigate("/login");
 
-  // =====================
-  // CARGAR INCIDENTES
-  // =====================
   const cargarIncidentes = async () => {
     try {
       setLoading(true);
@@ -115,7 +195,7 @@ export default function Analisis() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🔹 LISTAS ÚNICAS PARA SELECTS (como Reportes)
+  // 🔹 LISTAS ÚNICAS PARA SELECTS
   const categoriasUnicas = useMemo(
     () =>
       Array.from(
@@ -152,29 +232,29 @@ export default function Analisis() {
     [incidentes]
   );
 
-    const [me, setMe] = useState<SessionUser>(() => getSessionUser());
-
-  // 🔹 FILTRADO (como Reportes)
+  // 🔹 FILTRADO (sin aiPosibleFalso)
   const incidentesFiltrados = useMemo(() => {
+    const term = busqueda.toLowerCase().trim();
+
     return incidentes.filter((i) => {
-      // si quieres que esta pantalla sea SOLO IA, deja esto activado:
+      // Solo con IA real (sin "posible falso")
       const tieneIA =
         i.aiCategoria != null ||
         i.aiPrioridad != null ||
-        i.aiPosibleFalso != null ||
         i.aiConfianza != null ||
         (i.aiMotivos != null && i.aiMotivos !== "") ||
         (i.aiRiesgos != null && i.aiRiesgos !== "");
+
       if (!tieneIA) return false;
+
+      if (term) {
+        const blob =
+          `${i.usuarioNombre ?? ""} ${i.comunidadNombre ?? ""} ${i.aiCategoria ?? ""} ${i.aiPrioridad ?? ""}`.toLowerCase();
+        if (!blob.includes(term)) return false;
+      }
 
       if (filtroCategoria && i.aiCategoria !== filtroCategoria) return false;
       if (filtroPrioridad && i.aiPrioridad !== filtroPrioridad) return false;
-
-      if (filtroFalso) {
-        const esperado = filtroFalso === "true";
-        if (Boolean(i.aiPosibleFalso) !== esperado) return false;
-      }
-
       if (filtroComunidad && i.comunidadNombre !== filtroComunidad) return false;
 
       if (filtroFecha) {
@@ -184,49 +264,121 @@ export default function Analisis() {
 
       return true;
     });
-  }, [incidentes, filtroCategoria, filtroPrioridad, filtroFalso, filtroComunidad, filtroFecha]);
+  }, [incidentes, busqueda, filtroCategoria, filtroPrioridad, filtroComunidad, filtroFecha]);
+
+  // KPI counts
+  const total = incidentesFiltrados.length;
+  const alta = useMemo(() => incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA").length, [incidentesFiltrados]);
+  const media = useMemo(() => incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA").length, [incidentesFiltrados]);
+  const baja = useMemo(() => incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "BAJA").length, [incidentesFiltrados]);
+  const avgConf = useMemo(() => {
+    const vals = incidentesFiltrados.map((x) => x.aiConfianza).filter((v): v is number => typeof v === "number");
+    if (vals.length === 0) return 0;
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
+  }, [incidentesFiltrados]);
+
+  // Line chart
+  const lineData = useMemo(() => buildDailyIncidentes(incidentesFiltrados, 14), [incidentesFiltrados]);
+
+  // Top categorías / comunidades
+  const topCategorias = useMemo(() => {
+    const by = new Map<string, number>();
+    for (const i of incidentesFiltrados) {
+      const k = (i.aiCategoria ?? "—").trim() || "—";
+      by.set(k, (by.get(k) ?? 0) + 1);
+    }
+    return [...by.entries()]
+      .map(([categoria, total]) => ({ categoria, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [incidentesFiltrados]);
+
+  const topComunidades = useMemo(() => {
+    const by = new Map<string, number>();
+    for (const i of incidentesFiltrados) {
+      const k = (i.comunidadNombre ?? "—").trim() || "—";
+      by.set(k, (by.get(k) ?? 0) + 1);
+    }
+    return [...by.entries()]
+      .map(([comunidad, total]) => ({ comunidad, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [incidentesFiltrados]);
+
+  // Donut prioridad (ALTA/MEDIA/BAJA/OTRO)
+  const otro = Math.max(0, total - (alta + media + baja));
+  const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+  const pAlta = pct(alta);
+  const pMedia = pct(media);
+  const pBaja = pct(baja);
+  const pOtro = pct(otro);
+
+  const donutBg =
+    total > 0
+      ? `conic-gradient(
+          #ef4444 0% ${pAlta}%,
+          #f59e0b ${pAlta}% ${pAlta + pMedia}%,
+          #16a34a ${pAlta + pMedia}% ${pAlta + pMedia + pBaja}%,
+          rgba(15,23,42,0.18) ${pAlta + pMedia + pBaja}% 100%
+        )`
+      : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
+
+  const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <>
       <div className="background" />
 
       <div className="dashboard">
-        {/* ========== SIDEBAR (estructura del segundo, estilo del primero) ========== */}
-        <aside className="sidebar">
+        {/* Overlay móvil */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              className="sidebar-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* SIDEBAR */}
+        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item">
+            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="sidebar-item">
+            <Link to="/comunidades" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item">
+            <Link to="/usuarios" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
             <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="sidebar-item active">
-              <img src={iconIa} className="nav-icon" alt="Alertas" />
+            <Link to="/analisis" className="sidebar-item active" onClick={closeSidebar}>
+              <img src={iconIa} className="nav-icon" alt="IA" />
               <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item">
+            <Link to="/reportes" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="sidebar-item">
+            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
@@ -238,71 +390,82 @@ export default function Analisis() {
               <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
             </div>
 
-            <button
-              id="btnSalir"
-              className="sidebar-logout"
-              onClick={handleLogout}
-            >
+            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
               Salir
             </button>
             <span className="sidebar-version">v1.0 — SafeZone</span>
           </div>
-        </aside>
+        </motion.aside>
 
-        {/* ===== CONTENIDO PRINCIPAL (igual a Reportes) ===== */}
-        <main className="reportes-main">
-          <section className="reportes-panel">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <h1 className="panel-title">IA Análisis</h1>
-
+        {/* MAIN */}
+        <main className="analisis-main">
+          <motion.div
+            className="analisis-panel card"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          >
+            {/* TOPBAR */}
+            <div className="topbar">
               <button
-                className="filter-pill"
-                style={{ cursor: "pointer" }}
-                onClick={cargarIncidentes}
-                disabled={loading}
-                title="Recargar"
+                className="hamburger"
+                type="button"
+                aria-label="Abrir menú"
+                onClick={() => setSidebarOpen(true)}
               >
-                {loading ? "Cargando..." : "Recargar"}
+                <span />
+                <span />
+                <span />
               </button>
+
+              <div className="topbar-shell">
+                <div className="topbar-left">
+                  <div className="page-title">IA Análisis</div>
+
+                  <div className={`search-pill-v2 ${busqueda ? "open" : ""}`}>
+                    <span className="search-ico-v2" aria-hidden="true">
+                      <Search size={18} />
+                    </span>
+
+                    <input
+                      type="text"
+                      className="search-input-v2"
+                      placeholder="Buscar por usuario, comunidad o categoría..."
+                      value={busqueda}
+                      onChange={(e) => setBusqueda(e.target.value)}
+                    />
+
+                    {!!busqueda && (
+                      <button
+                        className="search-clear-v2"
+                        type="button"
+                        aria-label="Limpiar búsqueda"
+                        onClick={() => setBusqueda("")}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="topbar-actions">
+                  <button
+                    className="action-pill action-pill-accent"
+                    onClick={cargarIncidentes}
+                    disabled={loading}
+                    type="button"
+                    title="Recargar"
+                  >
+                    <RefreshCcw size={18} />
+                    {loading ? "Cargando..." : "Recargar"}
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Mensajes */}
-            {error && (
-              <div style={{ padding: "10px 0", color: "tomato" }}>
-                {error}
-              </div>
-            )}
+            {error && <p className="ui-error">{error}</p>}
 
-            {/* KPI (igual estilo) */}
-            <div className="kpi-row">
-              <div className="kpi-card">
-                <span className="kpi-label">Incidentes analizados</span>
-                <span className="kpi-value">{incidentesFiltrados.length}</span>
-              </div>
-
-              <div className="kpi-card">
-                <span className="kpi-label">Prioridad ALTA</span>
-                <span className="kpi-value kpi-bad">
-                  {incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA").length}
-                </span>
-              </div>
-
-              <div className="kpi-card">
-                <span className="kpi-label">Prioridad MEDIA</span>
-                <span className="kpi-value kpi-warning">
-                  {incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA").length}
-                </span>
-              </div>
-
-              <div className="kpi-card">
-                <span className="kpi-label">Posibles falsos</span>
-                <span className="kpi-value kpi-warning">
-                  {incidentesFiltrados.filter((x) => x.aiPosibleFalso === true).length}
-                </span>
-              </div>
-            </div>
-
-            {/* FILTROS (pills) */}
+            {/* FILTERS */}
             <div className="filters-row">
               <select
                 className="filter-pill"
@@ -328,16 +491,6 @@ export default function Analisis() {
 
               <select
                 className="filter-pill"
-                value={filtroFalso}
-                onChange={(e) => setFiltroFalso(e.target.value)}
-              >
-                <option value="">¿Posible falso?</option>
-                <option value="false">No</option>
-                <option value="true">Sí</option>
-              </select>
-
-              <select
-                className="filter-pill"
                 value={filtroComunidad}
                 onChange={(e) => setFiltroComunidad(e.target.value)}
               >
@@ -355,9 +508,164 @@ export default function Analisis() {
               />
             </div>
 
-            {/* TABLA (mismo contenedor) */}
-            <section className="tabla-ia">
-              <div className="tabla-anali">
+            {/* KPIs (sin “posibles falsos”) */}
+            <div className="kpi-row">
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Incidentes analizados</span>
+                  <div className="kpi-icon kpi-total" aria-hidden="true">
+                    <Brain size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{total}</div>
+                <div className="kpi-sub">Con metadatos de IA</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Prioridad ALTA</span>
+                  <div className="kpi-icon kpi-bad" aria-hidden="true">
+                    <Flame size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{alta}</div>
+                <div className="kpi-sub">Atención inmediata</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Prioridad MEDIA</span>
+                  <div className="kpi-icon kpi-warn" aria-hidden="true">
+                    <AlertTriangle size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{media}</div>
+                <div className="kpi-sub">Revisar y coordinar</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Confianza promedio</span>
+                  <div className="kpi-icon kpi-ok" aria-hidden="true">
+                    <BadgeCheck size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{avgConf ? avgConf.toFixed(2) : "—"}</div>
+                <div className="kpi-sub">Basado en incidentes con confianza</div>
+              </div>
+            </div>
+
+            {/* Charts + Side card */}
+            <div className="grid-2col">
+              <section className="chart-card-v2 card">
+                <div className="chart-head">
+                  <div>
+                    <div className="chart-title-v2">Incidentes analizados</div>
+                    <div className="chart-sub-v2">Últimos 14 días</div>
+                  </div>
+                </div>
+
+                <div className="line-chart-wrap">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                      <XAxis dataKey="label" tickMargin={8} />
+                      <YAxis tickMargin={8} allowDecimals={false} />
+                      <Tooltip
+                        labelFormatter={(l) => `Día: ${l}`}
+                        formatter={(v: any) => [v, "Incidentes"]}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="incidentes"
+                        stroke="#f95150"
+                        strokeWidth={3}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              <section className="side-card-v2 card">
+                <div className="chart-head">
+                  <div>
+                    <div className="chart-title-v2">Prioridad IA</div>
+                    <div className="chart-sub-v2">Distribución global</div>
+                  </div>
+                </div>
+
+                <div className="donut-wrap">
+                  <div className="donut" style={{ background: donutBg }} aria-label="Donut prioridad">
+                    <div className="donut-hole">
+                      <div className="donut-total">{total}</div>
+                      <div className="donut-label">Incidentes</div>
+                    </div>
+                  </div>
+
+                  <div className="donut-legend">
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span className="donut-name">ALTA</span>
+                      <span className="donut-val">{alta}</span>
+                    </div>
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#f59e0b" }} />
+                      <span className="donut-name">MEDIA</span>
+                      <span className="donut-val">{media}</span>
+                    </div>
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span className="donut-name">BAJA</span>
+                      <span className="donut-val">{baja}</span>
+                    </div>
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "rgba(15,23,42,0.28)" }} />
+                      <span className="donut-name">OTRO</span>
+                      <span className="donut-val">{otro}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="toplist">
+                  <div className="toplist-title">Top categorías</div>
+                  <div className="toplist-sub">Frecuencia por categoría IA</div>
+                  <div className="toplist-items">
+                    {topCategorias.length === 0 ? (
+                      <div className="toplist-empty">Sin datos</div>
+                    ) : (
+                      topCategorias.map((c) => (
+                        <div className="toplist-row" key={c.categoria}>
+                          <span className="toplist-name" title={c.categoria}>{c.categoria}</span>
+                          <span className="toplist-val">{c.total}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="toplist">
+                  <div className="toplist-title">Top comunidades</div>
+                  <div className="toplist-sub">Frecuencia por comunidad</div>
+                  <div className="toplist-items">
+                    {topComunidades.length === 0 ? (
+                      <div className="toplist-empty">Sin datos</div>
+                    ) : (
+                      topComunidades.map((c) => (
+                        <div className="toplist-row" key={c.comunidad}>
+                          <span className="toplist-name" title={c.comunidad}>{c.comunidad}</span>
+                          <span className="toplist-val">{c.total}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* TABLA (sin columna "Falso") */}
+            <section className="tabla-card">
+              <div className="tabla-wrap">
                 <table className="tabla-analisis">
                   <thead>
                     <tr>
@@ -367,7 +675,6 @@ export default function Analisis() {
                       <th>Categoría IA</th>
                       <th>Prioridad</th>
                       <th>Confianza</th>
-                      <th>Falso</th>
                       <th>Motivos</th>
                       <th>Riesgos</th>
                       <th>Fecha</th>
@@ -377,15 +684,11 @@ export default function Analisis() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={10}>
-                          Cargando análisis IA...
-                        </td>
+                        <td colSpan={9}>Cargando análisis IA...</td>
                       </tr>
                     ) : incidentesFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan={10}>
-                          No se encontraron incidentes con IA.
-                        </td>
+                        <td colSpan={9}>No se encontraron incidentes con IA.</td>
                       </tr>
                     ) : (
                       incidentesFiltrados.map((i) => {
@@ -394,22 +697,17 @@ export default function Analisis() {
 
                         return (
                           <tr key={i.id}>
-                            <td>{i.id}</td>
-                            <td>{i.usuarioNombre ?? "-"}</td>
-                            <td>{i.comunidadNombre ?? "-"}</td>
-                            <td>{i.aiCategoria ?? "-"}</td>
-                            <td>
+                            <td className="td-center">{i.id}</td>
+                            <td title={i.usuarioNombre ?? "-"}>{i.usuarioNombre ?? "-"}</td>
+                            <td title={i.comunidadNombre ?? "-"}>{i.comunidadNombre ?? "-"}</td>
+                            <td title={i.aiCategoria ?? "-"}>{i.aiCategoria ?? "-"}</td>
+                            <td className="td-center">
                               <span className={getBadgePrioridad(i.aiPrioridad)}>
                                 {i.aiPrioridad ?? "-"}
                               </span>
                             </td>
-                            <td >
+                            <td className="td-center">
                               {i.aiConfianza == null ? "-" : i.aiConfianza.toFixed(2)}
-                            </td>
-                            <td >
-                              <span className={i.aiPosibleFalso ? "badge badge-warning" : "badge badge-ok"}>
-                                {i.aiPosibleFalso ? "Sí" : "No"}
-                              </span>
                             </td>
 
                             <td className="cell-wrap">
@@ -430,7 +728,7 @@ export default function Analisis() {
                               )}
                             </td>
 
-                            <td>{isoToYMD(i.fechaCreacion) || "-"}</td>
+                            <td className="td-center">{isoToYMD(i.fechaCreacion) || "-"}</td>
                           </tr>
                         );
                       })
@@ -441,9 +739,9 @@ export default function Analisis() {
             </section>
 
             <p className="panel-update">
-              Última actualización: {new Date().toLocaleString()}
+              Última actualización: {new Date().toLocaleString("es-EC")}
             </p>
-          </section>
+          </motion.div>
         </main>
       </div>
     </>

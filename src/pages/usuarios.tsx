@@ -12,7 +12,7 @@ import iconImagen from "../assets/icon_imagen.svg";
 import iconEliminar from "../assets/icon_eliminar.svg";
 
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import { usuariosService, type UsuarioApi } from "../services/Usuario.Service";
 
@@ -20,6 +20,33 @@ import { usuariosService, type UsuarioApi } from "../services/Usuario.Service";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+
+// ✅ Animaciones + UI pro
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Search,
+  X,
+  Download,
+  RefreshCcw,
+  Users,
+  UserCheck,
+  UserX,
+  Activity,
+  FileSpreadsheet,
+  FileText,
+} from "lucide-react";
+
+// ✅ Charts (mismo stack que Dashboard/Comunidades) — BARRAS
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  LabelList,
+} from "recharts";
 
 type SessionUser = {
   nombre?: string;
@@ -39,23 +66,28 @@ type UsuarioUI = {
   comunidad: string;
   rol: string;
 
-  // ✅ Cuenta (habilitado / suspendido)
-  estado: EstadoUsuarioCuenta;
+  // Cuenta
+  estadoCuenta: EstadoUsuarioCuenta;
 
-  // ✅ Presencia (aprox por último acceso)
+  // Presencia aprox
   estadoOnline: EstadoUsuarioOnline;
 
-  fechaRegistro: string;
-  horaRegistro: string;
-  ultimoAcceso: string;
+  fechaRegistro: string; // dd/mm/yyyy (UI)
+  horaRegistro: string; // hh:mm (UI)
+  ultimoAcceso: string; // dd/mm/yyyy hh:mm (UI)
   fotoUrl?: string;
 
-  // guardo ISO original para calcular online con precisión local
+  // ISO para cálculos
+  fechaRegistroIso?: string | null;
   ultimoAccesoIso?: string | null;
 };
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
+}
+
+function isValidDate(d: Date) {
+  return d instanceof Date && !Number.isNaN(d.getTime());
 }
 
 function getSessionUser(): SessionUser {
@@ -72,7 +104,7 @@ function getSessionUser(): SessionUser {
         email: obj?.email,
       };
     } catch {
-      // ignore parse error
+      // ignore
     }
   }
   return { nombre: "Equipo SafeZone", rol: "Admin" };
@@ -81,19 +113,14 @@ function getSessionUser(): SessionUser {
 function isoToFechaHora(iso?: string | null) {
   if (!iso) return { fecha: "", hora: "" };
   const d = new Date(iso);
+  if (!isValidDate(d)) return { fecha: "", hora: "" };
   return {
     fecha: `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}/${d.getFullYear()}`,
     hora: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
   };
 }
 
-/**
- * ✅ Presencia aproximada:
- * - "Activo" si último acceso fue <= X minutos
- * - "Inactivo" si no hay último acceso o fue hace más tiempo
- *
- * Ajusta ONLINE_THRESHOLD_MIN si quieres 2, 5, 10 minutos, etc.
- */
+/** Presencia aproximada */
 const ONLINE_THRESHOLD_MIN = 1;
 
 function minutesDiffFromNow(iso?: string | null) {
@@ -109,8 +136,124 @@ function getEstadoOnline(ultimoAccesoIso?: string | null): EstadoUsuarioOnline {
   return mins <= ONLINE_THRESHOLD_MIN ? "Activo" : "Inactivo";
 }
 
+/* =========================
+   Bar Chart — registros 14d
+========================= */
+type DailyPoint = { key: string; label: string; registros: number };
+
+function toKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function fmtLabel(d: Date) {
+  const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  return `${pad2(d.getDate())} ${meses[d.getMonth()]}`;
+}
+
+function buildDailyRegistros(users: UsuarioUI[], days = 14): DailyPoint[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const base: DailyPoint[] = Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (days - 1 - i));
+    return {
+      key: toKey(d),
+      label: fmtLabel(d),
+      registros: 0,
+    };
+  });
+
+  const byKey = new Map(base.map((p) => [p.key, p]));
+  let hasRealDates = false;
+
+  for (const u of users) {
+    if (!u.fechaRegistroIso) continue;
+    const d = new Date(u.fechaRegistroIso);
+    if (!isValidDate(d)) continue;
+    hasRealDates = true;
+
+    d.setHours(0, 0, 0, 0);
+    const key = toKey(d);
+    const p = byKey.get(key);
+    if (!p) continue;
+    p.registros += 1;
+  }
+
+  // fallback suave si backend no manda fechaRegistro
+  if (!hasRealDates && users.length > 0) {
+    users.forEach((_, idx) => {
+      const i = idx % days;
+      base[i].registros += 1;
+    });
+  }
+
+  return base;
+}
+
+/* =========================
+   Tooltip PRO (glass) — registros
+========================= */
+function RegistrosTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value?: number }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+
+  const v = Number(payload[0]?.value ?? 0);
+
+  return (
+    <div className="chart-tooltip">
+      <div className="chart-tooltip-label">{label}</div>
+      <div className="chart-tooltip-row">
+        <span className="chart-tooltip-dot" />
+        <span className="chart-tooltip-value">{v}</span>
+        <span className="chart-tooltip-unit">registros</span>
+      </div>
+    </div>
+  );
+}
+
+/* =========================
+   Tooltip PRO — Top comunidades
+========================= */
+function ComunidadesTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value?: number }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const v = Number(payload[0]?.value ?? 0);
+
+  return (
+    <div className="chart-tooltip">
+      <div className="chart-tooltip-label">{label}</div>
+      <div className="chart-tooltip-row">
+        <span className="chart-tooltip-dot chart-tooltip-dot-teal" />
+        <span className="chart-tooltip-value">{v}</span>
+        <span className="chart-tooltip-unit">usuarios</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Usuarios() {
   const navigate = useNavigate();
+
+  // ✅ sidebar móvil
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
   const [usuarios, setUsuarios] = useState<UsuarioUI[]>([]);
@@ -123,62 +266,86 @@ export default function Usuarios() {
 
   const [me] = useState<SessionUser>(() => getSessionUser());
 
+  const handleLogout = () => navigate("/login");
+
+  const cargarUsuarios = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const data: UsuarioApi[] = await usuariosService.listar();
+
+      const usuariosTransformados: UsuarioUI[] = data.map((u) => {
+        const reg = isoToFechaHora(u.fechaRegistro);
+        const acc = isoToFechaHora(u.ultimoAcceso);
+
+        const comunidad = (u.comunidadNombre ?? "").trim() || "—";
+        const rolUI =
+          (u.rol ?? "").toLowerCase() === "admin" || u.id === 1 ? "Administrador" : "Usuario";
+
+        const ultimoAccesoIso = u.ultimoAcceso ?? null;
+
+        return {
+          id: u.id,
+          nombre: `${u.nombre ?? ""} ${u.apellido ?? ""}`.trim(),
+          email: u.email ?? "",
+          telefono: u.telefono ?? "",
+          comunidad,
+          rol: rolUI,
+
+          // ✅ Estado CUENTA
+          estadoCuenta: u.activo ? "Activo" : "Suspendido",
+
+          // ✅ Estado ONLINE
+          estadoOnline: getEstadoOnline(ultimoAccesoIso),
+
+          fechaRegistro: reg.fecha,
+          horaRegistro: reg.hora,
+          ultimoAcceso: acc.fecha ? `${acc.fecha} ${acc.hora}` : "—",
+          fotoUrl: u.fotoUrl,
+
+          // ISO para charts y refresh online
+          fechaRegistroIso: u.fechaRegistro ?? null,
+          ultimoAccesoIso,
+        };
+      });
+
+      setUsuarios(usuariosTransformados);
+    } catch (err) {
+      console.error("Error cargando usuarios", err);
+      setError("No se pudieron cargar los usuarios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchUsuarios = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const data: UsuarioApi[] = await usuariosService.listar();
-
-        const usuariosTransformados: UsuarioUI[] = data.map((u) => {
-          const reg = isoToFechaHora(u.fechaRegistro);
-          const acc = isoToFechaHora(u.ultimoAcceso);
-
-          const comunidad = (u.comunidadNombre ?? "").trim() || "—";
-
-          const rolUI =
-            (u.rol ?? "").toLowerCase() === "admin" || u.id === 1
-              ? "Administrador"
-              : "Usuario";
-
-          const ultimoAccesoIso = u.ultimoAcceso ?? null;
-
-          return {
-            id: u.id,
-            nombre: `${u.nombre ?? ""} ${u.apellido ?? ""}`.trim(),
-            email: u.email ?? "",
-            telefono: u.telefono ?? "",
-            comunidad,
-            rol: rolUI,
-
-            // ✅ Estado de CUENTA
-            estado: u.activo ? "Activo" : "Suspendido",
-
-            // ✅ Estado ONLINE (aprox)
-            estadoOnline: getEstadoOnline(ultimoAccesoIso),
-
-            fechaRegistro: reg.fecha,
-            horaRegistro: reg.hora,
-            ultimoAcceso: acc.fecha ? `${acc.fecha} ${acc.hora}` : "—",
-            fotoUrl: u.fotoUrl,
-            ultimoAccesoIso,
-          };
-        });
-
-        setUsuarios(usuariosTransformados);
-      } catch (err) {
-        console.error("Error cargando usuarios", err);
-        setError("No se pudieron cargar los usuarios");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUsuarios();
+    cargarUsuarios();
   }, []);
 
-  // Cerrar dropdown al click fuera / ESC
+  // ✅ recomputa estadoOnline cada 30s sin volver a pegar al backend
+  useEffect(() => {
+    const t = setInterval(() => {
+      setUsuarios((prev) =>
+        prev.map((u) => ({
+          ...u,
+          estadoOnline: getEstadoOnline(u.ultimoAccesoIso ?? null),
+        }))
+      );
+    }, 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  // ✅ Cerrar sidebar al agrandar pantalla
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 901) setSidebarOpen(false);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // ✅ Cerrar dropdown al click fuera / ESC
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (!openExport) return;
@@ -196,22 +363,87 @@ export default function Usuarios() {
     };
   }, [openExport]);
 
-  const handleLogout = () => navigate("/login");
+  const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value);
 
-  const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) =>
-    setBusqueda(e.target.value);
-
-  const usuariosFiltrados = usuarios.filter((u) => {
-    const term = busqueda.toLowerCase();
-    return (
-      u.nombre.toLowerCase().includes(term) ||
-      u.email.toLowerCase().includes(term) ||
-      u.comunidad.toLowerCase().includes(term)
-    );
-  });
+  const usuariosFiltrados = useMemo(() => {
+    const term = busqueda.toLowerCase().trim();
+    if (!term) return usuarios;
+    return usuarios.filter((u) => {
+      return (
+        u.nombre.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term) ||
+        u.comunidad.toLowerCase().includes(term)
+      );
+    });
+  }, [usuarios, busqueda]);
 
   // =========================
-  // ✅ EXPORT HELPERS (sin foto)
+  // KPIs
+  // =========================
+  const totalUsuarios = usuarios.length;
+
+  const cuentaActivos = useMemo(
+    () => usuarios.filter((u) => u.estadoCuenta === "Activo").length,
+    [usuarios]
+  );
+
+  const cuentaSuspendidos = useMemo(
+    () => usuarios.filter((u) => u.estadoCuenta === "Suspendido").length,
+    [usuarios]
+  );
+
+  const onlineActivos = useMemo(
+    () => usuarios.filter((u) => u.estadoOnline === "Activo").length,
+    [usuarios]
+  );
+
+  // =========================
+  // ✅ Top comunidades (con foto representativa)
+  // =========================
+  const topComunidades = useMemo(() => {
+    const by = new Map<string, { total: number; fotoUrl?: string }>();
+
+    for (const u of usuarios) {
+      const k = (u.comunidad ?? "—").trim() || "—";
+      const current = by.get(k);
+
+      if (!current) {
+        by.set(k, { total: 1, fotoUrl: u.fotoUrl });
+      } else {
+        current.total += 1;
+        // guarda primera foto disponible
+        if (!current.fotoUrl && u.fotoUrl) current.fotoUrl = u.fotoUrl;
+      }
+    }
+
+    return [...by.entries()]
+      .map(([comunidad, meta]) => ({
+        comunidad,
+        total: meta.total,
+        fotoUrl: meta.fotoUrl,
+      }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 7);
+  }, [usuarios]);
+
+  // =========================
+  // Donut Cuenta (CSS conic)
+  // =========================
+  const pct = (n: number) => (totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0);
+  const pAct = pct(cuentaActivos);
+
+  const donutBg =
+    totalUsuarios > 0
+      ? `conic-gradient(#16a34a 0% ${pAct}%, #ef4444 ${pAct}% 100%)`
+      : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
+
+  // =========================
+  // Bar chart data (registros)
+  // =========================
+  const lineData = useMemo(() => buildDailyRegistros(usuarios, 14), [usuarios]);
+
+  // =========================
+  // EXPORT (sin foto)
   // =========================
   const buildExportRows = () =>
     usuariosFiltrados.map((u) => ({
@@ -220,11 +452,8 @@ export default function Usuarios() {
       Telefono: u.telefono ?? "—",
       Comunidad: u.comunidad ?? "—",
       Rol: u.rol ?? "—",
-
-      // ✅ Incluyo ambos estados
-      "Estado cuenta": u.estado ?? "—",
+      "Estado cuenta": u.estadoCuenta ?? "—",
       Online: u.estadoOnline ?? "—",
-
       Registro: `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
       "Ultimo acceso": u.ultimoAcceso ?? "—",
     }));
@@ -266,12 +495,11 @@ export default function Usuarios() {
   const exportPDF = async () => {
     const doc = new jsPDF("p", "mm", "a4");
 
-    // Logo centrado arriba
     try {
       const logo = await toDataURL(logoSafeZone);
       doc.addImage(logo, "PNG", 95, 10, 20, 28);
     } catch {
-      // si falla el logo, igual genera el PDF
+      // ignore
     }
 
     doc.setFontSize(16);
@@ -284,24 +512,26 @@ export default function Usuarios() {
 
     autoTable(doc, {
       startY: 60,
-      head: [[
-        "Nombre",
-        "Correo",
-        "Teléfono",
-        "Comunidad",
-        "Rol",
-        "Estado cuenta",
-        "Online",
-        "Registro",
-        "Último acceso",
-      ]],
+      head: [
+        [
+          "Nombre",
+          "Correo",
+          "Teléfono",
+          "Comunidad",
+          "Rol",
+          "Estado cuenta",
+          "Online",
+          "Registro",
+          "Último acceso",
+        ],
+      ],
       body: usuariosFiltrados.map((u) => [
         u.nombre ?? "—",
         u.email ?? "—",
         u.telefono ?? "—",
         u.comunidad ?? "—",
         u.rol ?? "—",
-        u.estado ?? "—",
+        u.estadoCuenta ?? "—",
         u.estadoOnline ?? "—",
         `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
         u.ultimoAcceso ?? "—",
@@ -310,15 +540,15 @@ export default function Usuarios() {
       headStyles: { fillColor: [30, 30, 30] },
       margin: { left: 10, right: 10 },
       columnStyles: {
-        0: { cellWidth: 26 }, // Nombre
-        1: { cellWidth: 42 }, // Correo
-        2: { cellWidth: 18 }, // Teléfono
-        3: { cellWidth: 18 }, // Comunidad
-        4: { cellWidth: 16 }, // Rol
-        5: { cellWidth: 18 }, // Estado cuenta
-        6: { cellWidth: 14 }, // Online
-        7: { cellWidth: 18 }, // Registro
-        8: { cellWidth: 20 }, // Último acceso
+        0: { cellWidth: 26 },
+        1: { cellWidth: 42 },
+        2: { cellWidth: 18 },
+        3: { cellWidth: 18 },
+        4: { cellWidth: 16 },
+        5: { cellWidth: 18 },
+        6: { cellWidth: 14 },
+        7: { cellWidth: 18 },
+        8: { cellWidth: 20 },
       },
     });
 
@@ -328,47 +558,149 @@ export default function Usuarios() {
 
   const canExport = usuariosFiltrados.length > 0;
 
+  const badgeCuentaClass = (s: EstadoUsuarioCuenta) =>
+    s === "Activo" ? "badge badge-success" : "badge badge-danger";
+
+  const badgeOnlineClass = (s: EstadoUsuarioOnline) =>
+    s === "Activo" ? "badge badge-success" : "badge badge-danger";
+
+  const closeSidebar = () => setSidebarOpen(false);
+
+  // =========================
+  // ✅ Custom tick (foto + texto) para Top Comunidades
+  // =========================
+  const CommunityTick = (props: any) => {
+    const { x, y, payload, index } = props;
+    const name: string = payload?.value ?? "—";
+
+    const item = topComunidades.find((t) => t.comunidad === name);
+    const fotoUrl = item?.fotoUrl;
+    const initial = (name?.trim()?.[0] ?? "C").toUpperCase();
+    const clipId = `clip-comm-${index}`;
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <defs>
+          <clipPath id={clipId}>
+            <circle cx={10} cy={0} r={10} />
+          </clipPath>
+        </defs>
+
+        {/* avatar */}
+        {fotoUrl ? (
+          <>
+            <circle cx={10} cy={0} r={10} fill="rgba(15,23,42,0.06)" />
+            <image
+              href={fotoUrl}
+              x={0}
+              y={-10}
+              width={20}
+              height={20}
+              preserveAspectRatio="xMidYMid slice"
+              clipPath={`url(#${clipId})`}
+            />
+            <circle cx={10} cy={0} r={10} fill="transparent" stroke="rgba(255,255,255,0.85)" />
+          </>
+        ) : (
+          <>
+            <circle cx={10} cy={0} r={10} fill="rgba(148,163,184,0.35)" />
+            <text
+              x={10}
+              y={4}
+              textAnchor="middle"
+              fontSize="10"
+              fontWeight="900"
+              fill="rgba(15,23,42,0.72)"
+            >
+              {initial}
+            </text>
+            <circle cx={10} cy={0} r={10} fill="transparent" stroke="rgba(255,255,255,0.85)" />
+          </>
+        )}
+
+        {/* label */}
+        <text
+          x={26}
+          y={4}
+          fontSize="12"
+          fontWeight="900"
+          fill="rgba(15,23,42,0.78)"
+        >
+          {name.length > 18 ? `${name.slice(0, 18)}…` : name}
+        </text>
+      </g>
+    );
+  };
+
+  const ComunidadValueLabel = (props: any) => {
+    const { x, y, width, value } = props;
+    return (
+      <text
+        x={x + width + 10}
+        y={y + 12}
+        fontSize="12"
+        fontWeight="950"
+        fill="rgba(15,23,42,0.70)"
+      >
+        {Number(value ?? 0).toLocaleString("es-EC")}
+      </text>
+    );
+  };
+
   return (
     <>
       <div className="background" />
 
       <div className="dashboard">
-        {/* ========== SIDEBAR ========== */}
-        <aside className="sidebar">
+        {/* Overlay móvil */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              className="sidebar-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* SIDEBAR */}
+        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item">
+            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="sidebar-item">
+            <Link to="/comunidades" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item active">
+            <Link to="/usuarios" className="sidebar-item active" onClick={closeSidebar}>
               <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
             <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="sidebar-item">
-              <img src={iconIa} className="nav-icon" alt="Alertas" />
+            <Link to="/analisis" className="sidebar-item" onClick={closeSidebar}>
+              <img src={iconIa} className="nav-icon" alt="IA" />
               <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item">
+            <Link to="/reportes" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="sidebar-item">
+            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
               <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
@@ -385,97 +717,299 @@ export default function Usuarios() {
             </button>
             <span className="sidebar-version">v1.0 — SafeZone</span>
           </div>
-        </aside>
+        </motion.aside>
 
+        {/* MAIN */}
         <main className="usuarios-main">
-          <div className="usuario-panel">
-            {/* ✅ Header con Exportar */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-              }}
-            >
-              <h1 className="usuarios-title">Usuarios</h1>
-
-              <div
-                ref={exportRef}
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  alignItems: "center",
-                  position: "relative",
-                }}
+          <motion.div
+            className="usuarios-panel card"
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: "easeOut" }}
+          >
+            {/* TOPBAR */}
+            <div className="topbar">
+              <button
+                className="hamburger"
+                type="button"
+                aria-label="Abrir menú"
+                onClick={() => setSidebarOpen(true)}
               >
-                <button
-                  className="filter-pill"
-                  style={{
-                    cursor: canExport ? "pointer" : "not-allowed",
-                    opacity: canExport ? 1 : 0.6,
-                  }}
-                  onClick={() => setOpenExport((v) => !v)}
-                  disabled={!canExport}
-                  title="Exportar reporte"
-                >
-                  Exportar ▾
-                </button>
+                <span />
+                <span />
+                <span />
+              </button>
 
-                {openExport && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 44,
-                      right: 0,
-                      background: "rgba(20,20,20,0.95)",
-                      border: "1px solid rgba(255,255,255,0.15)",
-                      borderRadius: 12,
-                      padding: 6,
-                      minWidth: 160,
-                      zIndex: 10,
-                      boxShadow: "0 12px 28px rgba(0,0,0,0.45)",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    <button
-                      className="export-option"
-                      onClick={() => {
-                        exportExcel();
-                        setOpenExport(false);
-                      }}
-                    >
-                      Excel (.xlsx)
-                    </button>
+              <div className="topbar-shell">
+                <div className="topbar-left">
+                  <div className="page-title">Usuarios</div>
 
-                    <button
-                      className="export-option"
-                      onClick={() => {
-                        exportPDF();
-                        setOpenExport(false);
-                      }}
-                    >
-                      PDF
-                    </button>
+                  <div className={`search-pill-v2 ${busqueda ? "open" : ""}`}>
+                    <span className="search-ico-v2" aria-hidden="true">
+                      <Search size={18} />
+                    </span>
+
+                    <input
+                      type="text"
+                      className="search-input-v2"
+                      placeholder="Buscar por nombre, correo o comunidad..."
+                      value={busqueda}
+                      onChange={handleChangeBusqueda}
+                    />
+
+                    {!!busqueda && (
+                      <button
+                        className="search-clear-v2"
+                        type="button"
+                        aria-label="Limpiar búsqueda"
+                        onClick={() => setBusqueda("")}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
+
+                {/* Acciones */}
+                <div ref={exportRef} className="topbar-actions">
+                  <button
+                    className="action-pill"
+                    onClick={() => setOpenExport((v) => !v)}
+                    disabled={!canExport}
+                    title="Exportar reporte"
+                    type="button"
+                  >
+                    <Download size={18} />
+                  </button>
+
+                  {openExport && (
+                    <div className="export-dropdown">
+                      <button
+                        className="export-option"
+                        onClick={() => {
+                          exportExcel();
+                          setOpenExport(false);
+                        }}
+                        type="button"
+                      >
+                        <FileSpreadsheet size={16} />
+                        Excel (.xlsx)
+                      </button>
+
+                      <button
+                        className="export-option"
+                        onClick={() => {
+                          exportPDF();
+                          setOpenExport(false);
+                        }}
+                        type="button"
+                      >
+                        <FileText size={16} />
+                        PDF
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    className="action-pill action-pill-accent"
+                    onClick={cargarUsuarios}
+                    disabled={loading}
+                    title="Recargar"
+                    type="button"
+                  >
+                    <RefreshCcw size={18} />
+                    {loading ? "Cargando..." : "Recargar"}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="usuarios-search">
-              <input
-                type="text"
-                placeholder="Buscar por nombre, correo o comunidad..."
-                value={busqueda}
-                onChange={handleChangeBusqueda}
-              />
+            {error && <p className="ui-error">{error}</p>}
+
+            {/* KPIs */}
+            <div className="kpi-row">
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Total usuarios</span>
+                  <div className="kpi-icon kpi-total" aria-hidden="true">
+                    <Users size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{totalUsuarios}</div>
+                <div className="kpi-sub">Registrados en el sistema</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Cuenta activa</span>
+                  <div className="kpi-icon kpi-ok" aria-hidden="true">
+                    <UserCheck size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{cuentaActivos}</div>
+                <div className="kpi-sub">Acceso habilitado</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Suspendidos</span>
+                  <div className="kpi-icon kpi-bad" aria-hidden="true">
+                    <UserX size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{cuentaSuspendidos}</div>
+                <div className="kpi-sub">Acceso restringido</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Online (aprox)</span>
+                  <div className="kpi-icon kpi-warn" aria-hidden="true">
+                    <Activity size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{onlineActivos}</div>
+                <div className="kpi-sub">Último acceso ≤ {ONLINE_THRESHOLD_MIN} min</div>
+              </div>
             </div>
 
-            {loading && <p className="loading">Cargando usuarios…</p>}
-            {error && <p className="error">{error}</p>}
+            {/* Charts + Side card */}
+            <div className="grid-2col">
+              <section className="chart-card-v2 card">
+                <div className="chart-head">
+                  <div>
+                    <div className="chart-title-v2">Registros de usuarios</div>
+                    <div className="chart-sub-v2">Últimos 14 días</div>
+                  </div>
+                </div>
 
-            {!loading && (
-              <section className="usuarios-card">
+                <div className="line-chart-wrap">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={lineData}
+                      margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                      barCategoryGap="28%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.18} vertical={false} />
+
+                      <XAxis
+                        dataKey="label"
+                        tickMargin={10}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "rgba(15,23,42,0.65)", fontSize: 12, fontWeight: 700 }}
+                      />
+
+                      <YAxis
+                        tickMargin={10}
+                        allowDecimals={false}
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fill: "rgba(15,23,42,0.55)", fontSize: 12, fontWeight: 700 }}
+                      />
+
+                      <Tooltip cursor={{ fill: "rgba(249,81,80,0.08)" }} content={<RegistrosTooltip />} />
+
+                      <Bar
+                        dataKey="registros"
+                        fill="#f95150"
+                        radius={[10, 10, 0, 0]}
+                        maxBarSize={34}
+                        animationDuration={650}
+                        background={{ fill: "rgba(15,23,42,0.06)" }}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              <section className="side-card-v2 card">
+                <div className="chart-head">
+                  <div>
+                    <div className="chart-title-v2">Estado de cuenta</div>
+                    <div className="chart-sub-v2">Distribución global</div>
+                  </div>
+                </div>
+
+                <div className="donut-wrap">
+                  <div className="donut" style={{ background: donutBg }} aria-label="Donut cuenta">
+                    <div className="donut-hole">
+                      <div className="donut-total">{totalUsuarios}</div>
+                      <div className="donut-label">Usuarios</div>
+                    </div>
+                  </div>
+
+                  <div className="donut-legend">
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span className="donut-name">Activos</span>
+                      <span className="donut-val">{cuentaActivos}</span>
+                    </div>
+
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span className="donut-name">Suspendidos</span>
+                      <span className="donut-val">{cuentaSuspendidos}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ✅ TOP COMUNIDADES (estilo imagen: barras horizontales + valor a la derecha + foto) */}
+                <div className="topbars">
+                  <div className="topbars-head">
+                    <div>
+                      <div className="topbars-title">Top comunidades</div>
+                      <div className="topbars-sub">Usuarios por comunidad</div>
+                    </div>
+                  </div>
+
+                  <div className="topbars-chart">
+                    {topComunidades.length === 0 ? (
+                      <div className="toplist-empty">Sin datos</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={topComunidades}
+                          layout="vertical"
+                          margin={{ top: 4, right: 28, left: 0, bottom: 0 }}
+                          barCategoryGap={12}
+                        >
+                          <XAxis type="number" hide />
+                          <YAxis
+                            type="category"
+                            dataKey="comunidad"
+                            axisLine={false}
+                            tickLine={false}
+                            width={150}
+                            tick={CommunityTick}
+                          />
+                          <Tooltip
+                            cursor={{ fill: "rgba(15,23,42,0.04)" }}
+                            content={<ComunidadesTooltip />}
+                          />
+                          <Bar
+                            dataKey="total"
+                            fill="rgba(16,185,129,0.40)"
+                            radius={[12, 12, 12, 12]}
+                            background={{ fill: "rgba(15,23,42,0.06)" }}
+                            barSize={16}
+                            animationDuration={650}
+                          >
+                            <LabelList dataKey="total" content={ComunidadValueLabel} />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Tabla */}
+            <section className="usuarios-card">
+              {loading ? (
+                <div className="ui-loading">Cargando usuarios…</div>
+              ) : (
                 <table className="usuarios-tabla">
                   <thead>
                     <tr>
@@ -485,8 +1019,8 @@ export default function Usuarios() {
                       <th>Teléfono</th>
                       <th>Comunidad</th>
                       <th>Rol</th>
-                      <th>Estado</th>
-
+                      <th>Cuenta</th>
+                      <th>Online</th>
                       <th>Registro</th>
                       <th>Último acceso</th>
                       <th>Acciones</th>
@@ -500,29 +1034,25 @@ export default function Usuarios() {
                           {u.fotoUrl ? (
                             <img src={u.fotoUrl} alt="foto" className="user-photo-icon" />
                           ) : (
-                            <img src={iconImagen} alt="foto" />
+                            <img src={iconImagen} alt="foto" className="user-photo-icon" />
                           )}
                         </td>
 
-                        <td>{u.nombre}</td>
-                        <td>{u.email}</td>
-                        <td>{u.telefono}</td>
-                        <td>{u.comunidad}</td>
+                        <td title={u.nombre}>{u.nombre}</td>
+                        <td title={u.email}>{u.email}</td>
+                        <td title={u.telefono}>{u.telefono}</td>
+                        <td title={u.comunidad}>{u.comunidad}</td>
                         <td>{u.rol}</td>
 
+                        <td>
+                          <span className={badgeCuentaClass(u.estadoCuenta)}>{u.estadoCuenta}</span>
+                        </td>
 
-                        {/* ✅ Estado online (aprox) */}
                         <td>
                           <span
-                            className={
-                              u.estadoOnline === "Activo"
-                                ? "badge badge-success"
-                                : "badge badge-danger"
-                            }
+                            className={badgeOnlineClass(u.estadoOnline)}
                             title={
-                              u.ultimoAccesoIso
-                                ? `Último acceso ISO: ${u.ultimoAccesoIso}`
-                                : "Sin registro de acceso"
+                              u.ultimoAccesoIso ? `Último acceso: ${u.ultimoAccesoIso}` : "Sin registro de acceso"
                             }
                           >
                             {u.estadoOnline}
@@ -530,18 +1060,19 @@ export default function Usuarios() {
                         </td>
 
                         <td>
-                          {u.fechaRegistro}
+                          {u.fechaRegistro || "—"}
                           <br />
-                          <span className="time">{u.horaRegistro}</span>
+                          <span className="time">{u.horaRegistro || ""}</span>
                         </td>
 
-                        <td>{u.ultimoAcceso}</td>
+                        <td title={u.ultimoAcceso}>{u.ultimoAcceso}</td>
 
-                        <td>
+                        <td className="acciones">
                           <button
                             className="icon-button"
                             title="Eliminar"
                             onClick={() => alert("Eliminar usuario: pendiente backend")}
+                            type="button"
                           >
                             <img src={iconEliminar} alt="Eliminar" />
                           </button>
@@ -551,21 +1082,18 @@ export default function Usuarios() {
 
                     {usuariosFiltrados.length === 0 && (
                       <tr>
-                        {/* ✅ ahora son 11 columnas */}
-                        <td colSpan={11} style={{ textAlign: "center" }}>
+                        <td colSpan={11} style={{ textAlign: "center", fontWeight: 900 }}>
                           No se encontraron usuarios.
                         </td>
                       </tr>
                     )}
                   </tbody>
                 </table>
-              </section>
-            )}
+              )}
+            </section>
 
-            <p className="usuarios-update">
-              Última actualización: {new Date().toLocaleString("es-EC")}
-            </p>
-          </div>
+            <p className="usuarios-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
+          </motion.div>
         </main>
       </div>
     </>

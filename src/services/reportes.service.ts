@@ -7,12 +7,29 @@ export type EstadoReporte = "Atendido" | "Pendiente" | "Falso positivo";
 export type Reporte = {
   id: string;
   usuario: string;
+
+  // ✅ FOTO ORIGINAL del usuario (viene del backend)
+  // (URL de Cloudinary / Firebase / tu backend)
+  usuarioFotoUrl?: string | null;
+
   tipo: string;
   comunidad: string;
   fecha: string; // dd/mm/yyyy
   ubicacion: string;
   estado: EstadoReporte;
 };
+
+type IncidenteExtras = {
+  // Coloca aquí los nombres más comunes que podría traerte tu API
+  usuarioFotoUrl?: string | null;
+  usuarioFoto?: string | null;
+  usuarioAvatarUrl?: string | null;
+  fotoUrl?: string | null;
+  avatarUrl?: string | null;
+  usuarioFotoPerfil?: string | null;
+};
+
+type IncidenteReporteDTO = IncidenteResponseDTO & IncidenteExtras;
 
 function pad2(n: number) {
   return String(n).padStart(2, "0");
@@ -32,16 +49,33 @@ function normalizarEstado(estadoApi?: string | null): EstadoReporte {
   return "Pendiente";
 }
 
-function mapIncidenteToReporte(i: IncidenteResponseDTO): Reporte {
+function pickUsuarioFoto(i: IncidenteReporteDTO): string | null {
+  // ✅ Prioridad a "usuarioFotoUrl" (lo que tú dices que ya viene)
+  return (
+    i.usuarioFotoUrl ??
+    i.usuarioFoto ??
+    i.usuarioAvatarUrl ??
+    i.usuarioFotoPerfil ??
+    i.fotoUrl ??
+    i.avatarUrl ??
+    null
+  );
+}
+
+function mapIncidenteToReporte(i: IncidenteReporteDTO): Reporte {
   return {
     id: String(i.id),
     usuario: i.usuarioNombre || "Usuario",
+
+    // ✅ Foto original
+    usuarioFotoUrl: pickUsuarioFoto(i),
+
     tipo: i.tipo || "Sin tipo",
     comunidad: i.comunidadNombre || "Sin comunidad",
     fecha: isoToDDMMYYYY(i.fechaCreacion),
     ubicacion:
-      typeof i.lat === "number" && typeof i.lng === "number"
-        ? `(${i.lat.toFixed(5)}, ${i.lng.toFixed(5)})`
+      typeof (i as any).lat === "number" && typeof (i as any).lng === "number"
+        ? `(${(i as any).lat.toFixed(5)}, ${(i as any).lng.toFixed(5)})`
         : "Sin ubicación",
     estado: normalizarEstado(i.estado),
   };
@@ -50,11 +84,11 @@ function mapIncidenteToReporte(i: IncidenteResponseDTO): Reporte {
 export const reportesService = {
   // GET /api/incidentes
   async listar(): Promise<Reporte[]> {
-    const data = await apiClient.get<IncidenteResponseDTO[]>("/incidentes");
+    const data = await apiClient.get<IncidenteReporteDTO[]>("/incidentes");
     return data.map(mapIncidenteToReporte);
   },
 
-  // DELETE /api/incidentes/{id}  (solo si tu backend lo tiene)
+  // DELETE /api/incidentes/{id}
   async eliminar(id: string | number): Promise<void> {
     await apiClient.del<void>(`/incidentes/${id}`);
   },

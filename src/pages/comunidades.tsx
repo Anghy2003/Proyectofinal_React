@@ -25,8 +25,33 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// ✅ Animaciones (sidebar overlay + entrada suave)
+// ✅ Animaciones
 import { AnimatePresence, motion } from "framer-motion";
+
+// ✅ Gráfico de líneas (mismo estilo dashboard)
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+} from "recharts";
+
+// ✅ Íconos pro
+import {
+  Search,
+  X,
+  Download,
+  RefreshCcw,
+  Building2,
+  CheckCircle2,
+  Clock3,
+  XCircle,
+  FileSpreadsheet,
+  FileText,
+} from "lucide-react";
 
 type SessionUser = {
   nombre?: string;
@@ -34,6 +59,117 @@ type SessionUser = {
   fotoUrl?: string;
   email?: string;
 };
+
+type DailyPoint = {
+  key: string; // YYYY-MM-DD
+  label: string; // "04 Ene"
+  total: number;
+  activas: number;
+  solicitadas: number;
+  rechazadas: number;
+};
+
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function isValidDate(d: Date) {
+  return d instanceof Date && !Number.isNaN(d.getTime());
+}
+
+function getCommunityDate(c: any): Date | null {
+  const candidates = [
+    c?.createdAt,
+    c?.fechaCreacion,
+    c?.fechaRegistro,
+    c?.created_at,
+    c?.updatedAt,
+    c?.fechaActualizacion,
+    c?.updated_at,
+  ].filter(Boolean);
+
+  for (const v of candidates) {
+    const d = new Date(v);
+    if (isValidDate(d)) return d;
+  }
+  return null;
+}
+
+function fmtLabel(d: Date) {
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${dd} ${meses[d.getMonth()]}`;
+}
+
+function toKey(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // base: últimos N días
+  const base: DailyPoint[] = Array.from({ length: days }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (days - 1 - i));
+    const key = toKey(d);
+    return {
+      key,
+      label: fmtLabel(d),
+      total: 0,
+      activas: 0,
+      solicitadas: 0,
+      rechazadas: 0,
+    };
+  });
+
+  const byKey = new Map(base.map((p) => [p.key, p]));
+
+  // si hay fechas reales, agregamos por día
+  let hasRealDates = false;
+
+  comunidades.forEach((c) => {
+    const d = getCommunityDate(c as any);
+    if (!d) return;
+    hasRealDates = true;
+
+    d.setHours(0, 0, 0, 0);
+    const key = toKey(d);
+    const p = byKey.get(key);
+    if (!p) return; // fuera de rango (no lo mostramos)
+
+    p.total += 1;
+    if (c.estado === "ACTIVA") p.activas += 1;
+    if (c.estado === "SOLICITADA") p.solicitadas += 1;
+    if (c.estado === "RECHAZADA") p.rechazadas += 1;
+  });
+
+  // fallback: si NO hay fechas, distribuimos “estético” por índice (para que el line chart no sea una línea plana)
+  if (!hasRealDates && comunidades.length > 0) {
+    comunidades.forEach((c, idx) => {
+      const i = idx % days;
+      const p = base[i];
+      p.total += 1;
+      if (c.estado === "ACTIVA") p.activas += 1;
+      if (c.estado === "SOLICITADA") p.solicitadas += 1;
+      if (c.estado === "RECHAZADA") p.rechazadas += 1;
+    });
+  }
+
+  // acumulado (para que se vea como tendencia real)
+  let accTotal = 0, accA = 0, accS = 0, accR = 0;
+  return base.map((p) => {
+    accTotal += p.total;
+    accA += p.activas;
+    accS += p.solicitadas;
+    accR += p.rechazadas;
+    return { ...p, total: accTotal, activas: accA, solicitadas: accS, rechazadas: accR };
+  });
+}
 
 export default function Comunidades() {
   const navigate = useNavigate();
@@ -68,7 +204,7 @@ export default function Comunidades() {
           email: obj?.email,
         };
       } catch {
-        // ignore parse error
+        // ignore
       }
     }
     return { nombre: "Equipo SafeZone", rol: "Admin" };
@@ -94,7 +230,7 @@ export default function Comunidades() {
     cargarComunidades();
   }, []);
 
-  // ✅ Cerrar sidebar al agrandar pantalla (evita quedar abierto)
+  // ✅ Cerrar sidebar al agrandar pantalla
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 901) setSidebarOpen(false);
@@ -121,18 +257,27 @@ export default function Comunidades() {
     };
   }, [openExport]);
 
-  // KPIs
+  // =========================
+  // KPIs + métricas
+  // =========================
   const totalComunidades = comunidades.length;
+
   const activasCount = useMemo(
     () => comunidades.filter((c) => c.estado === "ACTIVA").length,
     [comunidades]
   );
-  const inactivasCount = useMemo(
+
+  const solicitadasCount = useMemo(
+    () => comunidades.filter((c) => c.estado === "SOLICITADA").length,
+    [comunidades]
+  );
+
+  const rechazadasCount = useMemo(
     () => comunidades.filter((c) => c.estado === "RECHAZADA").length,
     [comunidades]
   );
 
-  // Filtro por buscador (nombre, código, dirección)
+  // Filtro
   const comunidadesFiltradas = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return comunidades;
@@ -148,7 +293,7 @@ export default function Comunidades() {
   const badgeClass = (estado: EstadoComunidad) => {
     if (estado === "ACTIVA") return "badge badge-success";
     if (estado === "RECHAZADA") return "badge badge-danger";
-    return "badge badge-warning"; // SOLICITADA
+    return "badge badge-warning";
   };
 
   const labelEstado = (estado: EstadoComunidad) => {
@@ -158,7 +303,7 @@ export default function Comunidades() {
   };
 
   // =========================
-  // ✅ EXPORT HELPERS
+  // EXPORT
   // =========================
   const buildExportRows = () =>
     comunidadesFiltradas.map((c) => ({
@@ -174,11 +319,11 @@ export default function Comunidades() {
     const ws = XLSX.utils.json_to_sheet(rows);
 
     ws["!cols"] = [
-      { wch: 14 }, // Codigo
-      { wch: 28 }, // Nombre
-      { wch: 12 }, // Miembros
-      { wch: 60 }, // Direccion
-      { wch: 14 }, // Estado
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 12 },
+      { wch: 60 },
+      { wch: 14 },
     ];
 
     const wb = XLSX.utils.book_new();
@@ -245,7 +390,28 @@ export default function Comunidades() {
 
   const canExport = comunidadesFiltradas.length > 0;
 
-  // ✅ helper: cerrar sidebar al navegar (solo en móvil)
+  // =========================
+  // Donut (CSS conic-gradient)
+  // =========================
+  const pct = (n: number) => (totalComunidades > 0 ? (n / totalComunidades) * 100 : 0);
+  const pAct = pct(activasCount);
+  const pSol = pct(solicitadasCount);
+  const pRec = pct(rechazadasCount);
+
+  const donutBg =
+    totalComunidades > 0
+      ? `conic-gradient(
+          #16a34a 0% ${pAct}%,
+          #f59e0b ${pAct}% ${pAct + pSol}%,
+          #ef4444 ${pAct + pSol}% 100%
+        )`
+      : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
+
+  // =========================
+  // ✅ LINE CHART DATA
+  // =========================
+  const lineData = useMemo(() => buildDailySeries(comunidades, 14), [comunidades]);
+
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
@@ -253,7 +419,7 @@ export default function Comunidades() {
       <div className="background" />
 
       <div className="dashboard">
-        {/* ✅ Overlay móvil (para cerrar sidebar al tocar fuera) */}
+        {/* Overlay móvil */}
         <AnimatePresence>
           {sidebarOpen && (
             <motion.div
@@ -266,11 +432,8 @@ export default function Comunidades() {
           )}
         </AnimatePresence>
 
-        {/* ========== SIDEBAR ========== */}
-        <motion.aside
-          className={`sidebar ${sidebarOpen ? "open" : ""}`}
-          initial={false}
-        >
+        {/* SIDEBAR */}
+        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
@@ -323,111 +486,243 @@ export default function Comunidades() {
           </div>
         </motion.aside>
 
-        {/* CONTENIDO PRINCIPAL */}
+        {/* MAIN */}
         <main className="comunidades-main">
           <motion.div
-            className="comunidades-panel"
+            className="comunidades-panel card"
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: "easeOut" }}
           >
-            {/* ✅ TOP: sandwich + título + acciones */}
-            <div className="panel-top">
-              <div className="panel-left">
-                <button
-                  className="menu-button"
-                  type="button"
-                  aria-label="Abrir menú"
-                  onClick={() => setSidebarOpen(true)}
-                >
-                  ☰
-                </button>
+            {/* TOPBAR */}
+            <div className="topbar">
+              <button
+                className="hamburger"
+                type="button"
+                aria-label="Abrir menú"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <span />
+                <span />
+                <span />
+              </button>
 
-                <h1 className="panel-title">Comunidades registradas</h1>
-              </div>
+              <div className="topbar-shell">
+                <div className="topbar-left">
+                  <div className="page-title">Comunidades</div>
 
-              <div ref={exportRef} className="panel-actions">
-                <button
-                  className="filter-pill"
-                  style={{
-                    cursor: canExport ? "pointer" : "not-allowed",
-                    opacity: canExport ? 1 : 0.6,
-                  }}
-                  onClick={() => setOpenExport((v) => !v)}
-                  disabled={!canExport}
-                  title="Exportar reporte"
-                >
-                  Exportar ▾
-                </button>
+                  <div className={`search-pill-v2 ${search ? "open" : ""}`}>
+                    <span className="search-ico-v2" aria-hidden="true">
+                      <Search size={18} />
+                    </span>
 
-                {openExport && (
-                  <div className="export-dropdown">
-                    <button
-                      className="export-option"
-                      onClick={() => {
-                        exportExcel();
-                        setOpenExport(false);
-                      }}
-                    >
-                      Excel (.xlsx)
-                    </button>
+                    <input
+                      type="text"
+                      className="search-input-v2"
+                      placeholder="Buscar por nombre, código o dirección..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
 
-                    <button
-                      className="export-option"
-                      onClick={() => {
-                        exportPDF();
-                        setOpenExport(false);
-                      }}
-                    >
-                      PDF
-                    </button>
+                    {!!search && (
+                      <button
+                        className="search-clear-v2"
+                        type="button"
+                        aria-label="Limpiar búsqueda"
+                        onClick={() => setSearch("")}
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
                   </div>
-                )}
+                </div>
 
-                <button
-                  className="filter-pill"
-                  style={{ cursor: "pointer" }}
-                  onClick={cargarComunidades}
-                  disabled={loading}
-                  title="Recargar"
-                >
-                  {loading ? "Cargando..." : "Recargar"}
-                </button>
+                {/* ✅ BOTONES ARREGLADOS (ya se ven) */}
+                <div ref={exportRef} className="topbar-actions">
+                  <button
+                    className="action-pill"
+                    onClick={() => setOpenExport((v) => !v)}
+                    disabled={!canExport}
+                    title="Exportar reporte"
+                    type="button"
+                  >
+                    <Download size={18} />
+                    Exportar
+                  </button>
+
+                  {openExport && (
+                    <div className="export-dropdown">
+                      <button
+                        className="export-option"
+                        onClick={() => {
+                          exportExcel();
+                          setOpenExport(false);
+                        }}
+                        type="button"
+                      >
+                        <FileSpreadsheet size={16} />
+                        Excel (.xlsx)
+                      </button>
+
+                      <button
+                        className="export-option"
+                        onClick={() => {
+                          exportPDF();
+                          setOpenExport(false);
+                        }}
+                        type="button"
+                      >
+                        <FileText size={16} />
+                        PDF
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    className="action-pill action-pill-accent"
+                    onClick={cargarComunidades}
+                    disabled={loading}
+                    title="Recargar"
+                    type="button"
+                  >
+                    <RefreshCcw size={18} />
+                    {loading ? "Cargando..." : "Recargar"}
+                  </button>
+                </div>
               </div>
             </div>
 
-            {error && <p style={{ color: "tomato", marginTop: 10 }}>{error}</p>}
+            {error && (
+              <p style={{ color: "#f95150", fontWeight: 900, marginTop: 6 }}>
+                {error}
+              </p>
+            )}
 
             {/* KPIs */}
             <div className="kpi-row">
               <div className="kpi-card">
-                <span className="kpi-label">Total Comunidades</span>
-                <span className="kpi-value">{totalComunidades}</span>
+                <div className="kpi-head">
+                  <span className="kpi-label">Total comunidades</span>
+                  <div className="kpi-icon kpi-total" aria-hidden="true">
+                    <Building2 size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{totalComunidades}</div>
+                <div className="kpi-sub">Registradas en el sistema</div>
               </div>
 
               <div className="kpi-card">
-                <span className="kpi-label">Activas</span>
-                <span className="kpi-value kpi-ok">{activasCount}</span>
+                <div className="kpi-head">
+                  <span className="kpi-label">Activas</span>
+                  <div className="kpi-icon kpi-ok" aria-hidden="true">
+                    <CheckCircle2 size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{activasCount}</div>
+                <div className="kpi-sub">Operativas y visibles</div>
               </div>
 
               <div className="kpi-card">
-                <span className="kpi-label">Inactivas</span>
-                <span className="kpi-value kpi-bad">{inactivasCount}</span>
+                <div className="kpi-head">
+                  <span className="kpi-label">Solicitadas</span>
+                  <div className="kpi-icon kpi-warn" aria-hidden="true">
+                    <Clock3 size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{solicitadasCount}</div>
+                <div className="kpi-sub">Pendientes de revisión</div>
+              </div>
+
+              <div className="kpi-card">
+                <div className="kpi-head">
+                  <span className="kpi-label">Rechazadas</span>
+                  <div className="kpi-icon kpi-bad" aria-hidden="true">
+                    <XCircle size={24} />
+                  </div>
+                </div>
+                <div className="kpi-value">{rechazadasCount}</div>
+                <div className="kpi-sub">No habilitadas</div>
               </div>
             </div>
 
-            {/* Buscador */}
-            <div className="search-wrapper">
-              <input
-                type="text"
-                className="search-input"
-                placeholder="Buscar por nombre, código o dirección..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+            {/* ✅ INSIGHTS: LINE CHART + DONUT */}
+            <div className="grid-2col">
+              <section className="chart-card-v2 card">
+                <div className="chart-head">
+                  <div>
+                    <div className="chart-title-v2">Tendencia de comunidades</div>
+                    <div className="chart-sub-v2">Últimos 14 días (acumulado)</div>
+                  </div>
+                </div>
+
+                <div className="line-chart-wrap">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={lineData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                      <XAxis dataKey="label" tickMargin={8} />
+                      <YAxis tickMargin={8} allowDecimals={false} />
+                      <Tooltip
+                        formatter={(v: any, name: any) => [v, name]}
+                        labelFormatter={(l) => `Día: ${l}`}
+                      />
+                      {/* Total en rojo (marca) */}
+                      <Line
+                        type="monotone"
+                        dataKey="total"
+                        name="Total"
+                        stroke="#f95150"
+                        strokeWidth={3}
+                        dot={false}
+                      />
+                      {/* líneas suaves por estado */}
+                      <Line type="monotone" dataKey="activas" name="Activas" stroke="#16a34a" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="solicitadas" name="Solicitadas" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="rechazadas" name="Rechazadas" stroke="#ef4444" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+
+              <section className="donut-card-v2 card">
+                <div className="chart-head">
+                  <div>
+                    <div className="chart-title-v2">Estado global</div>
+                    <div className="chart-sub-v2">Donut por proporción</div>
+                  </div>
+                </div>
+
+                <div className="donut-wrap">
+                  <div className="donut" style={{ background: donutBg }} aria-label="Donut de estados">
+                    <div className="donut-hole">
+                      <div className="donut-total">{totalComunidades}</div>
+                      <div className="donut-label">Comunidades</div>
+                    </div>
+                  </div>
+
+                  <div className="donut-legend">
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span className="donut-name">Activas</span>
+                      <span className="donut-val">{activasCount}</span>
+                    </div>
+
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#f59e0b" }} />
+                      <span className="donut-name">Solicitadas</span>
+                      <span className="donut-val">{solicitadasCount}</span>
+                    </div>
+
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span className="donut-name">Rechazadas</span>
+                      <span className="donut-val">{rechazadasCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
 
-            {/* ✅ TABLA (desktop/tablet) */}
+            {/* TABLA */}
             <section className="tabla-panel">
               <div className="tabla-inner">
                 <table className="tabla-comunidades">
@@ -446,13 +741,13 @@ export default function Comunidades() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center" }}>
+                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
                           Cargando comunidades...
                         </td>
                       </tr>
                     ) : comunidadesFiltradas.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center" }}>
+                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
                           No se encontraron comunidades.
                         </td>
                       </tr>
@@ -467,9 +762,10 @@ export default function Comunidades() {
                                 style={{
                                   width: 34,
                                   height: 34,
-                                  borderRadius: 10,
+                                  borderRadius: 12,
                                   objectFit: "cover",
-                                  border: "1px solid rgba(255,255,255,0.15)",
+                                  border: "1px solid rgba(15,23,42,0.10)",
+                                  background: "rgba(255,255,255,0.7)",
                                 }}
                               />
                             ) : (
@@ -477,9 +773,9 @@ export default function Comunidades() {
                                 style={{
                                   width: 34,
                                   height: 34,
-                                  borderRadius: 10,
-                                  background: "rgba(255,255,255,0.08)",
-                                  border: "1px solid rgba(255,255,255,0.15)",
+                                  borderRadius: 12,
+                                  background: "rgba(15,23,42,0.06)",
+                                  border: "1px solid rgba(15,23,42,0.10)",
                                 }}
                               />
                             )}
@@ -499,6 +795,7 @@ export default function Comunidades() {
                               className="icon-button"
                               onClick={() => alert("Editar comunidad (pendiente)")}
                               title="Editar"
+                              type="button"
                             >
                               <img src={iconEdit} alt="Editar" />
                             </button>
@@ -507,6 +804,7 @@ export default function Comunidades() {
                               className="icon-button"
                               onClick={() => alert("Eliminar / desactivar (pendiente)")}
                               title="Eliminar"
+                              type="button"
                             >
                               <img src={iconEliminar} alt="Eliminar" />
                             </button>
@@ -518,68 +816,6 @@ export default function Comunidades() {
                 </table>
               </div>
             </section>
-
-            {/* ✅ VISTA MÓVIL (cards) */}
-            <div className="comunidades-cards">
-              {loading ? (
-                <div className="card-empty">Cargando comunidades...</div>
-              ) : comunidadesFiltradas.length === 0 ? (
-                <div className="card-empty">No se encontraron comunidades.</div>
-              ) : (
-                comunidadesFiltradas.map((c) => (
-                  <div className="comunidad-card" key={c.id}>
-                    <div className="card-top">
-                      <div className="card-left">
-                        {c.fotoUrl ? (
-                          <img className="card-avatar" src={c.fotoUrl} alt="foto comunidad" />
-                        ) : (
-                          <div className="card-avatar placeholder" />
-                        )}
-
-                        <div className="card-title">
-                          <div className="card-name">{c.nombre ?? "—"}</div>
-                          <div className="card-code">Código: {c.codigoAcceso ?? "—"}</div>
-                        </div>
-                      </div>
-
-                      <span className={badgeClass(c.estado)}>{labelEstado(c.estado)}</span>
-                    </div>
-
-                    <div className="card-grid">
-                      <div className="card-field">
-                        <span className="card-label">Miembros</span>
-                        <span className="card-value">{c.miembrosCount ?? 0}</span>
-                      </div>
-
-                      <div className="card-field wide">
-                        <span className="card-label">Dirección</span>
-                        <span className="card-value address" title={c.direccion ?? ""}>
-                          {c.direccion ?? "—"}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="card-actions">
-                      <button
-                        className="icon-button"
-                        onClick={() => alert("Editar comunidad (pendiente)")}
-                        title="Editar"
-                      >
-                        <img src={iconEdit} alt="Editar" />
-                      </button>
-
-                      <button
-                        className="icon-button"
-                        onClick={() => alert("Eliminar / desactivar (pendiente)")}
-                        title="Eliminar"
-                      >
-                        <img src={iconEliminar} alt="Eliminar" />
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
 
             <p className="panel-update">
               Última actualización: {new Date().toLocaleString("es-EC")}

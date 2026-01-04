@@ -1,9 +1,45 @@
-/* ===== Fondo general (mismo que login) ===== */
-body {
-  margin: 0;
-  font-family: "Inter", sans-serif;
+/* src/styles/analisis.css
+   NUEVO DISEÑO (igual a Usuarios) + FIX letras filtros (negro/plomo)
+   + sin KPI “posibles falsos” (layout soporta 3 o 4 con auto-fit)
+*/
+
+/* ===========================
+   RESET + FUENTE
+=========================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+}
+
+/* ===========================
+   THEME
+=========================== */
+:root {
+  --sz-accent: #f95150;
+  --sz-accent-2: #ff7473;
+
+  --ink: #0f172a;
+  --muted: rgba(71, 85, 105, 0.92);
+
+  --glass: rgba(255, 255, 255, 0.56);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.82);
+
+  --shadow: 0 18px 55px rgba(15, 23, 42, 0.12);
+  --shadow-strong: 0 22px 70px rgba(15, 23, 42, 0.16);
+
+  --radius: 20px;
+}
+
+/* ===========================
+   FONDO
+=========================== */
 .background {
   position: fixed;
   inset: 0;
@@ -11,39 +47,60 @@ body {
   background-size: cover;
   background-position: center;
   filter: brightness(0.55);
-  z-index: -1;
+  z-index: -2;
 }
 
-/* ===== Layout principal ===== */
+/* ===========================
+   LAYOUT
+=========================== */
 .dashboard {
   position: relative;
   min-height: 100vh;
   display: flex;
-  color: #ffffff;
+  color: var(--ink);
 }
 
-/* ===== Sidebar ===== */
+/* Overlay móvil (si lo usas luego) */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9;
+}
 
+.card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  color: var(--ink);
+}
+
+/* ===========================
+   SIDEBAR (igual Usuarios)
+=========================== */
 .sidebar {
   position: fixed;
   top: 0;
   left: 0;
   bottom: 0;
 
-  width: 240px;
-  padding: 20px 18px;
-  box-sizing: border-box;
+  width: 260px;
+  padding: 18px 16px;
 
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 0 20px 20px 0;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-radius: 0 22px 22px 0;
+  box-shadow: var(--shadow);
 
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   gap: 10px;
 
   z-index: 10;
@@ -53,21 +110,27 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 26px;
+  margin-bottom: 12px;
 }
 
 .sidebar-logo {
-  width: 48px;
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
 }
 
 .sidebar-title {
-  font-weight: 600;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+  color: var(--sz-accent);
+  font-size: 1.02rem;
 }
 
 .sidebar-menu {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-top: 6px;
 }
 
 .sidebar-item {
@@ -75,315 +138,303 @@ body {
   align-items: center;
   gap: 12px;
 
-  padding: 12px 20px;
-  color: #ffffff;
+  padding: 11px 14px;
   text-decoration: none;
-  border-radius: 50px;
-  transition: all 0.3s ease;
+
+  border-radius: 999px;
+  color: rgba(15, 23, 42, 0.86);
+  border: 1px solid transparent;
+
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(249, 81, 80, 0.10);
+  border-color: rgba(249, 81, 80, 0.55);
+  transform: translateY(-1px);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.10);
 }
 
 .sidebar-item.active {
-  background: rgba(49, 119, 255, 0.25);
-  border: 1px solid rgba(49, 119, 255, 0.7);
+  background: rgba(249, 81, 80, 0.14);
+  border-color: #f95150;
+  box-shadow: 0 18px 55px rgba(249, 81, 80, 0.22);
+}
+
+.sidebar-item span {
+  font-weight: 950;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  opacity: 0.9;
+}
+
+.sidebar-section-label {
+  padding: 10px 8px 4px;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(71, 85, 105, 0.75);
 }
 
 .sidebar-footer {
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+}
+
+.sidebar-connected {
+  border-radius: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.50);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.10);
+}
+
+.sidebar-connected-title {
+  font-size: 0.78rem;
+  color: rgba(71, 85, 105, 0.88);
+  font-weight: 750;
+}
+
+.sidebar-connected-name {
+  margin-top: 2px;
+  font-weight: 950;
+  color: var(--ink);
 }
 
 .sidebar-logout {
-  align-self: flex-start;
-  background: transparent;
+  background: rgba(255, 255, 255, 0.60);
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  padding: 6px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: var(--ink);
+  padding: 10px 14px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 950;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sidebar-logout:hover {
+  border-color: rgba(249, 81, 80, 0.65);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 50px rgba(249, 81, 80, 0.16);
 }
 
 .sidebar-version {
-  opacity: 0.7;
+  color: rgba(71, 85, 105, 0.72);
+  font-size: 0.78rem;
 }
 
-/* ===== Panel principal reportes (se reutiliza para IA) ===== */
+/* ===========================
+   MAIN (soporta analisis-main y el TSX antiguo reportes-main)
+=========================== */
+.analisis-main,
 .reportes-main {
   flex: 1;
-  box-sizing: border-box;
-
-  display: flex;
-  margin-left: 0;
-  min-width: 0;
-  padding: 20px 26px;
+  margin-left: 280px;
+  padding: 18px 22px;
   height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
+.analisis-panel,
 .reportes-panel {
   width: 100%;
-  height: calc(100vh - 40px);
-  padding: 20px;
-  margin: 0;
-  min-width: 0;
-
+  padding: 14px;
   border-radius: 26px;
-
-  background: rgba(8, 24, 63, 0.0);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.45);
-
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
-.panel-title {
-  font-size: 1.4rem;
-  font-weight: 600;
-  margin: 0;
+/* ===========================
+   UI states
+=========================== */
+.ui-error {
+  margin: 8px 2px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(249, 81, 80, 0.35);
+  background: rgba(249, 81, 80, 0.10);
+  color: rgba(15, 23, 42, 0.92);
+  font-weight: 900;
 }
 
-/* ===== KPIs ===== */
+/* ===========================
+   KPIs (auto-fit: queda bien con 3 tarjetas)
+=========================== */
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
 }
 
 .kpi-card {
+  padding: 14px 14px 12px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-
-  background: rgba(8, 24, 63, 0.11);
-
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
-
-  padding: 14px 18px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 6px;
-  min-height: 90px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.56);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: var(--shadow);
+  color: var(--ink);
 }
 
 .kpi-label {
   font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.78);
+  font-weight: 900;
+  color: var(--muted);
 }
 
 .kpi-value {
-  font-size: 1.9rem;
-  font-weight: 600;
-  margin-top: 2px;
+  margin-top: 10px;
+  font-size: 2.05rem;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  color: rgba(15, 23, 42, 0.94);
 }
 
-.kpi-ok {
-  color: #22c55e;
-}
-
-.kpi-warning {
-  color: #facc15;
-}
-
-.kpi-bad {
-  color: #f97373;
-}
-
-/* ===== Filtros (pills) ===== */
+/* ===========================
+   FILTERS — FIX letras (negro/plomo) + evitar herencias “dark”
+=========================== */
 .filters-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
-  margin-top: 4px;
+  margin-top: 10px;
+
+  /* Esto es CLAVE si tienes color-scheme: dark en otro CSS */
+  color-scheme: light;
 }
 
-.filter-pill {
-  color-scheme: dark;
-
-  background: rgba(255, 255, 255, 0.03) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  padding: 8px 16px;
+/* Pilas consistentes (no full width accidental) */
+.filters-row .filter-pill,
+.filters-row .filter-date {
+  height: 42px;
   border-radius: 999px;
-  cursor: pointer;
+  padding: 0 14px;
+
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+
+  /* FORZAR texto oscuro sí o sí */
+  color: rgba(15, 23, 42, 0.92) !important;
+  -webkit-text-fill-color: rgba(15, 23, 42, 0.92) !important;
+
+  font-weight: 900;
   outline: none;
+
+  /* evita que algún CSS viejo les ponga width:100% */
+  width: auto !important;
+  flex: 1 1 220px;
+  min-width: 220px;
 }
 
-.filter-pill option {
-  background-color: #202b44;
-  color: #ffffff;
+.filters-row .filter-pill:focus,
+.filters-row .filter-date:focus {
+  border-color: rgba(249, 81, 80, 0.55);
+  box-shadow: 0 18px 55px rgba(249, 81, 80, 0.10);
 }
 
-/* ===== Tabla glass ===== */
-.tabla-panel {
-  margin-top: 8px;
+.filters-row .filter-pill::placeholder {
+  color: rgba(71, 85, 105, 0.85) !important; /* plomo */
+  -webkit-text-fill-color: rgba(71, 85, 105, 0.85) !important;
+}
+
+/* Dropdown options */
+.filters-row .filter-pill option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Input date (Chrome/Edge) */
+.filters-row .filter-date {
+  padding-right: 12px;
+}
+
+.filters-row .filter-date::-webkit-datetime-edit,
+.filters-row .filter-date::-webkit-datetime-edit-text,
+.filters-row .filter-date::-webkit-datetime-edit-month-field,
+.filters-row .filter-date::-webkit-datetime-edit-day-field,
+.filters-row .filter-date::-webkit-datetime-edit-year-field {
+  color: rgba(15, 23, 42, 0.92) !important;
+  -webkit-text-fill-color: rgba(15, 23, 42, 0.92) !important;
+}
+
+.filters-row .filter-date::-webkit-calendar-picker-indicator {
+  opacity: 0.75;
+}
+
+/* ===========================
+   TABLA (usa tus clases actuales: tabla-ia / tabla-anali / tabla-analisis)
+=========================== */
+.tabla-ia {
+  margin-top: 14px;
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(8, 24, 63, 0.35);
+  padding: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
-  padding: 16px 18px;
-  flex: 1;
-  min-width: 0;
+  background: rgba(255, 255, 255, 0.30);
+
+  overflow: auto;
 }
 
 .tabla-anali {
+  overflow: auto;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  max-height: 553px;
-  overflow-y: auto; 
-  overflow-x: hidden; 
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.35);
 
-  /* Scrollbar para Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.70) rgba(255, 255, 255, 0.06);
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
 }
-
-/* Scrollbar para navegadores WebKit (Chrome, Edge, etc.) */
-.tabla-anali::-webkit-scrollbar {
-  width: 10px;
-}
-
-.tabla-anali::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 999px;
-  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.45);
-}
-
-.tabla-anali::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.85),
-    rgba(255, 255, 255, 0.55)
-  );
-  border: 2px solid rgba(0, 0, 0, 0.35);
-}
-
-.tabla-anali::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.95),
-    rgba(255, 255, 255, 0.75)
-  );
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
-}
-
-/* ==== TABLA IA (solo Analisis) ==== */
 
 .tabla-analisis {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;      /* respeta los widths de las columnas */
-  font-size: 0.82rem;
+  table-layout: fixed;
+  font-size: 0.86rem;
+  color: rgba(15, 23, 42, 0.92);
 }
 
 .tabla-analisis th,
 .tabla-analisis td {
-  padding: 10px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
   text-align: left;
-  vertical-align: top;      /* mejor para listas largas */
+  vertical-align: top;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tabla-analisis thead th {
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.88);
-  background: rgba(255, 255, 255, 0.03);
+  font-weight: 950;
+  background: rgba(255, 255, 255, 0.55);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
 }
 
-/* === distribución de columnas (10 columnas) === */
-/* ID */
-.tabla-analisis th:nth-child(1),
-.tabla-analisis td:nth-child(1) { width: 4%; text-align: center; }
-
-/* Usuario */
-.tabla-analisis th:nth-child(2),
-.tabla-analisis td:nth-child(2) { width: 9%; }
-
-/* Comunidad */
-.tabla-analisis th:nth-child(3),
-.tabla-analisis td:nth-child(3) { width: 12%; }
-
-/* Categoría IA */
-.tabla-analisis th:nth-child(4),
-.tabla-analisis td:nth-child(4) { width: 12%; }
-
-/* Prioridad */
-.tabla-analisis th:nth-child(5),
-.tabla-analisis td:nth-child(5) { width: 6%; text-align: center; }
-
-/* Confianza */
-.tabla-analisis th:nth-child(6),
-.tabla-analisis td:nth-child(6) { width: 6%; text-align: center; }
-
-/* Falso */
-.tabla-analisis th:nth-child(7),
-.tabla-analisis td:nth-child(7) { width: 6%; text-align: center; }
-
-/* 🟡 MOTIVOS – bien ancha */
-.tabla-analisis th:nth-child(8),
-.tabla-analisis td:nth-child(8) { width: 24%; }
-
-/* Riesgos */
-.tabla-analisis th:nth-child(9),
-.tabla-analisis td:nth-child(9) { width: 15%; }
-
-/* Fecha */
-.tabla-analisis th:nth-child(10),
-.tabla-analisis td:nth-child(10) { width: 6%; text-align: center; }
-
-/* Estados / badges */
-.badge {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #ffffff;
+.tabla-analisis tbody tr:hover {
+  background: rgba(249, 81, 80, 0.06);
+  transition: background 0.18s ease;
 }
 
-.badge-ok {
-  background: #22c55e;
-}
-
-.badge-warning {
-  background: #facc15;
-  color: #1f2933;
-}
-
-.badge-bad {
-  background: #ef4444;
-}
-
-/* Última actualización */
-.panel-update {
-  font-size: 0.78rem;
-  opacity: 0.85;
-  margin: 4px 0 0;
-  text-align: right;
-}
-
-/* ===== EXTRAS IA ===== */
 .cell-wrap {
-  white-space: normal;       
-  overflow-wrap: break-word; 
-  word-break: normal;        
-  line-height: 1.35;          
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: 1.35;
 }
 
 .mini-list {
@@ -395,4 +446,66 @@ body {
   margin: 2px 0;
   line-height: 1.3;
   font-size: 0.83rem;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 950;
+  color: #fff;
+}
+
+.badge-ok { background: #16a34a; }
+.badge-warning { background: #f59e0b; }
+.badge-bad { background: #ef4444; }
+.badge-neutral { background: rgba(15, 23, 42, 0.55); }
+
+.panel-update {
+  font-size: 0.78rem;
+  color: rgba(71, 85, 105, 0.85);
+  margin: 12px 4px 0;
+  text-align: right;
+  font-weight: 850;
+}
+
+/* ===========================
+   Responsive
+=========================== */
+@media (max-width: 1200px) {
+  .filters-row .filter-pill,
+  .filters-row .filter-date {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 900px) {
+  .sidebar {
+    width: min(86vw, 320px);
+    border-radius: 0 18px 18px 0;
+    transform: translateX(-110%);
+    transition: transform 240ms ease;
+  }
+
+  .sidebar.open { transform: translateX(0); }
+
+  .analisis-main,
+  .reportes-main {
+    margin-left: 0;
+    padding: 14px 12px;
+  }
+}
+
+@media (max-width: 650px) {
+  .filters-row .filter-pill,
+  .filters-row .filter-date {
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .tabla-analisis {
+    min-width: 1400px;
+  }
 }
