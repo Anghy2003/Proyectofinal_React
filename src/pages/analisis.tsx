@@ -2,12 +2,12 @@
 import "../styles/analisis.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/dashboard.svg";
-import iconUsuario from "../assets/iconusuario.svg";
-import iconComu from "../assets/icon_comu.svg";
-import iconRepo from "../assets/icon_repo.svg";
+import iconDashboard from "../assets/icon_casa.svg";
+import iconUsuario from "../assets/icon_usuario.svg";
+import iconComu from "../assets/icon_comunidad.svg";
+import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_acceso.svg";
+import iconAcceso from "../assets/icon_ajuste.svg";
 
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
@@ -85,7 +85,13 @@ function isValidDate(d: Date) {
 }
 
 function getSessionUser(): SessionUser {
-  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+  const candidates = [
+    "usuario",
+    "user",
+    "authUser",
+    "safezone_user",
+    "sessionUser",
+  ];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
     if (!raw) continue;
@@ -117,11 +123,27 @@ function toKey(d: Date) {
 }
 
 function fmtLabel(d: Date) {
-  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const meses = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
   return `${pad2(d.getDate())} ${meses[d.getMonth()]}`;
 }
 
-function buildDailyIncidentes(items: IncidenteResponseDTO[], days = 14): DailyPoint[] {
+function buildDailyIncidentes(
+  items: IncidenteResponseDTO[],
+  days = 14
+): DailyPoint[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -248,14 +270,16 @@ export default function Analisis() {
       if (!tieneIA) return false;
 
       if (term) {
-        const blob =
-          `${i.usuarioNombre ?? ""} ${i.comunidadNombre ?? ""} ${i.aiCategoria ?? ""} ${i.aiPrioridad ?? ""}`.toLowerCase();
+        const blob = `${i.usuarioNombre ?? ""} ${i.comunidadNombre ?? ""} ${
+          i.aiCategoria ?? ""
+        } ${i.aiPrioridad ?? ""}`.toLowerCase();
         if (!blob.includes(term)) return false;
       }
 
       if (filtroCategoria && i.aiCategoria !== filtroCategoria) return false;
       if (filtroPrioridad && i.aiPrioridad !== filtroPrioridad) return false;
-      if (filtroComunidad && i.comunidadNombre !== filtroComunidad) return false;
+      if (filtroComunidad && i.comunidadNombre !== filtroComunidad)
+        return false;
 
       if (filtroFecha) {
         const ymd = isoToYMD(i.fechaCreacion);
@@ -264,21 +288,51 @@ export default function Analisis() {
 
       return true;
     });
-  }, [incidentes, busqueda, filtroCategoria, filtroPrioridad, filtroComunidad, filtroFecha]);
+  }, [
+    incidentes,
+    busqueda,
+    filtroCategoria,
+    filtroPrioridad,
+    filtroComunidad,
+    filtroFecha,
+  ]);
 
   // KPI counts
   const total = incidentesFiltrados.length;
-  const alta = useMemo(() => incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA").length, [incidentesFiltrados]);
-  const media = useMemo(() => incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA").length, [incidentesFiltrados]);
-  const baja = useMemo(() => incidentesFiltrados.filter((x) => (x.aiPrioridad ?? "").toUpperCase() === "BAJA").length, [incidentesFiltrados]);
+  const alta = useMemo(
+    () =>
+      incidentesFiltrados.filter(
+        (x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA"
+      ).length,
+    [incidentesFiltrados]
+  );
+  const media = useMemo(
+    () =>
+      incidentesFiltrados.filter(
+        (x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA"
+      ).length,
+    [incidentesFiltrados]
+  );
+  const baja = useMemo(
+    () =>
+      incidentesFiltrados.filter(
+        (x) => (x.aiPrioridad ?? "").toUpperCase() === "BAJA"
+      ).length,
+    [incidentesFiltrados]
+  );
   const avgConf = useMemo(() => {
-    const vals = incidentesFiltrados.map((x) => x.aiConfianza).filter((v): v is number => typeof v === "number");
+    const vals = incidentesFiltrados
+      .map((x) => x.aiConfianza)
+      .filter((v): v is number => typeof v === "number");
     if (vals.length === 0) return 0;
     return vals.reduce((a, b) => a + b, 0) / vals.length;
   }, [incidentesFiltrados]);
 
   // Line chart
-  const lineData = useMemo(() => buildDailyIncidentes(incidentesFiltrados, 14), [incidentesFiltrados]);
+  const lineData = useMemo(
+    () => buildDailyIncidentes(incidentesFiltrados, 14),
+    [incidentesFiltrados]
+  );
 
   // Top categorías / comunidades
   const topCategorias = useMemo(() => {
@@ -304,6 +358,16 @@ export default function Analisis() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
   }, [incidentesFiltrados]);
+
+  const maxCategoria = useMemo(
+    () => Math.max(1, ...topCategorias.map((x) => x.total)),
+    [topCategorias]
+  );
+
+  const maxComunidad = useMemo(
+    () => Math.max(1, ...topComunidades.map((x) => x.total)),
+    [topComunidades]
+  );
 
   // Donut prioridad (ALTA/MEDIA/BAJA/OTRO)
   const otro = Math.max(0, total - (alta + media + baja));
@@ -344,41 +408,68 @@ export default function Analisis() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
+        <motion.aside
+          className={`sidebar ${sidebarOpen ? "open" : ""}`}
+          initial={false}
+        >
           <div className="sidebar-header">
             <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
             <div className="sidebar-title">SafeZone Admin</div>
           </div>
 
           <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
+            <Link
+              to="/dashboard"
+              className="sidebar-item"
+              onClick={closeSidebar}
+            >
               <img src={iconDashboard} className="nav-icon" alt="Panel" />
               <span>Panel</span>
             </Link>
 
-            <Link to="/comunidades" className="sidebar-item" onClick={closeSidebar}>
+            <Link
+              to="/comunidades"
+              className="sidebar-item"
+              onClick={closeSidebar}
+            >
               <img src={iconComu} className="nav-icon" alt="Comunidades" />
               <span>Comunidades</span>
             </Link>
 
-            <Link to="/usuarios" className="sidebar-item" onClick={closeSidebar}>
+            <Link
+              to="/usuarios"
+              className="sidebar-item"
+              onClick={closeSidebar}
+            >
               <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
               <span>Usuarios</span>
             </Link>
 
             <div className="sidebar-section-label">MANAGEMENT</div>
 
-            <Link to="/analisis" className="sidebar-item active" onClick={closeSidebar}>
+            <Link
+              to="/analisis"
+              className="sidebar-item active"
+              onClick={closeSidebar}
+            >
               <img src={iconIa} className="nav-icon" alt="IA" />
               <span>IA Análisis</span>
             </Link>
 
-            <Link to="/reportes" className="sidebar-item" onClick={closeSidebar}>
+            <Link
+              to="/reportes"
+              className="sidebar-item"
+              onClick={closeSidebar}
+            >
               <img src={iconRepo} className="nav-icon" alt="Reportes" />
               <span>Reportes</span>
             </Link>
 
-            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
+            <Link
+              to="/codigo-acceso"
+              className="sidebar-item"
+              onClick={closeSidebar}
+            >
               <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
               <span>Ajustes</span>
             </Link>
@@ -390,7 +481,11 @@ export default function Analisis() {
               <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
             </div>
 
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
+            <button
+              id="btnSalir"
+              className="sidebar-logout"
+              onClick={handleLogout}
+            >
               Salir
             </button>
             <span className="sidebar-version">v1.0 — SafeZone</span>
@@ -474,7 +569,9 @@ export default function Analisis() {
               >
                 <option value="">Categoría IA</option>
                 {categoriasUnicas.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
 
@@ -485,7 +582,9 @@ export default function Analisis() {
               >
                 <option value="">Prioridad IA</option>
                 {prioridadesUnicas.map((p) => (
-                  <option key={p} value={p}>{p}</option>
+                  <option key={p} value={p}>
+                    {p}
+                  </option>
                 ))}
               </select>
 
@@ -496,7 +595,9 @@ export default function Analisis() {
               >
                 <option value="">Comunidad</option>
                 {comunidadesUnicas.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
 
@@ -550,8 +651,12 @@ export default function Analisis() {
                     <BadgeCheck size={24} />
                   </div>
                 </div>
-                <div className="kpi-value">{avgConf ? avgConf.toFixed(2) : "—"}</div>
-                <div className="kpi-sub">Basado en incidentes con confianza</div>
+                <div className="kpi-value">
+                  {avgConf ? avgConf.toFixed(2) : "—"}
+                </div>
+                <div className="kpi-sub">
+                  Basado en incidentes con confianza
+                </div>
               </div>
             </div>
 
@@ -565,9 +670,12 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                <div className="line-chart-wrap">
+                <div className="line-chart-wrap5">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lineData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                    <LineChart
+                      data={lineData}
+                      margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
                       <XAxis dataKey="label" tickMargin={8} />
                       <YAxis tickMargin={8} allowDecimals={false} />
@@ -596,47 +704,77 @@ export default function Analisis() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div className="donut" style={{ background: donutBg }} aria-label="Donut prioridad">
+                  <div
+                    className="donut"
+                    style={{ background: donutBg }}
+                    aria-label="Donut prioridad"
+                  >
                     <div className="donut-hole">
-                      <div className="donut-total">{total}</div>
-                      <div className="donut-label">Incidentes</div>
+                      <div className="donut-total3">{total}</div>
+                      <div className="donut-label3">Incidentes</div>
                     </div>
                   </div>
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#ef4444" }}
+                      />
                       <span className="donut-name">ALTA</span>
                       <span className="donut-val">{alta}</span>
                     </div>
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#f59e0b" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#f59e0b" }}
+                      />
                       <span className="donut-name">MEDIA</span>
                       <span className="donut-val">{media}</span>
                     </div>
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#16a34a" }}
+                      />
                       <span className="donut-name">BAJA</span>
                       <span className="donut-val">{baja}</span>
                     </div>
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "rgba(15,23,42,0.28)" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "rgba(15,23,42,0.28)" }}
+                      />
                       <span className="donut-name">OTRO</span>
                       <span className="donut-val">{otro}</span>
                     </div>
                   </div>
                 </div>
 
+                {/* ===============================
+                             Top categorías
+                  ================================ */}
                 <div className="toplist">
                   <div className="toplist-title">Top categorías</div>
                   <div className="toplist-sub">Frecuencia por categoría IA</div>
+
                   <div className="toplist-items">
                     {topCategorias.length === 0 ? (
                       <div className="toplist-empty">Sin datos</div>
                     ) : (
                       topCategorias.map((c) => (
-                        <div className="toplist-row" key={c.categoria}>
-                          <span className="toplist-name" title={c.categoria}>{c.categoria}</span>
+                        <div
+                          className="toplist-row"
+                          key={c.categoria}
+                          style={{
+                            ["--p" as any]: `${
+                              (c.total / maxCategoria) * 100
+                            }%`,
+                          }}
+                        >
+                          <span className="toplist-name" title={c.categoria}>
+                            {c.categoria}
+                          </span>
                           <span className="toplist-val">{c.total}</span>
                         </div>
                       ))
@@ -644,16 +782,30 @@ export default function Analisis() {
                   </div>
                 </div>
 
+                {/* ===============================
+                          Top comunidades
+                  ================================ */}
                 <div className="toplist">
                   <div className="toplist-title">Top comunidades</div>
                   <div className="toplist-sub">Frecuencia por comunidad</div>
+
                   <div className="toplist-items">
                     {topComunidades.length === 0 ? (
                       <div className="toplist-empty">Sin datos</div>
                     ) : (
                       topComunidades.map((c) => (
-                        <div className="toplist-row" key={c.comunidad}>
-                          <span className="toplist-name" title={c.comunidad}>{c.comunidad}</span>
+                        <div
+                          className="toplist-row"
+                          key={c.comunidad}
+                          style={{
+                            ["--p" as any]: `${
+                              (c.total / maxComunidad) * 100
+                            }%`,
+                          }}
+                        >
+                          <span className="toplist-name" title={c.comunidad}>
+                            {c.comunidad}
+                          </span>
                           <span className="toplist-val">{c.total}</span>
                         </div>
                       ))
@@ -688,7 +840,9 @@ export default function Analisis() {
                       </tr>
                     ) : incidentesFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan={9}>No se encontraron incidentes con IA.</td>
+                        <td colSpan={9}>
+                          No se encontraron incidentes con IA.
+                        </td>
                       </tr>
                     ) : (
                       incidentesFiltrados.map((i) => {
@@ -698,37 +852,61 @@ export default function Analisis() {
                         return (
                           <tr key={i.id}>
                             <td className="td-center">{i.id}</td>
-                            <td title={i.usuarioNombre ?? "-"}>{i.usuarioNombre ?? "-"}</td>
-                            <td title={i.comunidadNombre ?? "-"}>{i.comunidadNombre ?? "-"}</td>
-                            <td title={i.aiCategoria ?? "-"}>{i.aiCategoria ?? "-"}</td>
+                            <td title={i.usuarioNombre ?? "-"}>
+                              {i.usuarioNombre ?? "-"}
+                            </td>
+                            <td title={i.comunidadNombre ?? "-"}>
+                              {i.comunidadNombre ?? "-"}
+                            </td>
+                            <td title={i.aiCategoria ?? "-"}>
+                              {i.aiCategoria ?? "-"}
+                            </td>
                             <td className="td-center">
-                              <span className={getBadgePrioridad(i.aiPrioridad)}>
+                              <span
+                                className={getBadgePrioridad(i.aiPrioridad)}
+                              >
                                 {i.aiPrioridad ?? "-"}
                               </span>
                             </td>
                             <td className="td-center">
-                              {i.aiConfianza == null ? "-" : i.aiConfianza.toFixed(2)}
+                              {i.aiConfianza == null
+                                ? "-"
+                                : i.aiConfianza.toFixed(2)}
                             </td>
 
                             <td className="cell-wrap">
-                              {motivos.length === 0 ? "-" : (
+                              {motivos.length === 0 ? (
+                                "-"
+                              ) : (
                                 <ul className="mini-list">
-                                  {motivos.slice(0, 3).map((m, idx) => <li key={idx}>{m}</li>)}
-                                  {motivos.length > 3 && <li>+{motivos.length - 3} más...</li>}
+                                  {motivos.slice(0, 3).map((m, idx) => (
+                                    <li key={idx}>{m}</li>
+                                  ))}
+                                  {motivos.length > 3 && (
+                                    <li>+{motivos.length - 3} más...</li>
+                                  )}
                                 </ul>
                               )}
                             </td>
 
                             <td className="cell-wrap">
-                              {riesgos.length === 0 ? "-" : (
+                              {riesgos.length === 0 ? (
+                                "-"
+                              ) : (
                                 <ul className="mini-list">
-                                  {riesgos.slice(0, 3).map((r, idx) => <li key={idx}>{r}</li>)}
-                                  {riesgos.length > 3 && <li>+{riesgos.length - 3} más...</li>}
+                                  {riesgos.slice(0, 3).map((r, idx) => (
+                                    <li key={idx}>{r}</li>
+                                  ))}
+                                  {riesgos.length > 3 && (
+                                    <li>+{riesgos.length - 3} más...</li>
+                                  )}
                                 </ul>
                               )}
                             </td>
 
-                            <td className="td-center">{isoToYMD(i.fechaCreacion) || "-"}</td>
+                            <td className="td-center">
+                              {isoToYMD(i.fechaCreacion) || "-"}
+                            </td>
                           </tr>
                         );
                       })

@@ -640,8 +640,8 @@ body {
   margin-top: 14px;
 }
 
-.chart-card-v2,
-.side-card-v2 {
+.chart-card-v3,
+.side-card-v3 {
   padding: 14px 14px 16px;
   border-radius: 20px;
 }
@@ -667,9 +667,9 @@ body {
 }
 
 /* ✅ más limpio, sin “fondo pesado”, más grande */
-.line-chart-wrap {
-  margin-top: 12px;
-  height: 310px;
+.line-chart-wrap6 {
+  margin-top: 150px;
+  height: 530px;
   border-radius: 16px;
   padding: 8px;
 
@@ -719,6 +719,7 @@ body {
   place-items: center;
   pointer-events: none;
   text-align: center;
+
 }
 
 .donut-total {
@@ -726,10 +727,11 @@ body {
   font-size: 1.95rem;
   color: rgba(15, 23, 42, 0.94);
   line-height: 1.05;
+  margin-top: 100px;
 }
 
 .donut-label {
-  margin-top: 2px;
+  margin-top: -230px!important;
   font-size: 0.84rem;
   font-weight: 900;
   color: rgba(71, 85, 105, 0.92);

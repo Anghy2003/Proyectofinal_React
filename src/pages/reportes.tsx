@@ -2,13 +2,13 @@
 import "../styles/reporte.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/dashboard.svg";
-import iconUsuario from "../assets/iconusuario.svg";
-import iconComu from "../assets/icon_comu.svg";
-import iconRepo from "../assets/icon_repo.svg";
+import iconDashboard from "../assets/icon_casa.svg";
+import iconUsuario from "../assets/icon_usuario.svg";
+import iconComu from "../assets/icon_comunidad.svg";
+import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_acceso.svg";
-import iconEliminar from "../assets/icon_eliminar.svg";
+import iconAcceso from "../assets/icon_ajuste.svg";
+import iconEliminar from "../assets/icon_eliminar2.svg";
 
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -714,6 +714,7 @@ export default function Reportes() {
                     aria-label="Exportar"
                   >
                     <Download size={18} />
+                    Exportar
                   </button>
 
                   {openExport && (
@@ -850,7 +851,7 @@ export default function Reportes() {
 
             {/* Charts + Side card */}
             <div className="grid-2col">
-              <section className="chart-card-v2 card">
+              <section className="chart-card-v3 card">
                 <div className="chart-head">
                   <div>
                     <div className="chart-title-v2">Reportes en el tiempo</div>
@@ -869,7 +870,7 @@ export default function Reportes() {
                   </select>
                 </div>
 
-                <div className="line-chart-wrap">
+                <div className="line-chart-wrap6">
                   {barData.length === 0 ? (
                     <div className="chart-empty">No hay datos para graficar con esos filtros.</div>
                   ) : (
@@ -908,7 +909,7 @@ export default function Reportes() {
                 </div>
               </section>
 
-              <section className="side-card-v2 card">
+              <section className="side-card-v3 card">
                 <div className="chart-head">
                   <div>
                     <div className="chart-title-v2">Reportes por comunidad</div>

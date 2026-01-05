@@ -103,8 +103,8 @@ export default function Login() {
           <div className="login-logo">
             <img src={logoSafezone} alt="SafeZone logo" />
           </div>
-          <h1 className="title">Bienvenido</h1>
-          <p className="subtitle">Inicia sesión para continuar</p>
+          <h1 className="title2">Bienvenido</h1>
+          <p className="subtitle2">Inicia sesión para continuar</p>
 
           <form onSubmit={handleLogin} className="login-form">
             <div className="input-group">

@@ -2,13 +2,13 @@
 import "../styles/codigocom.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/dashboard.svg";
-import iconUsuario from "../assets/iconusuario.svg";
-import iconComu from "../assets/icon_comu.svg";
-import iconRepo from "../assets/icon_repo.svg";
+import iconDashboard from "../assets/icon_casa.svg";
+import iconUsuario from "../assets/icon_usuario.svg";
+import iconComu from "../assets/icon_comunidad.svg";
+import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_acceso.svg";
-import iconEliminar from "../assets/icon_eliminar.svg";
+import iconAcceso from "../assets/icon_ajuste.svg";
+import iconEliminar from "../assets/icon_eliminar2.svg";
 
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";

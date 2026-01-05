@@ -2,14 +2,14 @@
 import "../styles/usuario.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/dashboard.svg";
-import iconUsuario from "../assets/iconusuario.svg";
-import iconComu from "../assets/icon_comu.svg";
-import iconRepo from "../assets/icon_repo.svg";
+import iconDashboard from "../assets/icon_casa.svg";
+import iconUsuario from "../assets/icon_usuario.svg";
+import iconComu from "../assets/icon_comunidad.svg";
+import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_acceso.svg";
+import iconAcceso from "../assets/icon_ajuste.svg";
 import iconImagen from "../assets/icon_imagen.svg";
-import iconEliminar from "../assets/icon_eliminar.svg";
+import iconEliminar from "../assets/icon_eliminar2.svg";
 
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
@@ -121,7 +121,7 @@ function isoToFechaHora(iso?: string | null) {
 }
 
 /** Presencia aproximada */
-const ONLINE_THRESHOLD_MIN = 1;
+const ONLINE_THRESHOLD_MIN = 2;
 
 function minutesDiffFromNow(iso?: string | null) {
   if (!iso) return Number.POSITIVE_INFINITY;
@@ -780,6 +780,7 @@ export default function Usuarios() {
                     type="button"
                   >
                     <Download size={18} />
+                    Exportar
                   </button>
 
                   {openExport && (
@@ -934,8 +935,8 @@ export default function Usuarios() {
                 <div className="donut-wrap">
                   <div className="donut" style={{ background: donutBg }} aria-label="Donut cuenta">
                     <div className="donut-hole">
-                      <div className="donut-total">{totalUsuarios}</div>
-                      <div className="donut-label">Usuarios</div>
+                      <div className="donut-total2">{totalUsuarios}</div>
+                      <div className="donut-label2">Usuarios</div>
                     </div>
                   </div>
 
@@ -971,7 +972,7 @@ export default function Usuarios() {
                         <BarChart
                           data={topComunidades}
                           layout="vertical"
-                          margin={{ top: 4, right: 28, left: 0, bottom: 0 }}
+                          margin={{ top: 4, right: 28, left: -60, bottom: 0 }}
                           barCategoryGap={12}
                         >
                           <XAxis type="number" hide />
@@ -980,7 +981,7 @@ export default function Usuarios() {
                             dataKey="comunidad"
                             axisLine={false}
                             tickLine={false}
-                            width={150}
+                            width={90}
                             tick={CommunityTick}
                           />
                           <Tooltip

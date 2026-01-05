@@ -370,6 +370,137 @@ body {
 .filters-row .filter-date::-webkit-calendar-picker-indicator {
   opacity: 0.75;
 }
+/* ===========================
+   Grafico
+=========================== */
+.line-chart-wrap5 {
+  margin-top: 200px;
+  height: 480px;
+}
+
+
+.donut-total3 {
+  font-weight: 950;
+  font-size: 1.9rem;
+  color: rgba(15, 23, 42, 0.94);
+  line-height: 1.05;
+}
+
+.donut-label3 {
+  margin-top: 2px;
+  font-size: 0.84rem;
+  font-weight: 900;
+  color: rgba(71, 85, 105, 0.92);
+}
+
+/* ===========================
+   Top
+=========================== */
+.toplist {
+  margin-top: 12px;
+  border-radius: 16px;
+  border: 1px solid var(--topbar-border, rgba(226, 232, 240, 0.9));
+  background: var(--topbar-bg, rgba(226, 245, 255, 0.55));
+  padding: 12px;
+}
+
+.toplist-title {
+  font-weight: 950;
+  color: rgba(15, 23, 42, 0.94);
+}
+
+.toplist-sub {
+  margin-top: 2px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  color: rgba(71, 85, 105, 0.90);
+}
+
+/* Contenedor “chart” interno tipo tarjeta */
+.toplist-items {
+  margin-top: 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  padding: 10px;
+}
+
+/* Row estilo barra */
+.toplist-row{
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 14px;
+
+  height: 25px;               
+  padding: 0 12px;            
+  border-radius: 999px;
+
+  /* track gris */
+  background: rgba(226, 232, 240, 0.60);
+  border: 1px solid rgba(255,255,255,0.75);
+  overflow: hidden;
+
+  margin-bottom: 12px;
+}
+
+.toplist-row:last-child{
+  margin-bottom: 0;
+}
+
+/* “Relleno” verde/menta (la barra). Depende de --p */
+.toplist-row::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--p, 40%);       
+  border-radius: 999px;
+  background: rgba(93, 206, 170, 0.62); 
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.45);
+}
+
+/* Para que el texto quede encima del fill */
+.toplist-name,
+.toplist-val {
+  position: relative;
+  z-index: 1;
+}
+
+.toplist-name{
+  font-weight: 900;
+  color: rgba(15,23,42,0.88);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* para que el texto no quede pegado al borde */
+  padding-left: 8px;
+}
+
+/* Valor a la derecha como “pill” */
+.toplist-val{
+  font-weight: 950;
+  color: rgba(15,23,42,0.92);
+
+  background: transparent;  
+  border: 0;
+  padding: 0;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Empty (ya lo tienes, lo dejo igual) */
+.toplist-empty {
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px dashed rgba(148, 163, 184, 0.60);
+  color: rgba(71, 85, 105, 0.92);
+  font-weight: 900;
+}
+
+
 
 /* ===========================
    TABLA (usa tus clases actuales: tabla-ia / tabla-anali / tabla-analisis)
@@ -471,6 +602,10 @@ body {
   font-weight: 850;
 }
 
+.tabla-card{
+  margin-top: 22px;   /* 👈 baja la tabla (ajusta 16-32px a tu gusto) */
+}
+
 /* ===========================
    Responsive
 =========================== */
@@ -508,4 +643,72 @@ body {
   .tabla-analisis {
     min-width: 1400px;
   }
+}
+
+
+/* ✅ wrapper de tabla con scroll si hace falta */
+.tabla-wrap{
+  overflow: auto;
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.35);
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mantén tu tabla */
+.tabla-analisis{
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* importante para columnas */
+  font-size: 0.86rem;
+  color: rgba(15, 23, 42, 0.92);
+  min-width: 1100px;   /* ✅ fuerza scroll horizontal cuando falte espacio */
+}
+
+/* Base: NO cortar texto para celdas normales */
+.tabla-analisis th,
+.tabla-analisis td{
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* ✅ Mantener en una sola línea en columnas “cortas” */
+.tabla-analisis td:not(.cell-wrap){
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ✅ Motivos y Riesgos: permitir salto de línea y ver TODO */
+.tabla-analisis td.cell-wrap{
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+/* Lista bonita */
+.mini-list{
+  margin: 0;
+  padding-left: 16px;
+}
+.mini-list li{
+  margin: 2px 0;
+  line-height: 1.3;
+  font-size: 0.83rem;
+}
+
+/* Sticky header OK */
+.tabla-analisis thead th{
+  font-weight: 950;
+  background: rgba(255, 255, 255, 0.55);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
 }

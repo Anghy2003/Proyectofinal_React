@@ -125,13 +125,13 @@ body {
 
 
 /* Títulos */
-.title {
+.title2 {
   margin: 0;
   font-size: 46px;
   line-height: 1.05;
   letter-spacing: -0.02em;
 }
-.subtitle {
+.subtitle2 {
   margin: 10px 0 18px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 14px;
@@ -170,14 +170,15 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(0, 0, 0, 0.20);
 
-  color: #fff;
+  color: rgba(255, 255, 255, 0.90) !important;
+  color-scheme: dark;
   outline: none;
 
   transition: border 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .input-group input::placeholder {
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.70) !important;
 }
 
 .input-group input:focus {
@@ -190,6 +191,14 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.input-group input,
+.input-group input:focus,
+.input-group input:active {
+  color: rgba(255, 255, 255, 0.90) !important;
+  caret-color: rgba(255, 255, 255, 0.90); /* cursor blanco */
+}
+
 
 /* Botón principal */
 .btn-primary {
@@ -288,4 +297,43 @@ body {
   .title {
     font-size: 40px;
   }
+}
+
+
+/* =========================
+   FORCE INPUT TEXT WHITE (definitivo)
+   Pegar al FINAL del archivo
+========================= */
+
+/* 1) Fuerza texto, placeholder y cursor */
+.login-page .login-card .input-group > input,
+.login-page .login-card .input-group > input:focus,
+.login-page .login-card .input-group > input:active,
+.login-page .login-card .input-group > input:hover {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.90) !important; /* Chrome */
+  color: rgba(255, 255, 255, 0.90) !important;                  /* general */
+  caret-color: rgba(255, 255, 255, 0.90) !important;
+}
+
+/* 2) Placeholder SIEMPRE blanco opaco */
+.login-page .login-card .input-group > input::placeholder {
+  color: rgba(255, 255, 255, 0.70) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.70) !important;
+  opacity: 1 !important;
+}
+
+/* 3) Autofill (Chrome/Edge) */
+.login-page .login-card .input-group > input:-webkit-autofill,
+.login-page .login-card .input-group > input:-webkit-autofill:hover,
+.login-page .login-card .input-group > input:-webkit-autofill:focus,
+.login-page .login-card .input-group > input:-webkit-autofill:active {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.90) !important;
+  caret-color: rgba(255, 255, 255, 0.90) !important;
+  box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.20) inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* 4) Evita esquema raro del navegador */
+.login-page {
+  color-scheme: dark;
 }

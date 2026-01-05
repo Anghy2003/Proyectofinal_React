@@ -2,14 +2,14 @@
 import "../styles/comunidad.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/dashboard.svg";
-import iconUsuario from "../assets/iconusuario.svg";
-import iconComu from "../assets/icon_comu.svg";
-import iconRepo from "../assets/icon_repo.svg";
+import iconDashboard from "../assets/icon_casa.svg";
+import iconUsuario from "../assets/icon_usuario.svg";
+import iconComu from "../assets/icon_comunidad.svg";
+import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_acceso.svg";
-import iconEdit from "../assets/icon_edit.svg";
-import iconEliminar from "../assets/icon_eliminar.svg";
+import iconAcceso from "../assets/icon_ajuste.svg";
+import iconEdit from "../assets/icon_editar2.svg";
+import iconEliminar from "../assets/icon_eliminar2.svg";
 
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -655,7 +655,7 @@ export default function Comunidades() {
                   </div>
                 </div>
 
-                <div className="line-chart-wrap">
+                <div className="line-chart-wrap1">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={lineData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
@@ -694,8 +694,8 @@ export default function Comunidades() {
                 <div className="donut-wrap">
                   <div className="donut" style={{ background: donutBg }} aria-label="Donut de estados">
                     <div className="donut-hole">
-                      <div className="donut-total">{totalComunidades}</div>
-                      <div className="donut-label">Comunidades</div>
+                      <div className="donut-total1">{totalComunidades}</div>
+                      <div className="donut-label1">Comunidades</div>
                     </div>
                   </div>
 

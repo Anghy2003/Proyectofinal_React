@@ -585,6 +585,11 @@ body {
   border-radius: 20px;
 }
 
+.chart-card-v2 {
+  display: flex;
+  flex-direction: column;
+}
+
 .chart-head {
   display: flex;
   justify-content: space-between;
@@ -606,8 +611,8 @@ body {
 }
 
 .line-chart-wrap {
-  margin-top: 12px;
-  height: 280px;
+  margin-top: 80px;
+  height: 460px;
   border-radius: 16px;
   padding: 10px;
   background: rgba(255, 255, 255, 0.40);
@@ -643,14 +648,14 @@ body {
   padding: 10px;
 }
 
-.donut-total {
+.donut-total2 {
   font-weight: 950;
   font-size: 1.9rem;
   color: rgba(15, 23, 42, 0.94);
   line-height: 1.05;
 }
 
-.donut-label {
+.donut-label2 {
   margin-top: 2px;
   font-size: 0.84rem;
   font-weight: 900;
@@ -697,6 +702,7 @@ body {
   border: 1px solid var(--topbar-border);
   background: var(--topbar-bg);
   padding: 12px;
+  flex: 1;
 }
 
 .topbars-head {
@@ -725,6 +731,7 @@ body {
   background: rgba(255, 255, 255, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.72);
   padding: 8px 8px 8px 6px;
+  overflow: hidden;
 }
 
 /* Empty */
@@ -871,7 +878,9 @@ body {
   border: 1px solid rgba(15, 23, 42, 0.10);
   background: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-  display: grid;
+    display: flex;             
+  align-items: center;          
+  justify-content: center; 
   place-items: center;
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
 }

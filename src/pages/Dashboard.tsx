@@ -2,12 +2,12 @@
 import "../styles/dashboard.css";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/dashboard.svg";
-import iconUsuario from "../assets/iconusuario.svg";
-import iconComu from "../assets/icon_comu.svg";
-import iconRepo from "../assets/icon_repo.svg";
+import iconDashboard from "../assets/icon_casa.svg";
+import iconUsuario from "../assets/icon_usuario.svg";
+import iconComu from "../assets/icon_comunidad.svg";
+import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_acceso.svg";
+import iconAcceso from "../assets/icon_ajuste.svg";
 
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -625,11 +625,11 @@ export default function Dashboard() {
               transition={{ duration: 0.28, ease: "easeOut" }}
             >
               <div className="topbar-left">
-                <button type="button" className="topbar-back" aria-label="Volver" onClick={() => navigate(-1)}>
+                {/*<button type="button" className="topbar-back" aria-label="Volver" onClick={() => navigate(-1)}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <path d="M15 5L9 12L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </button>
+                </button>*/}
 
                 <div
                   className={`search-pill-v2 ${searchOpen ? "open" : ""}`}
@@ -729,10 +729,6 @@ export default function Dashboard() {
 
               {/* ✅ TOP RIGHT: solo ES + Admin + avatar (sin otros iconos) */}
               <div className="topbar-actions">
-                <div className="lang-pill-v2" aria-label="Idioma">
-                  ES
-                </div>
-
                 <div className="me-pill-v2" title={me?.email ?? ""}>
                   <div className="me-role-pill-v2">
                     <ShieldCheck size={16} />
