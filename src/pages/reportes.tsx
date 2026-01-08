@@ -1,16 +1,11 @@
 // src/pages/Reportes.tsx
 import "../styles/reporte.css";
+import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/icon_casa.svg";
-import iconUsuario from "../assets/icon_usuario.svg";
-import iconComu from "../assets/icon_comunidad.svg";
-import iconRepo from "../assets/icon_reporte.svg";
-import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_ajuste.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
-import { Link, useNavigate } from "react-router-dom";
+import {useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import {
@@ -63,7 +58,14 @@ type SessionUser = {
 
 type Granularity = "dia" | "mes" | "anio";
 
-const PIE_COLORS = ["#f95150", "#6366f1", "#22c55e", "#f59e0b", "#0ea5e9", "#a855f7"];
+const PIE_COLORS = [
+  "#f95150",
+  "#6366f1",
+  "#22c55e",
+  "#f59e0b",
+  "#0ea5e9",
+  "#a855f7",
+];
 
 function getBadgeClass(estado: EstadoReporte): string {
   if (estado === "Atendido") return "badge badge-ok";
@@ -72,7 +74,13 @@ function getBadgeClass(estado: EstadoReporte): string {
 }
 
 function getSessionUser(): SessionUser {
-  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+  const candidates = [
+    "usuario",
+    "user",
+    "authUser",
+    "safezone_user",
+    "sessionUser",
+  ];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
     if (!raw) continue;
@@ -145,7 +153,10 @@ function ReportesTooltip({
         <div className="chart-tooltip-list">
           {items.map((it) => (
             <div key={it.name} className="chart-tooltip-li">
-              <span className="chart-tooltip-dot-sm" style={{ background: it.color }} />
+              <span
+                className="chart-tooltip-dot-sm"
+                style={{ background: it.color }}
+              />
               <span className="chart-tooltip-li-name">{it.name}</span>
               <span className="chart-tooltip-li-val">{it.value}</span>
             </div>
@@ -160,7 +171,10 @@ function ReportesTooltip({
    Avatar fallback (si falla foto)
 ========================= */
 function initialsOf(name: string) {
-  const parts = String(name || "Usuario").trim().split(/\s+/).slice(0, 2);
+  const parts = String(name || "Usuario")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2);
   const a = (parts[0]?.[0] ?? "U").toUpperCase();
   const b = (parts[1]?.[0] ?? "").toUpperCase();
   return (a + b).slice(0, 2);
@@ -284,7 +298,8 @@ export default function Reportes() {
     };
   }, [openExport]);
 
-  const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value);
+  const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) =>
+    setBusqueda(e.target.value);
 
   // 🔹 LISTAS ÚNICAS PARA LOS SELECT
   const tiposUnicos = useMemo(
@@ -318,17 +333,34 @@ export default function Reportes() {
 
       if (term) {
         const hay =
-          String(r.id ?? "").toLowerCase().includes(term) ||
-          String(r.usuario ?? "").toLowerCase().includes(term) ||
-          String(r.tipo ?? "").toLowerCase().includes(term) ||
-          String(r.comunidad ?? "").toLowerCase().includes(term) ||
-          String(r.estado ?? "").toLowerCase().includes(term);
+          String(r.id ?? "")
+            .toLowerCase()
+            .includes(term) ||
+          String(r.usuario ?? "")
+            .toLowerCase()
+            .includes(term) ||
+          String(r.tipo ?? "")
+            .toLowerCase()
+            .includes(term) ||
+          String(r.comunidad ?? "")
+            .toLowerCase()
+            .includes(term) ||
+          String(r.estado ?? "")
+            .toLowerCase()
+            .includes(term);
         if (!hay) return false;
       }
 
       return true;
     });
-  }, [reportes, busqueda, filtroTipo, filtroEstado, filtroComunidad, filtroFecha]);
+  }, [
+    reportes,
+    busqueda,
+    filtroTipo,
+    filtroEstado,
+    filtroComunidad,
+    filtroFecha,
+  ]);
 
   // =====================
   // KPIs
@@ -353,7 +385,13 @@ export default function Reportes() {
   const barData = useMemo(() => {
     const map = new Map<
       string,
-      { label: string; atendido: number; pendiente: number; falso: number; sortKey: number }
+      {
+        label: string;
+        atendido: number;
+        pendiente: number;
+        falso: number;
+        sortKey: number;
+      }
     >();
 
     const keyFor = (d: Date) => {
@@ -382,7 +420,13 @@ export default function Reportes() {
       const { groupKey, label, sortKey } = keyFor(d);
 
       if (!map.has(groupKey)) {
-        map.set(groupKey, { label, atendido: 0, pendiente: 0, falso: 0, sortKey });
+        map.set(groupKey, {
+          label,
+          atendido: 0,
+          pendiente: 0,
+          falso: 0,
+          sortKey,
+        });
       }
       const row = map.get(groupKey)!;
 
@@ -548,7 +592,9 @@ export default function Reportes() {
     doc.text("Reporte de Incidentes", 105, 45, { align: "center" });
 
     doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, 105, 52, { align: "center" });
+    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, 105, 52, {
+      align: "center",
+    });
 
     autoTable(doc, {
       startY: 60,
@@ -599,59 +645,10 @@ export default function Reportes() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
-          <div className="sidebar-header">
-            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
-            <div className="sidebar-title">SafeZone Admin</div>
-          </div>
-
-          <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconDashboard} className="nav-icon" alt="Panel" />
-              <span>Panel</span>
-            </Link>
-
-            <Link to="/comunidades" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconComu} className="nav-icon" alt="Comunidades" />
-              <span>Comunidades</span>
-            </Link>
-
-            <Link to="/usuarios" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
-              <span>Usuarios</span>
-            </Link>
-
-            <div className="sidebar-section-label">MANAGEMENT</div>
-
-            <Link to="/analisis" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconIa} className="nav-icon" alt="IA" />
-              <span>IA Análisis</span>
-            </Link>
-
-            <Link to="/reportes" className="sidebar-item active" onClick={closeSidebar}>
-              <img src={iconRepo} className="nav-icon" alt="Reportes" />
-              <span>Reportes</span>
-            </Link>
-
-            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
-              <span>Ajustes</span>
-            </Link>
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="sidebar-connected">
-              <div className="sidebar-connected-title">Conectado como</div>
-              <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
-            </div>
-
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
-              Salir
-            </button>
-            <span className="sidebar-version">v1.0 — SafeZone</span>
-          </div>
-        </motion.aside>
-
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+        />
         {/* MAIN */}
         <main className="reportes-main">
           <motion.div
@@ -810,7 +807,11 @@ export default function Reportes() {
 
             {/* FILTROS */}
             <div className="filters-row">
-              <select className="filter-pill" value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
+              <select
+                className="filter-pill"
+                value={filtroTipo}
+                onChange={(e) => setFiltroTipo(e.target.value)}
+              >
                 <option value="">Tipo de reporte</option>
                 {tiposUnicos.map((tipo) => (
                   <option key={tipo} value={tipo}>
@@ -819,7 +820,11 @@ export default function Reportes() {
                 ))}
               </select>
 
-              <select className="filter-pill" value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+              <select
+                className="filter-pill"
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+              >
                 <option value="">Estado</option>
                 {estadosUnicos.map((estado) => (
                   <option key={estado} value={estado}>
@@ -855,13 +860,17 @@ export default function Reportes() {
                 <div className="chart-head">
                   <div>
                     <div className="chart-title-v2">Reportes en el tiempo</div>
-                    <div className="chart-sub-v2">Barras por período (según filtros)</div>
+                    <div className="chart-sub-v2">
+                      Barras por período (según filtros)
+                    </div>
                   </div>
 
                   <select
                     className="filter-pill mini-select"
                     value={granularity}
-                    onChange={(e) => setGranularity(e.target.value as Granularity)}
+                    onChange={(e) =>
+                      setGranularity(e.target.value as Granularity)
+                    }
                     title="Agrupar por"
                   >
                     <option value="dia">Día</option>
@@ -872,7 +881,9 @@ export default function Reportes() {
 
                 <div className="line-chart-wrap6">
                   {barData.length === 0 ? (
-                    <div className="chart-empty">No hay datos para graficar con esos filtros.</div>
+                    <div className="chart-empty">
+                      No hay datos para graficar con esos filtros.
+                    </div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart
@@ -880,14 +891,22 @@ export default function Reportes() {
                         margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
                         barCategoryGap="26%"
                       >
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.16} vertical={false} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          opacity={0.16}
+                          vertical={false}
+                        />
 
                         <XAxis
                           dataKey="label"
                           tickMargin={10}
                           axisLine={false}
                           tickLine={false}
-                          tick={{ fill: "rgba(15,23,42,0.65)", fontSize: 12, fontWeight: 800 }}
+                          tick={{
+                            fill: "rgba(15,23,42,0.65)",
+                            fontSize: 12,
+                            fontWeight: 800,
+                          }}
                         />
 
                         <YAxis
@@ -895,14 +914,45 @@ export default function Reportes() {
                           allowDecimals={false}
                           axisLine={false}
                           tickLine={false}
-                          tick={{ fill: "rgba(15,23,42,0.55)", fontSize: 12, fontWeight: 800 }}
+                          tick={{
+                            fill: "rgba(15,23,42,0.55)",
+                            fontSize: 12,
+                            fontWeight: 800,
+                          }}
                         />
 
-                        <Tooltip cursor={{ fill: "rgba(249,81,80,0.08)" }} content={<ReportesTooltip />} />
+                        <Tooltip
+                          cursor={{ fill: "rgba(249,81,80,0.08)" }}
+                          content={<ReportesTooltip />}
+                        />
 
-                        <Bar dataKey="atendido" stackId="a" name="Atendido" fill="#22c55e" radius={[10, 10, 0, 0]} maxBarSize={36} animationDuration={650} />
-                        <Bar dataKey="pendiente" stackId="a" name="Pendiente" fill="#f59e0b" radius={[10, 10, 0, 0]} maxBarSize={36} animationDuration={650} />
-                        <Bar dataKey="falso" stackId="a" name="Falso positivo" fill="#ef4444" radius={[10, 10, 0, 0]} maxBarSize={36} animationDuration={650} />
+                        <Bar
+                          dataKey="atendido"
+                          stackId="a"
+                          name="Atendido"
+                          fill="#22c55e"
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={36}
+                          animationDuration={650}
+                        />
+                        <Bar
+                          dataKey="pendiente"
+                          stackId="a"
+                          name="Pendiente"
+                          fill="#f59e0b"
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={36}
+                          animationDuration={650}
+                        />
+                        <Bar
+                          dataKey="falso"
+                          stackId="a"
+                          name="Falso positivo"
+                          fill="#ef4444"
+                          radius={[10, 10, 0, 0]}
+                          maxBarSize={36}
+                          animationDuration={650}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
@@ -936,7 +986,10 @@ export default function Reportes() {
                               strokeWidth={1}
                             >
                               {donutData.map((_, idx) => (
-                                <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
+                                <Cell
+                                  key={idx}
+                                  fill={PIE_COLORS[idx % PIE_COLORS.length]}
+                                />
                               ))}
                             </Pie>
                             <Tooltip />
@@ -952,7 +1005,12 @@ export default function Reportes() {
                       <div className="donut-legend">
                         {donutData.map((d, idx) => (
                           <div className="donut-li" key={d.name}>
-                            <span className="donut-dot" style={{ background: PIE_COLORS[idx % PIE_COLORS.length] }} />
+                            <span
+                              className="donut-dot"
+                              style={{
+                                background: PIE_COLORS[idx % PIE_COLORS.length],
+                              }}
+                            />
                             <span className="donut-name" title={d.name}>
                               {d.name}
                             </span>
@@ -966,10 +1024,16 @@ export default function Reportes() {
                         <div className="topbars-head">
                           <div>
                             <div className="topbars-title">Top usuarios</div>
-                            <div className="topbars-sub">Reportes generados</div>
+                            <div className="topbars-sub">
+                              Reportes generados
+                            </div>
                           </div>
 
-                          <div className="topbars-icon" aria-hidden="true" title="Ranking">
+                          <div
+                            className="topbars-icon"
+                            aria-hidden="true"
+                            title="Ranking"
+                          >
                             <Flame size={18} />
                           </div>
                         </div>
@@ -979,7 +1043,10 @@ export default function Reportes() {
                             <div className="topbars-empty">Sin datos</div>
                           ) : (
                             topUsuarios.map((u) => {
-                              const pct = Math.max(10, Math.round((u.value / topMax) * 100));
+                              const pct = Math.max(
+                                10,
+                                Math.round((u.value / topMax) * 100)
+                              );
                               const src = avatarFor(u.name);
                               const fallback = svgAvatar(initialsOf(u.name));
 
@@ -992,17 +1059,26 @@ export default function Reportes() {
                                       alt={u.name}
                                       loading="lazy"
                                       onError={(e) => {
-                                        (e.currentTarget as HTMLImageElement).src = fallback;
+                                        (
+                                          e.currentTarget as HTMLImageElement
+                                        ).src = fallback;
                                       }}
                                     />
 
                                     <div className="topbars-bar" title={u.name}>
-                                      <div className="topbars-fill" style={{ width: `${pct}%` }} />
-                                      <div className="topbars-label">{u.name}</div>
+                                      <div
+                                        className="topbars-fill"
+                                        style={{ width: `${pct}%` }}
+                                      />
+                                      <div className="topbars-label">
+                                        {u.name}
+                                      </div>
                                     </div>
                                   </div>
 
-                                  <div className="topbars-value">{u.value.toLocaleString("es-EC")}</div>
+                                  <div className="topbars-value">
+                                    {u.value.toLocaleString("es-EC")}
+                                  </div>
                                 </div>
                               );
                             })
@@ -1035,13 +1111,27 @@ export default function Reportes() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: "center", padding: "14px", fontWeight: 900 }}>
+                        <td
+                          colSpan={8}
+                          style={{
+                            textAlign: "center",
+                            padding: "14px",
+                            fontWeight: 900,
+                          }}
+                        >
                           Cargando reportes...
                         </td>
                       </tr>
                     ) : reportesFiltrados.length === 0 ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: "center", padding: "14px", fontWeight: 900 }}>
+                        <td
+                          colSpan={8}
+                          style={{
+                            textAlign: "center",
+                            padding: "14px",
+                            fontWeight: 900,
+                          }}
+                        >
                           No se encontraron reportes.
                         </td>
                       </tr>
@@ -1055,7 +1145,9 @@ export default function Reportes() {
                           <td title={reporte.fecha}>{reporte.fecha}</td>
                           <td title={reporte.ubicacion}>{reporte.ubicacion}</td>
                           <td>
-                            <span className={getBadgeClass(reporte.estado)}>{reporte.estado}</span>
+                            <span className={getBadgeClass(reporte.estado)}>
+                              {reporte.estado}
+                            </span>
                           </td>
                           <td className="acciones">
                             <button
@@ -1075,7 +1167,9 @@ export default function Reportes() {
               </div>
             </section>
 
-            <p className="panel-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
+            <p className="panel-update">
+              Última actualización: {new Date().toLocaleString("es-EC")}
+            </p>
           </motion.div>
         </main>
       </div>

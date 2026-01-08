@@ -1,17 +1,12 @@
 // src/pages/Comunidades.tsx
 import "../styles/comunidad.css";
+import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/icon_casa.svg";
-import iconUsuario from "../assets/icon_usuario.svg";
-import iconComu from "../assets/icon_comunidad.svg";
-import iconRepo from "../assets/icon_reporte.svg";
-import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_ajuste.svg";
 import iconEdit from "../assets/icon_editar2.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -96,7 +91,20 @@ function getCommunityDate(c: any): Date | null {
 }
 
 function fmtLabel(d: Date) {
-  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const meses = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
   const dd = String(d.getDate()).padStart(2, "0");
   return `${dd} ${meses[d.getMonth()]}`;
 }
@@ -161,13 +169,22 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
   }
 
   // acumulado (para que se vea como tendencia real)
-  let accTotal = 0, accA = 0, accS = 0, accR = 0;
+  let accTotal = 0,
+    accA = 0,
+    accS = 0,
+    accR = 0;
   return base.map((p) => {
     accTotal += p.total;
     accA += p.activas;
     accS += p.solicitadas;
     accR += p.rechazadas;
-    return { ...p, total: accTotal, activas: accA, solicitadas: accS, rechazadas: accR };
+    return {
+      ...p,
+      total: accTotal,
+      activas: accA,
+      solicitadas: accS,
+      rechazadas: accR,
+    };
   });
 }
 
@@ -186,12 +203,14 @@ export default function Comunidades() {
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
 
-  const handleLogout = () => {
-    navigate("/login");
-  };
-
   function getSessionUser(): SessionUser {
-    const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+    const candidates = [
+      "usuario",
+      "user",
+      "authUser",
+      "safezone_user",
+      "sessionUser",
+    ];
     for (const k of candidates) {
       const raw = localStorage.getItem(k);
       if (!raw) continue;
@@ -393,7 +412,8 @@ export default function Comunidades() {
   // =========================
   // Donut (CSS conic-gradient)
   // =========================
-  const pct = (n: number) => (totalComunidades > 0 ? (n / totalComunidades) * 100 : 0);
+  const pct = (n: number) =>
+    totalComunidades > 0 ? (n / totalComunidades) * 100 : 0;
   const pAct = pct(activasCount);
   const pSol = pct(solicitadasCount);
   const pRec = pct(rechazadasCount);
@@ -410,7 +430,10 @@ export default function Comunidades() {
   // =========================
   // ✅ LINE CHART DATA
   // =========================
-  const lineData = useMemo(() => buildDailySeries(comunidades, 14), [comunidades]);
+  const lineData = useMemo(
+    () => buildDailySeries(comunidades, 14),
+    [comunidades]
+  );
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -433,58 +456,10 @@ export default function Comunidades() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
-          <div className="sidebar-header">
-            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
-            <div className="sidebar-title">SafeZone Admin</div>
-          </div>
-
-          <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconDashboard} className="nav-icon" alt="Panel" />
-              <span>Panel</span>
-            </Link>
-
-            <Link to="/comunidades" className="sidebar-item active" onClick={closeSidebar}>
-              <img src={iconComu} className="nav-icon" alt="Comunidades" />
-              <span>Comunidades</span>
-            </Link>
-
-            <Link to="/usuarios" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
-              <span>Usuarios</span>
-            </Link>
-
-            <div className="sidebar-section-label">MANAGEMENT</div>
-
-            <Link to="/analisis" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconIa} className="nav-icon" alt="Alertas" />
-              <span>IA Análisis</span>
-            </Link>
-
-            <Link to="/reportes" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconRepo} className="nav-icon" alt="Reportes" />
-              <span>Reportes</span>
-            </Link>
-
-            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
-              <span>Ajustes</span>
-            </Link>
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="sidebar-connected">
-              <div className="sidebar-connected-title">Conectado como</div>
-              <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
-            </div>
-
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
-              Salir
-            </button>
-            <span className="sidebar-version">v1.0 — SafeZone</span>
-          </div>
-        </motion.aside>
+          <Sidebar
+            sidebarOpen={sidebarOpen}
+            closeSidebar={() => setSidebarOpen(false)}
+          />
 
         {/* MAIN */}
         <main className="comunidades-main">
@@ -650,14 +625,21 @@ export default function Comunidades() {
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">Tendencia de comunidades</div>
-                    <div className="chart-sub-v2">Últimos 14 días (acumulado)</div>
+                    <div className="chart-title-v2">
+                      Tendencia de comunidades
+                    </div>
+                    <div className="chart-sub-v2">
+                      Últimos 14 días (acumulado)
+                    </div>
                   </div>
                 </div>
 
                 <div className="line-chart-wrap1">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={lineData} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                    <LineChart
+                      data={lineData}
+                      margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                    >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
                       <XAxis dataKey="label" tickMargin={8} />
                       <YAxis tickMargin={8} allowDecimals={false} />
@@ -675,9 +657,30 @@ export default function Comunidades() {
                         dot={false}
                       />
                       {/* líneas suaves por estado */}
-                      <Line type="monotone" dataKey="activas" name="Activas" stroke="#16a34a" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="solicitadas" name="Solicitadas" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="rechazadas" name="Rechazadas" stroke="#ef4444" strokeWidth={2} dot={false} />
+                      <Line
+                        type="monotone"
+                        dataKey="activas"
+                        name="Activas"
+                        stroke="#16a34a"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="solicitadas"
+                        name="Solicitadas"
+                        stroke="#f59e0b"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="rechazadas"
+                        name="Rechazadas"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -692,7 +695,11 @@ export default function Comunidades() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div className="donut" style={{ background: donutBg }} aria-label="Donut de estados">
+                  <div
+                    className="donut"
+                    style={{ background: donutBg }}
+                    aria-label="Donut de estados"
+                  >
                     <div className="donut-hole">
                       <div className="donut-total1">{totalComunidades}</div>
                       <div className="donut-label1">Comunidades</div>
@@ -701,19 +708,28 @@ export default function Comunidades() {
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#16a34a" }}
+                      />
                       <span className="donut-name">Activas</span>
                       <span className="donut-val">{activasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#f59e0b" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#f59e0b" }}
+                      />
                       <span className="donut-name">Solicitadas</span>
                       <span className="donut-val">{solicitadasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#ef4444" }}
+                      />
                       <span className="donut-name">Rechazadas</span>
                       <span className="donut-val">{rechazadasCount}</span>
                     </div>
@@ -741,13 +757,19 @@ export default function Comunidades() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
+                        <td
+                          colSpan={7}
+                          style={{ textAlign: "center", fontWeight: 900 }}
+                        >
                           Cargando comunidades...
                         </td>
                       </tr>
                     ) : comunidadesFiltradas.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
+                        <td
+                          colSpan={7}
+                          style={{ textAlign: "center", fontWeight: 900 }}
+                        >
                           No se encontraron comunidades.
                         </td>
                       </tr>
@@ -783,17 +805,25 @@ export default function Comunidades() {
 
                           <td>{c.codigoAcceso ?? "—"}</td>
                           <td>{c.nombre}</td>
-                          <td style={{ textAlign: "center" }}>{c.miembrosCount ?? 0}</td>
-                          <td title={c.direccion ?? ""}>{c.direccion ?? "—"}</td>
+                          <td style={{ textAlign: "center" }}>
+                            {c.miembrosCount ?? 0}
+                          </td>
+                          <td title={c.direccion ?? ""}>
+                            {c.direccion ?? "—"}
+                          </td>
 
                           <td>
-                            <span className={badgeClass(c.estado)}>{labelEstado(c.estado)}</span>
+                            <span className={badgeClass(c.estado)}>
+                              {labelEstado(c.estado)}
+                            </span>
                           </td>
 
                           <td className="acciones">
                             <button
                               className="icon-button"
-                              onClick={() => alert("Editar comunidad (pendiente)")}
+                              onClick={() =>
+                                alert("Editar comunidad (pendiente)")
+                              }
                               title="Editar"
                               type="button"
                             >
@@ -802,7 +832,9 @@ export default function Comunidades() {
 
                             <button
                               className="icon-button"
-                              onClick={() => alert("Eliminar / desactivar (pendiente)")}
+                              onClick={() =>
+                                alert("Eliminar / desactivar (pendiente)")
+                              }
                               title="Eliminar"
                               type="button"
                             >

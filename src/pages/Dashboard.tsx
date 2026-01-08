@@ -1,17 +1,9 @@
 // src/pages/Dashboard.tsx
 import "../styles/dashboard.css";
+import Sidebar from "../components/sidebar";
 
-import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/icon_casa.svg";
-import iconUsuario from "../assets/icon_usuario.svg";
-import iconComu from "../assets/icon_comunidad.svg";
-import iconRepo from "../assets/icon_reporte.svg";
-import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_ajuste.svg";
-
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
-
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 
 import {
@@ -77,7 +69,20 @@ function clamp(n: number, a: number, b: number) {
   return Math.max(a, Math.min(b, n));
 }
 
-const monthLabels = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const monthLabels = [
+  "Ene",
+  "Feb",
+  "Mar",
+  "Abr",
+  "May",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dic",
+];
 
 function formatDateLabel(d: Date) {
   const dd = String(d.getDate()).padStart(2, "0");
@@ -102,7 +107,13 @@ function prettyRole(role?: string) {
 }
 
 function getSessionUser(): SessionUser {
-  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+  const candidates = [
+    "usuario",
+    "user",
+    "authUser",
+    "safezone_user",
+    "sessionUser",
+  ];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
     if (!raw) continue;
@@ -156,7 +167,12 @@ const gridStagger: Variants = {
 
 const rowIn: Variants = {
   hidden: { opacity: 0, y: 10, filter: "blur(6px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.28, ease: "easeOut" } },
+  show: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: 0.28, ease: "easeOut" },
+  },
 };
 
 const ACCENT = "#fe5554";
@@ -215,12 +231,43 @@ export default function Dashboard() {
   ================================ */
   const NAV_ITEMS: NavItem[] = useMemo(
     () => [
-      { label: "Panel", path: "/dashboard", keywords: ["panel", "dashboard", "inicio", "home"] },
-      { label: "Comunidades", path: "/comunidades", keywords: ["comunidades", "comunidad", "community", "comu"] },
-      { label: "Usuarios", path: "/usuarios", keywords: ["usuarios", "usuario", "user", "users"] },
-      { label: "IA Análisis", path: "/analisis", keywords: ["ia", "análisis", "analisis", "ai", "inteligencia"] },
-      { label: "Reportes", path: "/reportes", keywords: ["reportes", "reporte", "incidentes", "alerts", "alertas"] },
-      { label: "Ajustes", path: "/codigo-acceso", keywords: ["ajustes", "config", "configuración", "configuracion", "codigo", "acceso"] },
+      {
+        label: "Panel",
+        path: "/dashboard",
+        keywords: ["panel", "dashboard", "inicio", "home"],
+      },
+      {
+        label: "Comunidades",
+        path: "/comunidades",
+        keywords: ["comunidades", "comunidad", "community", "comu"],
+      },
+      {
+        label: "Usuarios",
+        path: "/usuarios",
+        keywords: ["usuarios", "usuario", "user", "users"],
+      },
+      {
+        label: "IA Análisis",
+        path: "/analisis",
+        keywords: ["ia", "análisis", "analisis", "ai", "inteligencia"],
+      },
+      {
+        label: "Reportes",
+        path: "/reportes",
+        keywords: ["reportes", "reporte", "incidentes", "alerts", "alertas"],
+      },
+      {
+        label: "Ajustes",
+        path: "/codigo-acceso",
+        keywords: [
+          "ajustes",
+          "config",
+          "configuración",
+          "configuracion",
+          "codigo",
+          "acceso",
+        ],
+      },
     ],
     []
   );
@@ -232,13 +279,19 @@ export default function Dashboard() {
   const searchWrapRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
-  const normalizedQuery = useMemo(() => searchText.trim().toLowerCase(), [searchText]);
+  const normalizedQuery = useMemo(
+    () => searchText.trim().toLowerCase(),
+    [searchText]
+  );
 
   const results = useMemo(() => {
     const q = normalizedQuery;
     if (!q) return [];
-    const startsWith = (text: string) => text.toLowerCase().trim().startsWith(q);
-    return NAV_ITEMS.filter((item) => startsWith(item.label) || item.keywords.some(startsWith)).slice(0, 6);
+    const startsWith = (text: string) =>
+      text.toLowerCase().trim().startsWith(q);
+    return NAV_ITEMS.filter(
+      (item) => startsWith(item.label) || item.keywords.some(startsWith)
+    ).slice(0, 6);
   }, [NAV_ITEMS, normalizedQuery]);
 
   function goTo(path: string) {
@@ -292,7 +345,9 @@ export default function Dashboard() {
     }
 
     if (range === "7d") {
-      const start = startOfDayLocal(new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)).getTime();
+      const start = startOfDayLocal(
+        new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+      ).getTime();
       const end = endOfDayLocal(now).getTime();
       return incidentes.filter((i: any) => {
         const d = parseDateSafe(i.fechaCreacion);
@@ -302,7 +357,9 @@ export default function Dashboard() {
       });
     }
 
-    const start = startOfDayLocal(new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)).getTime();
+    const start = startOfDayLocal(
+      new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)
+    ).getTime();
     const end = endOfDayLocal(now).getTime();
     return incidentes.filter((i: any) => {
       const d = parseDateSafe(i.fechaCreacion);
@@ -321,66 +378,83 @@ export default function Dashboard() {
     return 90;
   }, [analyticsRange]);
 
-  const { series, currentTotal, previousTotal, windowStart, windowEnd, prevStart, prevEnd } =
-    useMemo(() => {
-      const now = new Date();
-      const end = endOfDayLocal(now);
-      const start = startOfDayLocal(new Date(now.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000));
+  const {
+    series,
+    currentTotal,
+    previousTotal,
+    windowStart,
+    windowEnd,
+    prevStart,
+    prevEnd,
+  } = useMemo(() => {
+    const now = new Date();
+    const end = endOfDayLocal(now);
+    const start = startOfDayLocal(
+      new Date(now.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000)
+    );
 
-      const prevEnd = endOfDayLocal(new Date(start.getTime() - 1 * 24 * 60 * 60 * 1000));
-      const prevStart = startOfDayLocal(new Date(prevEnd.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000));
+    const prevEnd = endOfDayLocal(
+      new Date(start.getTime() - 1 * 24 * 60 * 60 * 1000)
+    );
+    const prevStart = startOfDayLocal(
+      new Date(prevEnd.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000)
+    );
 
-      const dayCounts = (from: Date, to: Date) => {
-        const buckets = new Map<string, number>();
-        const cur = new Date(from);
-        while (cur.getTime() <= to.getTime()) {
-          buckets.set(startOfDayLocal(cur).toISOString(), 0);
-          cur.setDate(cur.getDate() + 1);
-        }
+    const dayCounts = (from: Date, to: Date) => {
+      const buckets = new Map<string, number>();
+      const cur = new Date(from);
+      while (cur.getTime() <= to.getTime()) {
+        buckets.set(startOfDayLocal(cur).toISOString(), 0);
+        cur.setDate(cur.getDate() + 1);
+      }
 
-        for (const inc of incidentes as any[]) {
-          const d = parseDateSafe(inc.fechaCreacion ?? inc.createdAt ?? inc.created_at);
-          if (!d) continue;
-          const t = d.getTime();
-          if (t < from.getTime() || t > to.getTime()) continue;
-          const key = startOfDayLocal(d).toISOString();
-          buckets.set(key, (buckets.get(key) ?? 0) + 1);
-        }
+      for (const inc of incidentes as any[]) {
+        const d = parseDateSafe(
+          inc.fechaCreacion ?? inc.createdAt ?? inc.created_at
+        );
+        if (!d) continue;
+        const t = d.getTime();
+        if (t < from.getTime() || t > to.getTime()) continue;
+        const key = startOfDayLocal(d).toISOString();
+        buckets.set(key, (buckets.get(key) ?? 0) + 1);
+      }
 
-        const entries = [...buckets.entries()].sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime());
-        return entries.map(([iso, value]) => ({ iso, value }));
-      };
+      const entries = [...buckets.entries()].sort(
+        (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+      );
+      return entries.map(([iso, value]) => ({ iso, value }));
+    };
 
-      const curArr = dayCounts(start, end);
-      const prevArr = dayCounts(prevStart, prevEnd);
+    const curArr = dayCounts(start, end);
+    const prevArr = dayCounts(prevStart, prevEnd);
 
-      const data = curArr.map((d, idx) => {
-        const dateObj = new Date(d.iso);
-        const prevVal = prevArr[idx]?.value ?? 0;
-        return {
-          label: formatDateLabel(dateObj), // día mes año
-          iso: d.iso,
-          current: d.value,
-          previous: prevVal,
-        };
-      });
-
+    const data = curArr.map((d, idx) => {
+      const dateObj = new Date(d.iso);
+      const prevVal = prevArr[idx]?.value ?? 0;
       return {
-        series: data,
-        currentTotal: sum(curArr.map((x) => x.value)),
-        previousTotal: sum(prevArr.map((x) => x.value)),
-        windowStart: start,
-        windowEnd: end,
-        prevStart,
-        prevEnd,
+        label: formatDateLabel(dateObj), // día mes año
+        iso: d.iso,
+        current: d.value,
+        previous: prevVal,
       };
-    }, [incidentes, analyticsDays]);
+    });
+
+    return {
+      series: data,
+      currentTotal: sum(curArr.map((x) => x.value)),
+      previousTotal: sum(prevArr.map((x) => x.value)),
+      windowStart: start,
+      windowEnd: end,
+      prevStart,
+      prevEnd,
+    };
+  }, [incidentes, analyticsDays]);
 
   /* ===============================
      KPIs
   ================================ */
   const totalReportes = useMemo(
-    () => (kpis?.alertasTotales ?? incidentes.length ?? 0),
+    () => kpis?.alertasTotales ?? incidentes.length ?? 0,
     [kpis, incidentes]
   );
 
@@ -391,7 +465,12 @@ export default function Dashboard() {
 
   const usuariosWithTs = useMemo(() => {
     const arr = (usuarios || []).map((u: any) => {
-      const dStr = u.fechaCreacion ?? u.fechaRegistro ?? u.createdAt ?? u.created_at ?? null;
+      const dStr =
+        u.fechaCreacion ??
+        u.fechaRegistro ??
+        u.createdAt ??
+        u.created_at ??
+        null;
       const d = dStr ? parseDateSafe(dStr) : null;
       return { ...u, _ts: d ? d.getTime() : 0 };
     });
@@ -414,7 +493,10 @@ export default function Dashboard() {
     return { cur, prev };
   }, [usuariosWithTs, windowStart, windowEnd, prevStart, prevEnd]);
 
-  const usersDeltaPct = useMemo(() => pctDiff(usersInWindow.cur, usersInWindow.prev), [usersInWindow]);
+  const usersDeltaPct = useMemo(
+    () => pctDiff(usersInWindow.cur, usersInWindow.prev),
+    [usersInWindow]
+  );
 
   /* ===============================
      Donut: reportes por comunidad (Top 5)
@@ -427,15 +509,25 @@ export default function Dashboard() {
   const comunidadesStats = useMemo(() => {
     const map = new Map<string, number>();
     for (const i of incidentes as any[]) {
-      const name = (i.comunidadNombre || i.comunidad || "Sin comunidad").toString();
+      const name = (
+        i.comunidadNombre ||
+        i.comunidad ||
+        "Sin comunidad"
+      ).toString();
       map.set(name, (map.get(name) ?? 0) + 1);
     }
-    const arr = [...map.entries()].map(([comunidadNombre, total]) => ({ comunidadNombre, total }));
+    const arr = [...map.entries()].map(([comunidadNombre, total]) => ({
+      comunidadNombre,
+      total,
+    }));
     arr.sort((a, b) => b.total - a.total);
     return arr;
   }, [incidentes]);
 
-  const topComunidades = useMemo(() => comunidadesStats.slice(0, 5), [comunidadesStats]);
+  const topComunidades = useMemo(
+    () => comunidadesStats.slice(0, 5),
+    [comunidadesStats]
+  );
 
   const donutChartData = useMemo(
     () =>
@@ -452,9 +544,18 @@ export default function Dashboard() {
     [topComunidades]
   );
 
-  const donutSeries = useMemo(() => donutChartData.map((d) => d.value), [donutChartData]);
-  const donutLabels = useMemo(() => donutChartData.map((d) => d.name), [donutChartData]);
-  const donutApexColors = useMemo(() => donutChartData.map((d) => d.color), [donutChartData]);
+  const donutSeries = useMemo(
+    () => donutChartData.map((d) => d.value),
+    [donutChartData]
+  );
+  const donutLabels = useMemo(
+    () => donutChartData.map((d) => d.name),
+    [donutChartData]
+  );
+  const donutApexColors = useMemo(
+    () => donutChartData.map((d) => d.color),
+    [donutChartData]
+  );
 
   const donutOptions: ApexOptions = useMemo(
     () => ({
@@ -472,7 +573,8 @@ export default function Dashboard() {
       tooltip: {
         theme: "dark",
         y: {
-          formatter: (val: number) => `${Math.round(val).toLocaleString()} reportes`,
+          formatter: (val: number) =>
+            `${Math.round(val).toLocaleString()} reportes`,
         },
       },
       plotOptions: {
@@ -511,10 +613,18 @@ export default function Dashboard() {
   }, [incidentes]);
 
   const topUsers = useMemo(() => {
-    const rows: Array<{ id: any; name: string; email: string; avatar?: string | null; count: number }> = [];
+    const rows: Array<{
+      id: any;
+      name: string;
+      email: string;
+      avatar?: string | null;
+      count: number;
+    }> = [];
 
     incidentesPorUsuario.forEach((count, uid) => {
-      const u = (usuarios || []).find((x: any) => (x?.id ?? x?.usuarioId ?? x?.userId) === uid);
+      const u = (usuarios || []).find(
+        (x: any) => (x?.id ?? x?.usuarioId ?? x?.userId) === uid
+      );
       const name =
         u?.nombre ??
         u?.fullName ??
@@ -522,7 +632,13 @@ export default function Dashboard() {
         `Usuario ${uid}`;
       const email = u?.email ?? "";
       const avatar = u?.fotoUrl ?? u?.foto ?? u?.photoURL ?? null;
-      rows.push({ id: uid, name: String(name || `Usuario ${uid}`), email: String(email || ""), avatar, count });
+      rows.push({
+        id: uid,
+        name: String(name || `Usuario ${uid}`),
+        email: String(email || ""),
+        avatar,
+        count,
+      });
     });
 
     rows.sort((a, b) => b.count - a.count);
@@ -548,71 +664,22 @@ export default function Dashboard() {
 
       <motion.div className={`dashboard ${sidebarOpen ? "sidebar-open" : ""}`} initial="hidden" animate="show" variants={pageIn}>
         {/* ========== SIDEBAR ========== */}
-        <aside className="sidebar" aria-label="Menú">
-          <div className="sidebar-header">
-            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
-            <div className="sidebar-title">
-              <div className="sidebar-brand">SafeZone</div>
-              <div className="sidebar-sub">Admin</div>
-            </div>
-
-            <button type="button" className="sidebar-close" aria-label="Cerrar menú" onClick={() => setSidebarOpen(false)}>
-              ✕
-            </button>
-          </div>
-
-          <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item active" onClick={() => setSidebarOpen(false)}>
-              <img src={iconDashboard} className="nav-icon" alt="Panel" />
-              <span>Panel</span>
-            </Link>
-
-            <Link to="/comunidades" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
-              <img src={iconComu} className="nav-icon" alt="Comunidades" />
-              <span>Comunidades</span>
-            </Link>
-
-            <Link to="/usuarios" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
-              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
-              <span>Usuarios</span>
-            </Link>
-
-            <div className="sidebar-section-label">MANAGEMENT</div>
-
-            <Link to="/analisis" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
-              <img src={iconIa} className="nav-icon" alt="IA" />
-              <span>IA Análisis</span>
-            </Link>
-
-            <Link to="/reportes" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
-              <img src={iconRepo} className="nav-icon" alt="Reportes" />
-              <span>Reportes</span>
-            </Link>
-
-            <Link to="/codigo-acceso" className="sidebar-item" onClick={() => setSidebarOpen(false)}>
-              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
-              <span>Ajustes</span>
-            </Link>
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="sidebar-connected">
-              <div className="sidebar-connected-title">Conectado como</div>
-              <div className="sidebar-connected-name">{prettyRole(me?.rol)}</div>
-            </div>
-
-            <button className="sidebar-logout" onClick={() => navigate("/login")}>
-              Salir
-            </button>
-            <span className="sidebar-version">v1.0 — SafeZone</span>
-          </div>
-        </aside>
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+          showCloseButton
+        />
 
         {/* ========== MAIN ========== */}
         <main className="dashboard-main">
           {/* TOPBAR */}
           <div className="topbar">
-            <button type="button" className="hamburger" aria-label="Abrir menú" onClick={() => setSidebarOpen(true)}>
+            <button
+              type="button"
+              className="hamburger"
+              aria-label="Abrir menú"
+              onClick={() => setSidebarOpen(true)}
+            >
               <span />
               <span />
               <span />
@@ -643,8 +710,17 @@ export default function Dashboard() {
                 >
                   <span className="search-ico-v2" aria-hidden="true">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                      <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" />
-                      <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <path
+                        d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                      <path
+                        d="M16.5 16.5 21 21"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
                     </svg>
                   </span>
 
@@ -662,7 +738,9 @@ export default function Dashboard() {
                       }
                       if (e.key === "ArrowDown") {
                         e.preventDefault();
-                        setSelectedIdx((v) => Math.min(v + 1, Math.max(0, results.length - 1)));
+                        setSelectedIdx((v) =>
+                          Math.min(v + 1, Math.max(0, results.length - 1))
+                        );
                         return;
                       }
                       if (e.key === "ArrowUp") {
@@ -673,7 +751,8 @@ export default function Dashboard() {
                       if (e.key === "Enter") {
                         e.preventDefault();
                         if (results.length > 0) {
-                          const pick = results[Math.min(selectedIdx, results.length - 1)];
+                          const pick =
+                            results[Math.min(selectedIdx, results.length - 1)];
                           goTo(pick.path);
                         }
                       }
@@ -710,16 +789,22 @@ export default function Dashboard() {
                             <button
                               key={r.path}
                               type="button"
-                              className={`search-item-v2 ${idx === selectedIdx ? "active" : ""}`}
+                              className={`search-item-v2 ${
+                                idx === selectedIdx ? "active" : ""
+                              }`}
                               onMouseEnter={() => setSelectedIdx(idx)}
                               onMouseDown={(e) => e.preventDefault()}
                               onClick={() => goTo(r.path)}
                             >
-                              <span className="search-item-label-v2">{r.label}</span>
+                              <span className="search-item-label-v2">
+                                {r.label}
+                              </span>
                             </button>
                           ))
                         ) : (
-                          <div className="search-empty-v2">No se encontraron coincidencias.</div>
+                          <div className="search-empty-v2">
+                            No se encontraron coincidencias.
+                          </div>
                         )}
                       </motion.div>
                     )}
@@ -737,9 +822,15 @@ export default function Dashboard() {
 
                   <div className="me-v2">
                     {me?.fotoUrl ? (
-                      <img className="me-avatar-v2" src={me.fotoUrl} alt="Usuario" />
+                      <img
+                        className="me-avatar-v2"
+                        src={me.fotoUrl}
+                        alt="Usuario"
+                      />
                     ) : (
-                      <div className="me-avatar-v2 me-fallback-v2">{getInitials(me?.nombre)}</div>
+                      <div className="me-avatar-v2 me-fallback-v2">
+                        {getInitials(me?.nombre)}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -761,60 +852,106 @@ export default function Dashboard() {
           {/* ======= CONTENIDO ======= */}
           <section className="content-wrap">
             {/* Header Analytics + chips */}
-            <motion.div className="card analytics-header-v2" variants={cardIn} initial="hidden" animate="show">
+            <motion.div
+              className="card analytics-header-v2"
+              variants={cardIn}
+              initial="hidden"
+              animate="show"
+            >
               <div className="analytics-head-left">
                 <div className="analytics-title-v2">Analytics</div>
               </div>
               <div className="analytics-filters-v2">
-                <button type="button" className={`analytics-chip-v2 ${analyticsRange === "14d" ? "active" : ""}`} onClick={() => setAnalyticsRange("14d")}>
+                <button
+                  type="button"
+                  className={`analytics-chip-v2 ${
+                    analyticsRange === "14d" ? "active" : ""
+                  }`}
+                  onClick={() => setAnalyticsRange("14d")}
+                >
                   14 Days
                 </button>
-                <button type="button" className={`analytics-chip-v2 ${analyticsRange === "1m" ? "active" : ""}`} onClick={() => setAnalyticsRange("1m")}>
+                <button
+                  type="button"
+                  className={`analytics-chip-v2 ${
+                    analyticsRange === "1m" ? "active" : ""
+                  }`}
+                  onClick={() => setAnalyticsRange("1m")}
+                >
                   1 Month
                 </button>
-                <button type="button" className={`analytics-chip-v2 ${analyticsRange === "3m" ? "active" : ""}`} onClick={() => setAnalyticsRange("3m")}>
+                <button
+                  type="button"
+                  className={`analytics-chip-v2 ${
+                    analyticsRange === "3m" ? "active" : ""
+                  }`}
+                  onClick={() => setAnalyticsRange("3m")}
+                >
                   3 Month
                 </button>
               </div>
             </motion.div>
 
             {/* KPI row */}
-            <motion.div className="kpi-row-v2" variants={gridStagger} initial="hidden" animate="show">
+            <motion.div
+              className="kpi-row-v2"
+              variants={gridStagger}
+              initial="hidden"
+              animate="show"
+            >
               <motion.article className="card kpi-card-v2" variants={cardIn}>
                 <div className="kpi-top">
                   <div className="kpi-title-v2">Reportes</div>
-                  <div className={`kpi-pct ${reportesDeltaPct >= 0 ? "up" : "down"}`}>{`${Math.abs(reportesDeltaPct).toFixed(2)}%`}</div>
+                  <div
+                    className={`kpi-pct ${
+                      reportesDeltaPct >= 0 ? "up" : "down"
+                    }`}
+                  >{`${Math.abs(reportesDeltaPct).toFixed(2)}%`}</div>
                 </div>
 
                 <div className="kpi-mid">
                   <div className="kpi-icon kpi-icon--accent">
                     <BarChart3 size={24} />
                   </div>
-                  <div className="kpi-value-v2">{isLoading ? "…" : totalReportes.toLocaleString()}</div>
+                  <div className="kpi-value-v2">
+                    {isLoading ? "…" : totalReportes.toLocaleString()}
+                  </div>
                 </div>
 
                 <div className="kpi-sub-v2">
                   <span className="kpi-dot-v2" />
-                  <span>{isLoading ? "—" : `Comparado al periodo anterior`}</span>
+                  <span>
+                    {isLoading ? "—" : `Comparado al periodo anterior`}
+                  </span>
                 </div>
               </motion.article>
 
               <motion.article className="card kpi-card-v2" variants={cardIn}>
                 <div className="kpi-top">
                   <div className="kpi-title-v2">Usuarios</div>
-                  <div className={`kpi-pct ${usersDeltaPct >= 0 ? "up" : "down"}`}>{`${Math.abs(usersDeltaPct).toFixed(2)}%`}</div>
+                  <div
+                    className={`kpi-pct ${usersDeltaPct >= 0 ? "up" : "down"}`}
+                  >{`${Math.abs(usersDeltaPct).toFixed(2)}%`}</div>
                 </div>
 
                 <div className="kpi-mid">
                   <div className="kpi-icon kpi-icon--soft">
                     <Users size={24} />
                   </div>
-                  <div className="kpi-value-v2">{isLoading ? "…" : (usuarios?.length ?? 0).toLocaleString()}</div>
+                  <div className="kpi-value-v2">
+                    {isLoading ? "…" : (usuarios?.length ?? 0).toLocaleString()}
+                  </div>
                 </div>
 
                 <div className="kpi-sub-v2">
                   <span className="kpi-dot-v2" />
-                  <span>{isLoading ? "—" : `${(kpis?.usuariosActivos ?? 0).toLocaleString()} activos`}</span>
+                  <span>
+                    {isLoading
+                      ? "—"
+                      : `${(
+                          kpis?.usuariosActivos ?? 0
+                        ).toLocaleString()} activos`}
+                  </span>
                 </div>
               </motion.article>
 
@@ -828,20 +965,35 @@ export default function Dashboard() {
                   <div className="kpi-icon kpi-icon--soft">
                     <MapPin size={24} />
                   </div>
-                  <div className="kpi-value-v2">{isLoading ? "…" : comunidadesStats.length.toLocaleString()}</div>
+                  <div className="kpi-value-v2">
+                    {isLoading ? "…" : comunidadesStats.length.toLocaleString()}
+                  </div>
                 </div>
 
                 <div className="kpi-sub-v2">
                   <span className="kpi-dot-v2" />
-                  <span>{isLoading ? "—" : `${topComunidades.length} top (histórico)`}</span>
+                  <span>
+                    {isLoading
+                      ? "—"
+                      : `${topComunidades.length} top (histórico)`}
+                  </span>
                 </div>
               </motion.article>
 
               <motion.article className="card kpi-cta-v2" variants={cardIn}>
                 <div className="cta-title">Ver incidentes</div>
-                <div className="cta-sub">Accede al listado completo de reportes y filtra por estado, comunidad o severidad.</div>
+                <div className="cta-sub">
+                  Accede al listado completo de reportes y filtra por estado,
+                  comunidad o severidad.
+                </div>
 
-                <motion.button whileHover={{ y: -1 }} whileTap={{ scale: 0.98 }} type="button" className="cta-btn" onClick={() => navigate("/reportes")}>
+                <motion.button
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  type="button"
+                  className="cta-btn"
+                  onClick={() => navigate("/reportes")}
+                >
                   Ir a incidentes →
                 </motion.button>
               </motion.article>
@@ -849,14 +1001,24 @@ export default function Dashboard() {
 
             {/* Row: Line chart + Donut */}
             <div className="grid-2col">
-              <motion.article className="card chart-card-v2" variants={cardIn} initial="hidden" animate="show">
+              <motion.article
+                className="card chart-card-v2"
+                variants={cardIn}
+                initial="hidden"
+                animate="show"
+              >
                 <div className="chart-head">
                   <div>
                     <div className="chart-title-v2">Reportes por fecha</div>
                     <div className="chart-sub-v2">
-                      {analyticsRange === "14d" ? "Últimos 14 días" : analyticsRange === "1m" ? "Últimos 30 días" : "Últimos 90 días"}
+                      {analyticsRange === "14d"
+                        ? "Últimos 14 días"
+                        : analyticsRange === "1m"
+                        ? "Últimos 30 días"
+                        : "Últimos 90 días"}
                       {" · "}
-                      {formatDateLabel(windowStart)} – {formatDateLabel(windowEnd)}
+                      {formatDateLabel(windowStart)} –{" "}
+                      {formatDateLabel(windowEnd)}
                     </div>
                   </div>
 
@@ -875,20 +1037,53 @@ export default function Dashboard() {
                 {/* ✅ más alta para ocupar el espacio */}
                 <div className="chart-wrap-v2 chart-wrap-v2--tall">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={series} margin={{ top: 12, right: 10, left: 0, bottom: 0 }}>
+                    <AreaChart
+                      data={series}
+                      margin={{ top: 12, right: 10, left: 0, bottom: 0 }}
+                    >
                       <defs>
-                        <linearGradient id="gCurrent" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={ACCENT} stopOpacity={0.30} />
-                          <stop offset="100%" stopColor={ACCENT} stopOpacity={0.02} />
+                        <linearGradient
+                          id="gCurrent"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={ACCENT}
+                            stopOpacity={0.3}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={ACCENT}
+                            stopOpacity={0.02}
+                          />
                         </linearGradient>
                         <linearGradient id="gPrev" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#64748b" stopOpacity={0.18} />
-                          <stop offset="100%" stopColor="#64748b" stopOpacity={0.02} />
+                          <stop
+                            offset="0%"
+                            stopColor="#64748b"
+                            stopOpacity={0.18}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#64748b"
+                            stopOpacity={0.02}
+                          />
                         </linearGradient>
                       </defs>
 
-                      <XAxis dataKey="label" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-                      <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11 }}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fontSize: 11 }}
+                        width={36}
+                      />
 
                       <Tooltip
                         contentStyle={{
@@ -898,7 +1093,10 @@ export default function Dashboard() {
                           boxShadow: "0 18px 45px rgba(15,23,42,0.18)",
                         }}
                         labelStyle={{ fontWeight: 900, color: "#0f172a" }}
-                        formatter={(v: any, name: any) => [v, name === "current" ? "Current" : "Previous"]}
+                        formatter={(v: any, name: any) => [
+                          v,
+                          name === "current" ? "Current" : "Previous",
+                        ]}
                       />
 
                       <Area
@@ -928,17 +1126,31 @@ export default function Dashboard() {
               </motion.article>
 
               {/* ✅ Donut sin “cuadro/fondo” interno y ocupando espacio */}
-              <motion.article className="card donut-card-v2" variants={cardIn} initial="hidden" animate="show">
+              <motion.article
+                className="card donut-card-v2"
+                variants={cardIn}
+                initial="hidden"
+                animate="show"
+              >
                 <div className="chart-title-v2">Reportes por comunidad</div>
-                <div className="chart-sub-v2">Distribución de incidentes por comunidad (top 5).</div>
+                <div className="chart-sub-v2">
+                  Distribución de incidentes por comunidad (top 5).
+                </div>
 
                 <div className="donut-stack-v2">
                   <div className="donut-apex-shell">
                     {donutSeries.length > 0 ? (
                       <>
-                        <Chart options={donutOptions} series={donutSeries} type="donut" height={320} />
+                        <Chart
+                          options={donutOptions}
+                          series={donutSeries}
+                          type="donut"
+                          height={320}
+                        />
                         <div className="donut-center-v2">
-                          <div className="donut-total-v2">{totalPorTopComunidades.toLocaleString()}</div>
+                          <div className="donut-total-v2">
+                            {totalPorTopComunidades.toLocaleString()}
+                          </div>
                           <div className="donut-label-v2">Reportes</div>
                         </div>
                       </>
@@ -949,9 +1161,21 @@ export default function Dashboard() {
 
                   <div className="donut-legend-grid-v2">
                     {donutChartData.map((c, idx) => (
-                      <motion.div key={c.name} className="donut-li-v2" variants={rowIn} initial="hidden" animate="show" transition={{ delay: idx * 0.03 }}>
-                        <span className="donut-dot-v2" style={{ backgroundColor: c.color }} />
-                        <span className="donut-name-v2" title={c.name}>{c.name}</span>
+                      <motion.div
+                        key={c.name}
+                        className="donut-li-v2"
+                        variants={rowIn}
+                        initial="hidden"
+                        animate="show"
+                        transition={{ delay: idx * 0.03 }}
+                      >
+                        <span
+                          className="donut-dot-v2"
+                          style={{ backgroundColor: c.color }}
+                        />
+                        <span className="donut-name-v2" title={c.name}>
+                          {c.name}
+                        </span>
                         <span className="donut-val-v2">{c.value}</span>
                       </motion.div>
                     ))}
@@ -962,21 +1186,40 @@ export default function Dashboard() {
 
             {/* Row: Heatmap + Top usuarios */}
             <div className="grid-2col heat-row">
-              <motion.article className="card heat-card-v2" variants={cardIn} initial="hidden" animate="show">
+              <motion.article
+                className="card heat-card-v2"
+                variants={cardIn}
+                initial="hidden"
+                animate="show"
+              >
                 <div className="card-head-v2">
                   <div>
                     <div className="card-title-v2">Mapa de calor</div>
-                    <div className="card-sub-v2">Zonas con mayor concentración de emergencias</div>
+                    <div className="card-sub-v2">
+                      Zonas con mayor concentración de emergencias
+                    </div>
                   </div>
 
                   <div className="tabs-v2">
-                    <button type="button" className={`tab-v2 ${range === "hoy" ? "active" : ""}`} onClick={() => setRange("hoy")}>
+                    <button
+                      type="button"
+                      className={`tab-v2 ${range === "hoy" ? "active" : ""}`}
+                      onClick={() => setRange("hoy")}
+                    >
                       Hoy
                     </button>
-                    <button type="button" className={`tab-v2 ${range === "7d" ? "active" : ""}`} onClick={() => setRange("7d")}>
+                    <button
+                      type="button"
+                      className={`tab-v2 ${range === "7d" ? "active" : ""}`}
+                      onClick={() => setRange("7d")}
+                    >
                       Últimos 7 días
                     </button>
-                    <button type="button" className={`tab-v2 ${range === "30d" ? "active" : ""}`} onClick={() => setRange("30d")}>
+                    <button
+                      type="button"
+                      className={`tab-v2 ${range === "30d" ? "active" : ""}`}
+                      onClick={() => setRange("30d")}
+                    >
                       30 días
                     </button>
                   </div>
@@ -987,9 +1230,16 @@ export default function Dashboard() {
                 </div>
               </motion.article>
 
-              <motion.article className="card topusers-card-v2" variants={cardIn} initial="hidden" animate="show">
+              <motion.article
+                className="card topusers-card-v2"
+                variants={cardIn}
+                initial="hidden"
+                animate="show"
+              >
                 <div className="chart-title-v2">Top usuarios</div>
-                <div className="chart-sub-v2">Usuarios con más reportes registrados.</div>
+                <div className="chart-sub-v2">
+                  Usuarios con más reportes registrados.
+                </div>
 
                 <div className="users-list-v2">
                   {topUsers.map((u, idx) => {
@@ -1005,12 +1255,20 @@ export default function Dashboard() {
                         transition={{ delay: idx * 0.04 }}
                         whileHover={{ y: -1 }}
                       >
-                        <div className={`user-rank-v2 ${isTop ? "top" : ""}`}>{idx + 1}</div>
+                        <div className={`user-rank-v2 ${isTop ? "top" : ""}`}>
+                          {idx + 1}
+                        </div>
 
                         {u.avatar ? (
-                          <img className="user-avatar-v2" src={u.avatar} alt={u.name} />
+                          <img
+                            className="user-avatar-v2"
+                            src={u.avatar}
+                            alt={u.name}
+                          />
                         ) : (
-                          <div className="user-avatar-v2 fallback">{getInitials(u.name)}</div>
+                          <div className="user-avatar-v2 fallback">
+                            {getInitials(u.name)}
+                          </div>
                         )}
 
                         <div className="user-main-v2">
@@ -1022,7 +1280,10 @@ export default function Dashboard() {
                               className="user-bar-v2"
                               initial={{ width: "0%" }}
                               animate={{ width: `${clamp(pct, 4, 100)}%` }}
-                              transition={{ duration: 0.55, ease: [0.2, 0.8, 0.2, 1] }}
+                              transition={{
+                                duration: 0.55,
+                                ease: [0.2, 0.8, 0.2, 1],
+                              }}
                             />
                           </div>
                         </div>
@@ -1032,7 +1293,11 @@ export default function Dashboard() {
                     );
                   })}
 
-                  {!isLoading && topUsers.length === 0 && <div className="empty-v2">Aún no hay datos para Top usuarios.</div>}
+                  {!isLoading && topUsers.length === 0 && (
+                    <div className="empty-v2">
+                      Aún no hay datos para Top usuarios.
+                    </div>
+                  )}
                 </div>
               </motion.article>
             </div>

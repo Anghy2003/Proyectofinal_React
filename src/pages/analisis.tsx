@@ -1,15 +1,8 @@
 // src/pages/Analisis.tsx
 import "../styles/analisis.css";
+import Sidebar from "../components/sidebar";
 
-import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/icon_casa.svg";
-import iconUsuario from "../assets/icon_usuario.svg";
-import iconComu from "../assets/icon_comunidad.svg";
-import iconRepo from "../assets/icon_reporte.svg";
-import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_ajuste.svg";
-
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -408,89 +401,11 @@ export default function Analisis() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <motion.aside
-          className={`sidebar ${sidebarOpen ? "open" : ""}`}
-          initial={false}
-        >
-          <div className="sidebar-header">
-            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
-            <div className="sidebar-title">SafeZone Admin</div>
-          </div>
-
-          <nav className="sidebar-menu">
-            <Link
-              to="/dashboard"
-              className="sidebar-item"
-              onClick={closeSidebar}
-            >
-              <img src={iconDashboard} className="nav-icon" alt="Panel" />
-              <span>Panel</span>
-            </Link>
-
-            <Link
-              to="/comunidades"
-              className="sidebar-item"
-              onClick={closeSidebar}
-            >
-              <img src={iconComu} className="nav-icon" alt="Comunidades" />
-              <span>Comunidades</span>
-            </Link>
-
-            <Link
-              to="/usuarios"
-              className="sidebar-item"
-              onClick={closeSidebar}
-            >
-              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
-              <span>Usuarios</span>
-            </Link>
-
-            <div className="sidebar-section-label">MANAGEMENT</div>
-
-            <Link
-              to="/analisis"
-              className="sidebar-item active"
-              onClick={closeSidebar}
-            >
-              <img src={iconIa} className="nav-icon" alt="IA" />
-              <span>IA Análisis</span>
-            </Link>
-
-            <Link
-              to="/reportes"
-              className="sidebar-item"
-              onClick={closeSidebar}
-            >
-              <img src={iconRepo} className="nav-icon" alt="Reportes" />
-              <span>Reportes</span>
-            </Link>
-
-            <Link
-              to="/codigo-acceso"
-              className="sidebar-item"
-              onClick={closeSidebar}
-            >
-              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
-              <span>Ajustes</span>
-            </Link>
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="sidebar-connected">
-              <div className="sidebar-connected-title">Conectado como</div>
-              <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
-            </div>
-
-            <button
-              id="btnSalir"
-              className="sidebar-logout"
-              onClick={handleLogout}
-            >
-              Salir
-            </button>
-            <span className="sidebar-version">v1.0 — SafeZone</span>
-          </div>
-        </motion.aside>
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+          showCloseButton
+        />
 
         {/* MAIN */}
         <main className="analisis-main">

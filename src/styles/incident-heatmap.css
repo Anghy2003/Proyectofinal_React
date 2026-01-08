@@ -1,0 +1,115 @@
+/* ===============================
+   Wrapper del mapa
+   =============================== */
+.heat-wrap-v2 {
+  margin-top: 12px;
+  height: clamp(420px, 54vh, 620px);
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.heat-wrap-v2 .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 18px;
+}
+
+/* ===============================
+   Tooltip custom (Leaflet)
+   =============================== */
+.heat-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.heat-tooltip .leaflet-tooltip-content {
+  margin: 0 !important;
+}
+
+/* ===============================
+   Tarjeta de información
+   =============================== */
+.heat-card {
+  min-width: 220px;
+  max-width: 280px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+  padding: 12px;
+
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.heat-card__title {
+  font-weight: 800;
+  font-size: 13px;
+  color: rgba(15, 23, 42, 0.92);
+  margin-bottom: 6px;
+}
+
+.heat-card__meta {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.8);
+}
+
+.heat-label {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.heat-sub {
+  font-size: 11px;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.heat-divider {
+  height: 1px;
+  background: rgba(15, 23, 42, 0.1);
+  margin: 10px 0;
+}
+
+.heat-sec-title {
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.78);
+  margin-bottom: 8px;
+}
+
+.heat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 6px 0;
+}
+
+.heat-pill {
+  font-size: 11px;
+  color: rgba(15, 23, 42, 0.78);
+  background: rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  padding: 4px 8px;
+  border-radius: 999px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heat-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(216, 27, 27, 0.95);
+}
+
+.heat-empty {
+  font-size: 12px;
+  color: rgba(15, 23, 42, 0.55);
+}

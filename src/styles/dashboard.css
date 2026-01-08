@@ -1080,7 +1080,8 @@ body {
 
 .heat-wrap-v2 {
   margin-top: 12px;
-  height: clamp(420px, 54vh, 620px);
+  height: 100%;
+  min-height: 700px !important; 
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--glass-border);

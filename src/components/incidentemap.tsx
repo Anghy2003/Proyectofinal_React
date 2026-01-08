@@ -3,6 +3,8 @@ import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet.heat";
 
+import "../styles/incident-heatmap.css";
+
 import type { IncidenteResponseDTO } from "../services/incidentesService";
 
 /* ===============================
@@ -72,6 +74,7 @@ function getWeight(i: any): number {
 function HeatLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
   const map = useMap();
   const layerRef = useRef<L.Layer | null>(null);
+  const didAutoFitRef = useRef(false);
 
   const points = useMemo(() => {
     return incidentes
@@ -83,39 +86,36 @@ function HeatLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
       .filter(Boolean) as [number, number, number][];
   }, [incidentes]);
 
-  // ✅ LOG para ver si llegan puntos al mapa
   useEffect(() => {
-    console.log("=== HEATMAP DEBUG ===");
-    console.log("incidentes recibidos:", incidentes.length);
-    console.log("points generados:", points.length);
-    console.log("sample incidente:", incidentes[0]);
-  }, [incidentes, points]);
-
-  useEffect(() => {
-    // ✅ siempre limpia anterior
     if (layerRef.current) {
       map.removeLayer(layerRef.current);
       layerRef.current = null;
     }
 
-    // ✅ si no hay puntos, no dibuja heatmap
     if (!points.length) return;
 
     // @ts-ignore
     const heat = L.heatLayer(points, {
-      radius: 28,
-      blur: 22,
+      radius: 32,
+      blur: 26,
       maxZoom: 17,
+      minOpacity: 0.35,
+      max: 1.0,
+      gradient: {
+        0.2: "#ffe08a",
+        0.45: "#ffb25c",
+        0.7: "#ff6b4a",
+        1.0: "#d81b1b",
+      },
     }).addTo(map);
 
     layerRef.current = heat;
 
-    const bounds = L.latLngBounds(points.map((p) => [p[0], p[1]]));
-    map.fitBounds(bounds, {
-      padding: [40, 40],
-      maxZoom: 15,
-      animate: true,
-    });
+    if (!didAutoFitRef.current) {
+      const bounds = L.latLngBounds(points.map((p) => [p[0], p[1]]));
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      didAutoFitRef.current = true;
+    }
 
     return () => {
       if (layerRef.current) {
@@ -125,8 +125,124 @@ function HeatLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
     };
   }, [map, points]);
 
+  useEffect(() => {
+    didAutoFitRef.current = false;
+  }, [incidentes]);
+
   return null;
 }
+
+
+function HeatHoverLayer({ incidentes }: { incidentes: IncidenteResponseDTO[] }) {
+  const map = useMap();
+  const layerRef = useRef<L.LayerGroup | null>(null);
+
+  const zones = useMemo(() => {
+    const mapZones = new Map<string, {
+      lat: number;
+      lng: number;
+      total: number;
+      tipos: Record<string, number>;
+    }>();
+
+    incidentes.forEach((i) => {
+      const p = extractLatLng(i);
+      if (!p) return;
+
+      // 🔹 redondeo para agrupar por zona (≈ 10–15m)
+      const lat = Number(p[0].toFixed(4));
+      const lng = Number(p[1].toFixed(4));
+      const key = `${lat}|${lng}`;
+
+      if (!mapZones.has(key)) {
+        mapZones.set(key, {
+          lat,
+          lng,
+          total: 0,
+          tipos: {},
+        });
+      }
+
+      const z = mapZones.get(key)!;
+      z.total += 1;
+      const tipo = i.tipo || "Sin tipo";
+      z.tipos[tipo] = (z.tipos[tipo] || 0) + 1;
+    });
+
+    return Array.from(mapZones.values());
+  }, [incidentes]);
+
+  useEffect(() => {
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+    }
+
+    const group = L.layerGroup();
+
+    zones.forEach((z) => {
+      // ✅ Ordena tipos por cantidad (mayor a menor)
+const tiposOrdenados = Object.entries(z.tipos).sort((a, b) => b[1] - a[1]);
+
+// ✅ Construye lista (Top 10 opcional)
+const tiposHtml = tiposOrdenados
+  .slice(0, 10) // cambia 10 por 5 si quieres más compacto
+  .map(
+    ([tipo, n]) => `
+      <div class="heat-row">
+        <span class="heat-pill">${tipo}</span>
+        <span class="heat-count">${n}</span>
+      </div>
+    `
+  )
+  .join("");
+
+// ✅ Un solo cuadro: total + tipos con conteo
+const html = `
+  <div class="heat-card">
+    <div class="heat-card__title">Zona de incidentes</div>
+
+    <div class="heat-card__meta">
+      <div><span class="heat-label">Total de reportes:</span> <b>${z.total}</b></div>
+      <div class="heat-sub">${z.lat}, ${z.lng}</div>
+    </div>
+
+    <div class="heat-divider"></div>
+
+    <div class="heat-card__section">
+      <div class="heat-sec-title">Tipos de reportes</div>
+      ${tiposHtml || `<div class="heat-empty">Sin datos</div>`}
+    </div>
+  </div>
+`;
+
+      const marker = L.circleMarker([z.lat, z.lng], {
+        radius: 18,
+        fillOpacity: 0,
+        stroke: false,
+        interactive: true,
+      });
+
+      marker.bindTooltip(html, {
+        direction: "top",
+        className: "heat-tooltip",
+        sticky: true,
+        opacity: 1,
+      });
+
+      group.addLayer(marker);
+    });
+
+    group.addTo(map);
+    layerRef.current = group;
+
+    return () => {
+      map.removeLayer(group);
+    };
+  }, [map, zones]);
+
+  return null;
+}
+
 
 /* ===============================
    Componente principal
@@ -149,6 +265,7 @@ export default function IncidentHeatmap({
       />
 
       <HeatLayer incidentes={incidentes} />
+      <HeatHoverLayer incidentes={incidentes} />
     </MapContainer>
   );
 }

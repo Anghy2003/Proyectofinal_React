@@ -1,17 +1,13 @@
 // src/pages/Usuarios.tsx
 import "../styles/usuario.css";
+import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_rojo.png";
-import iconDashboard from "../assets/icon_casa.svg";
-import iconUsuario from "../assets/icon_usuario.svg";
-import iconComu from "../assets/icon_comunidad.svg";
-import iconRepo from "../assets/icon_reporte.svg";
-import iconIa from "../assets/icon_ia.svg";
-import iconAcceso from "../assets/icon_ajuste.svg";
 import iconImagen from "../assets/icon_imagen.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import { usuariosService, type UsuarioApi } from "../services/Usuario.Service";
@@ -91,7 +87,13 @@ function isValidDate(d: Date) {
 }
 
 function getSessionUser(): SessionUser {
-  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
+  const candidates = [
+    "usuario",
+    "user",
+    "authUser",
+    "safezone_user",
+    "sessionUser",
+  ];
   for (const k of candidates) {
     const raw = localStorage.getItem(k);
     if (!raw) continue;
@@ -149,7 +151,20 @@ function toKey(d: Date) {
 }
 
 function fmtLabel(d: Date) {
-  const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const meses = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
   return `${pad2(d.getDate())} ${meses[d.getMonth()]}`;
 }
 
@@ -266,8 +281,6 @@ export default function Usuarios() {
 
   const [me] = useState<SessionUser>(() => getSessionUser());
 
-  const handleLogout = () => navigate("/login");
-
   const cargarUsuarios = async () => {
     try {
       setLoading(true);
@@ -281,7 +294,9 @@ export default function Usuarios() {
 
         const comunidad = (u.comunidadNombre ?? "").trim() || "—";
         const rolUI =
-          (u.rol ?? "").toLowerCase() === "admin" || u.id === 1 ? "Administrador" : "Usuario";
+          (u.rol ?? "").toLowerCase() === "admin" || u.id === 1
+            ? "Administrador"
+            : "Usuario";
 
         const ultimoAccesoIso = u.ultimoAcceso ?? null;
 
@@ -363,7 +378,8 @@ export default function Usuarios() {
     };
   }, [openExport]);
 
-  const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) => setBusqueda(e.target.value);
+  const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) =>
+    setBusqueda(e.target.value);
 
   const usuariosFiltrados = useMemo(() => {
     const term = busqueda.toLowerCase().trim();
@@ -429,7 +445,8 @@ export default function Usuarios() {
   // =========================
   // Donut Cuenta (CSS conic)
   // =========================
-  const pct = (n: number) => (totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0);
+  const pct = (n: number) =>
+    totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0;
   const pAct = pct(cuentaActivos);
 
   const donutBg =
@@ -454,7 +471,8 @@ export default function Usuarios() {
       Rol: u.rol ?? "—",
       "Estado cuenta": u.estadoCuenta ?? "—",
       Online: u.estadoOnline ?? "—",
-      Registro: `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
+      Registro:
+        `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
       "Ultimo acceso": u.ultimoAcceso ?? "—",
     }));
 
@@ -599,7 +617,13 @@ export default function Usuarios() {
               preserveAspectRatio="xMidYMid slice"
               clipPath={`url(#${clipId})`}
             />
-            <circle cx={10} cy={0} r={10} fill="transparent" stroke="rgba(255,255,255,0.85)" />
+            <circle
+              cx={10}
+              cy={0}
+              r={10}
+              fill="transparent"
+              stroke="rgba(255,255,255,0.85)"
+            />
           </>
         ) : (
           <>
@@ -614,7 +638,13 @@ export default function Usuarios() {
             >
               {initial}
             </text>
-            <circle cx={10} cy={0} r={10} fill="transparent" stroke="rgba(255,255,255,0.85)" />
+            <circle
+              cx={10}
+              cy={0}
+              r={10}
+              fill="transparent"
+              stroke="rgba(255,255,255,0.85)"
+            />
           </>
         )}
 
@@ -666,58 +696,10 @@ export default function Usuarios() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <motion.aside className={`sidebar ${sidebarOpen ? "open" : ""}`} initial={false}>
-          <div className="sidebar-header">
-            <img src={logoSafeZone} alt="SafeZone" className="sidebar-logo" />
-            <div className="sidebar-title">SafeZone Admin</div>
-          </div>
-
-          <nav className="sidebar-menu">
-            <Link to="/dashboard" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconDashboard} className="nav-icon" alt="Panel" />
-              <span>Panel</span>
-            </Link>
-
-            <Link to="/comunidades" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconComu} className="nav-icon" alt="Comunidades" />
-              <span>Comunidades</span>
-            </Link>
-
-            <Link to="/usuarios" className="sidebar-item active" onClick={closeSidebar}>
-              <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
-              <span>Usuarios</span>
-            </Link>
-
-            <div className="sidebar-section-label">MANAGEMENT</div>
-
-            <Link to="/analisis" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconIa} className="nav-icon" alt="IA" />
-              <span>IA Análisis</span>
-            </Link>
-
-            <Link to="/reportes" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconRepo} className="nav-icon" alt="Reportes" />
-              <span>Reportes</span>
-            </Link>
-
-            <Link to="/codigo-acceso" className="sidebar-item" onClick={closeSidebar}>
-              <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
-              <span>Ajustes</span>
-            </Link>
-          </nav>
-
-          <div className="sidebar-footer">
-            <div className="sidebar-connected">
-              <div className="sidebar-connected-title">Conectado como</div>
-              <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
-            </div>
-
-            <button id="btnSalir" className="sidebar-logout" onClick={handleLogout}>
-              Salir
-            </button>
-            <span className="sidebar-version">v1.0 — SafeZone</span>
-          </div>
-        </motion.aside>
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+        />
 
         {/* MAIN */}
         <main className="usuarios-main">
@@ -870,7 +852,9 @@ export default function Usuarios() {
                   </div>
                 </div>
                 <div className="kpi-value">{onlineActivos}</div>
-                <div className="kpi-sub">Último acceso ≤ {ONLINE_THRESHOLD_MIN} min</div>
+                <div className="kpi-sub">
+                  Último acceso ≤ {ONLINE_THRESHOLD_MIN} min
+                </div>
               </div>
             </div>
 
@@ -891,14 +875,22 @@ export default function Usuarios() {
                       margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
                       barCategoryGap="28%"
                     >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.18} vertical={false} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        opacity={0.18}
+                        vertical={false}
+                      />
 
                       <XAxis
                         dataKey="label"
                         tickMargin={10}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "rgba(15,23,42,0.65)", fontSize: 12, fontWeight: 700 }}
+                        tick={{
+                          fill: "rgba(15,23,42,0.65)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
                       />
 
                       <YAxis
@@ -906,10 +898,17 @@ export default function Usuarios() {
                         allowDecimals={false}
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: "rgba(15,23,42,0.55)", fontSize: 12, fontWeight: 700 }}
+                        tick={{
+                          fill: "rgba(15,23,42,0.55)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                        }}
                       />
 
-                      <Tooltip cursor={{ fill: "rgba(249,81,80,0.08)" }} content={<RegistrosTooltip />} />
+                      <Tooltip
+                        cursor={{ fill: "rgba(249,81,80,0.08)" }}
+                        content={<RegistrosTooltip />}
+                      />
 
                       <Bar
                         dataKey="registros"
@@ -933,7 +932,11 @@ export default function Usuarios() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div className="donut" style={{ background: donutBg }} aria-label="Donut cuenta">
+                  <div
+                    className="donut"
+                    style={{ background: donutBg }}
+                    aria-label="Donut cuenta"
+                  >
                     <div className="donut-hole">
                       <div className="donut-total2">{totalUsuarios}</div>
                       <div className="donut-label2">Usuarios</div>
@@ -942,13 +945,19 @@ export default function Usuarios() {
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#16a34a" }}
+                      />
                       <span className="donut-name">Activos</span>
                       <span className="donut-val">{cuentaActivos}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#ef4444" }}
+                      />
                       <span className="donut-name">Suspendidos</span>
                       <span className="donut-val">{cuentaSuspendidos}</span>
                     </div>
@@ -996,7 +1005,10 @@ export default function Usuarios() {
                             barSize={16}
                             animationDuration={650}
                           >
-                            <LabelList dataKey="total" content={ComunidadValueLabel} />
+                            <LabelList
+                              dataKey="total"
+                              content={ComunidadValueLabel}
+                            />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
@@ -1033,9 +1045,17 @@ export default function Usuarios() {
                       <tr key={u.id}>
                         <td>
                           {u.fotoUrl ? (
-                            <img src={u.fotoUrl} alt="foto" className="user-photo-icon" />
+                            <img
+                              src={u.fotoUrl}
+                              alt="foto"
+                              className="user-photo-icon"
+                            />
                           ) : (
-                            <img src={iconImagen} alt="foto" className="user-photo-icon" />
+                            <img
+                              src={iconImagen}
+                              alt="foto"
+                              className="user-photo-icon"
+                            />
                           )}
                         </td>
 
@@ -1046,14 +1066,18 @@ export default function Usuarios() {
                         <td>{u.rol}</td>
 
                         <td>
-                          <span className={badgeCuentaClass(u.estadoCuenta)}>{u.estadoCuenta}</span>
+                          <span className={badgeCuentaClass(u.estadoCuenta)}>
+                            {u.estadoCuenta}
+                          </span>
                         </td>
 
                         <td>
                           <span
                             className={badgeOnlineClass(u.estadoOnline)}
                             title={
-                              u.ultimoAccesoIso ? `Último acceso: ${u.ultimoAccesoIso}` : "Sin registro de acceso"
+                              u.ultimoAccesoIso
+                                ? `Último acceso: ${u.ultimoAccesoIso}`
+                                : "Sin registro de acceso"
                             }
                           >
                             {u.estadoOnline}
@@ -1072,7 +1096,9 @@ export default function Usuarios() {
                           <button
                             className="icon-button"
                             title="Eliminar"
-                            onClick={() => alert("Eliminar usuario: pendiente backend")}
+                            onClick={() =>
+                              alert("Eliminar usuario: pendiente backend")
+                            }
                             type="button"
                           >
                             <img src={iconEliminar} alt="Eliminar" />
@@ -1083,7 +1109,10 @@ export default function Usuarios() {
 
                     {usuariosFiltrados.length === 0 && (
                       <tr>
-                        <td colSpan={11} style={{ textAlign: "center", fontWeight: 900 }}>
+                        <td
+                          colSpan={11}
+                          style={{ textAlign: "center", fontWeight: 900 }}
+                        >
                           No se encontraron usuarios.
                         </td>
                       </tr>
@@ -1093,7 +1122,9 @@ export default function Usuarios() {
               )}
             </section>
 
-            <p className="usuarios-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
+            <p className="usuarios-update">
+              Última actualización: {new Date().toLocaleString("es-EC")}
+            </p>
           </motion.div>
         </main>
       </div>
