@@ -2,8 +2,10 @@
 import "../styles/analisis.css";
 import Sidebar from "../components/sidebar";
 
+import logoSafeZone from "../assets/logo_SafeZone.png";
+
 import { useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -14,6 +16,9 @@ import {
   Flame,
   AlertTriangle,
   BadgeCheck,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 
 import {
@@ -30,6 +35,12 @@ import {
   incidentesService,
   type IncidenteResponseDTO,
 } from "../services/incidentesService";
+
+// ✅ Export libs
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 type SessionUser = {
   nombre?: string;
@@ -368,7 +379,6 @@ export default function Analisis() {
   const pAlta = pct(alta);
   const pMedia = pct(media);
   const pBaja = pct(baja);
-  const pOtro = pct(otro);
 
   const donutBg =
     total > 0
@@ -381,6 +391,204 @@ export default function Analisis() {
       : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
 
   const closeSidebar = () => setSidebarOpen(false);
+
+  /* =====================
+     EXPORT (PDF + EXCEL)
+  ===================== */
+  const [openExport, setOpenExport] = useState(false);
+  const exportRef = useRef<HTMLDivElement | null>(null);
+  const lineChartRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!openExport) return;
+      if (!exportRef.current) return;
+      if (!exportRef.current.contains(e.target as Node)) setOpenExport(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenExport(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [openExport]);
+
+  const canExport = incidentesFiltrados.length > 0;
+
+  const toDataURL = async (url: string): Promise<string> => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const captureLineChartPNG = async (): Promise<string | null> => {
+    const node = lineChartRef.current;
+    if (!node) return null;
+
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+    });
+
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
+  const buildExportRows = () =>
+    incidentesFiltrados.map((i) => {
+      const motivos = parseJsonArrayString(i.aiMotivos).join(" | ");
+      const riesgos = parseJsonArrayString(i.aiRiesgos).join(" | ");
+      return {
+        ID: i.id ?? "—",
+        Usuario: i.usuarioNombre ?? "—",
+        Comunidad: i.comunidadNombre ?? "—",
+        "Categoría IA": i.aiCategoria ?? "—",
+        Prioridad: i.aiPrioridad ?? "—",
+        Confianza:
+          i.aiConfianza == null ? "—" : Number(i.aiConfianza).toFixed(2),
+        Motivos: motivos || "—",
+        Riesgos: riesgos || "—",
+        Fecha: isoToYMD(i.fechaCreacion) || "—",
+      };
+    });
+
+  const exportExcel = () => {
+    const rows = buildExportRows();
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    ws["!cols"] = [
+      { wch: 8 }, // ID
+      { wch: 22 }, // Usuario
+      { wch: 22 }, // Comunidad
+      { wch: 22 }, // Categoria
+      { wch: 12 }, // Prioridad
+      { wch: 10 }, // Confianza
+      { wch: 40 }, // Motivos
+      { wch: 40 }, // Riesgos
+      { wch: 12 }, // Fecha
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Analisis IA");
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `reporte_analisis_ia_${stamp}.xlsx`);
+  };
+
+  const exportPDF = async () => {
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginX = 14;
+
+    // Logo
+    try {
+      const logo = await toDataURL(logoSafeZone);
+      const logoW = 40;
+      const logoH = 40;
+      doc.addImage(logo, "PNG", (pageW - logoW) / 2, 10, logoW, logoH);
+    } catch {}
+
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text("Reporte de IA Análisis", pageW / 2, 58, { align: "center" });
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, pageW / 2, 65, {
+      align: "center",
+    });
+
+    const startYTabla = 75;
+
+    // Tabla
+    autoTable(doc, {
+      startY: startYTabla,
+      head: [
+        [
+          "ID",
+          "Usuario",
+          "Comunidad",
+          "Categoría IA",
+          "Prioridad",
+          "Conf.",
+          "Motivos",
+          "Riesgos",
+          "Fecha",
+        ],
+      ],
+
+      body: incidentesFiltrados.map((i) => {
+        const motivos = parseJsonArrayString(i.aiMotivos).join(" | ");
+        const riesgos = parseJsonArrayString(i.aiRiesgos).join(" | ");
+        return [
+          String(i.id ?? "—"),
+          String(i.usuarioNombre ?? "—"),
+          String(i.comunidadNombre ?? "—"),
+          String(i.aiCategoria ?? "—"),
+          String(i.aiPrioridad ?? "—"),
+          i.aiConfianza == null ? "—" : Number(i.aiConfianza).toFixed(2),
+          motivos || "—",
+          riesgos || "—",
+          isoToYMD(i.fechaCreacion) || "—",
+        ];
+      }),
+      styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" },
+      headStyles: { fillColor: [30, 30, 30] },
+      margin: { left: marginX, right: marginX },
+      columnStyles: {
+        0: { cellWidth: 8 },
+        1: { cellWidth: 18 },
+        2: { cellWidth: 18 },
+        3: { cellWidth: 22 },
+        4: { cellWidth: 14 },
+        5: { cellWidth: 10 },
+        6: { cellWidth: 40 },
+        7: { cellWidth: 40 },
+        8: { cellWidth: 14 },
+      },
+    });
+
+    // Gráfica al final
+    try {
+      const img = await captureLineChartPNG();
+      if (img) {
+        let y = (doc as any).lastAutoTable?.finalY ?? startYTabla + 20;
+        y += 16;
+
+        const w = pageW - marginX * 2;
+        const h = 85;
+
+        if (y + h + 18 > pageH) {
+          doc.addPage();
+          y = 28;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text("Gráfica: Incidentes analizados (14 días)", pageW / 2, y - 6, {
+          align: "center",
+        });
+        doc.setFont("helvetica", "normal");
+
+        const xChart = (pageW - w) / 2;
+        doc.addImage(img, "PNG", xChart, y, w, h);
+      }
+    } catch {}
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    doc.save(`reporte_analisis_ia_${stamp}.pdf`);
+  };
 
   return (
     <>
@@ -458,7 +666,48 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                <div className="topbar-actions">
+                <div className="topbar-actions" ref={exportRef}>
+                  {/* ✅ EXPORTAR (igual pro que Reportes) */}
+                  <button
+                    className="action-pill action-pill-icon"
+                    onClick={() => setOpenExport((v) => !v)}
+                    disabled={!canExport}
+                    title="Exportar análisis"
+                    type="button"
+                    aria-label="Exportar"
+                  >
+                    <Download size={18} />
+                    Exportar
+                  </button>
+
+                  {openExport && (
+                    <div className="export-dropdown">
+                      <button
+                        className="export-option"
+                        onClick={() => {
+                          exportExcel();
+                          setOpenExport(false);
+                        }}
+                        type="button"
+                      >
+                        <FileSpreadsheet size={16} />
+                        Excel (.xlsx)
+                      </button>
+
+                      <button
+                        className="export-option"
+                        onClick={() => {
+                          exportPDF();
+                          setOpenExport(false);
+                        }}
+                        type="button"
+                      >
+                        <FileText size={16} />
+                        PDF
+                      </button>
+                    </div>
+                  )}
+
                   <button
                     className="action-pill action-pill-accent"
                     onClick={cargarIncidentes}
@@ -585,7 +834,8 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                <div className="line-chart-wrap5">
+                {/* ✅ ref para exportar la gráfica */}
+                <div className="line-chart-wrap5" ref={lineChartRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={lineData}

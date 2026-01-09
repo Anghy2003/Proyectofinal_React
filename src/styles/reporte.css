@@ -1201,3 +1201,13 @@ body {
     min-width: 1200px;
   }
 }
+
+.export-capture {
+  background: #ffffff !important;
+  border-radius: 14px;
+}
+
+/* evita tooltips flotando en captura */
+.export-capture .recharts-tooltip-wrapper {
+  display: none !important;
+}

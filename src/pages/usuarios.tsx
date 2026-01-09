@@ -2,7 +2,7 @@
 import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
 
-import logoSafeZone from "../assets/logo_rojo.png";
+import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconImagen from "../assets/icon_imagen.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
@@ -264,6 +264,57 @@ function ComunidadesTooltip({
   );
 }
 
+/* =========================================================
+   ✅ Helper: convertir SVG (Recharts) a PNG DataURL para jsPDF
+========================================================= */
+async function svgToPngDataUrl(
+  svgEl: SVGSVGElement,
+  scale = 2
+): Promise<{ dataUrl: string; width: number; height: number }> {
+  const xml = new XMLSerializer().serializeToString(svgEl);
+
+  const svg = xml.includes("xmlns=")
+    ? xml
+    : xml.replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+
+  const blob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("No se pudo cargar SVG como imagen"));
+    img.src = url;
+  });
+
+  const box = svgEl.getBoundingClientRect();
+  const w = Math.max(1, Math.floor(box.width));
+  const h = Math.max(1, Math.floor(box.height));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.floor(w * scale);
+  canvas.height = Math.floor(h * scale);
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("No canvas context");
+
+  // Fondo blanco para PDF
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  URL.revokeObjectURL(url);
+
+  return {
+    dataUrl: canvas.toDataURL("image/png", 1.0),
+    width: w,
+    height: h,
+  };
+}
+
 export default function Usuarios() {
   const navigate = useNavigate();
 
@@ -278,6 +329,9 @@ export default function Usuarios() {
   // ✅ Export dropdown
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ Ref del chart (para export PDF)
+  const chartRegistrosRef = useRef<HTMLDivElement | null>(null);
 
   const [me] = useState<SessionUser>(() => getSessionUser());
 
@@ -460,7 +514,7 @@ export default function Usuarios() {
   const lineData = useMemo(() => buildDailyRegistros(usuarios, 14), [usuarios]);
 
   // =========================
-  // EXPORT (sin foto)
+  // EXPORT (sin foto) + ✅ hoja con datos de gráfica + ✅ PDF con gráfica
   // =========================
   const buildExportRows = () =>
     usuariosFiltrados.map((u) => ({
@@ -477,6 +531,7 @@ export default function Usuarios() {
     }));
 
   const exportExcel = () => {
+    // Hoja 1: tabla usuarios
     const rows = buildExportRows();
     const ws = XLSX.utils.json_to_sheet(rows);
 
@@ -492,8 +547,17 @@ export default function Usuarios() {
       { wch: 18 }, // Ultimo acceso
     ];
 
+    // Hoja 2: datos de gráfica (últimos 14 días)
+    const chartRows = lineData.map((p) => ({
+      Dia: p.label,
+      Registros: p.registros,
+    }));
+    const wsChart = XLSX.utils.json_to_sheet(chartRows);
+    wsChart["!cols"] = [{ wch: 14 }, { wch: 12 }];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
+    XLSX.utils.book_append_sheet(wb, wsChart, "Grafica_14_dias");
 
     const stamp = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(wb, `reporte_usuarios_${stamp}.xlsx`);
@@ -513,9 +577,11 @@ export default function Usuarios() {
   const exportPDF = async () => {
     const doc = new jsPDF("p", "mm", "a4");
 
+    // ===== HEADER =====
     try {
       const logo = await toDataURL(logoSafeZone);
-      doc.addImage(logo, "PNG", 95, 10, 20, 28);
+      // un poco más ancho
+      doc.addImage(logo, "PNG", 92, 10, 26, 26);
     } catch {
       // ignore
     }
@@ -528,6 +594,7 @@ export default function Usuarios() {
       align: "center",
     });
 
+    // ===== TABLA =====
     autoTable(doc, {
       startY: 60,
       head: [
@@ -554,7 +621,7 @@ export default function Usuarios() {
         `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
         u.ultimoAcceso ?? "—",
       ]),
-      styles: { fontSize: 8.5, cellPadding: 2 },
+      styles: { fontSize: 8.5, cellPadding: 2, overflow: "linebreak" },
       headStyles: { fillColor: [30, 30, 30] },
       margin: { left: 10, right: 10 },
       columnStyles: {
@@ -569,6 +636,57 @@ export default function Usuarios() {
         8: { cellWidth: 20 },
       },
     });
+
+    // ===== GRAFICA AL FINAL =====
+    const afterTableY = (doc as any).lastAutoTable?.finalY ?? 60;
+    let y = afterTableY + 10;
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Gráfica de registros (últimos 14 días)", 105, y, {
+      align: "center",
+    });
+
+    doc.setFont("helvetica", "normal");
+
+    y += 6;
+
+    try {
+      const svg = chartRegistrosRef.current?.querySelector(
+        "svg"
+      ) as SVGSVGElement | null;
+
+      if (svg) {
+        const { dataUrl, width, height } = await svgToPngDataUrl(svg, 2);
+
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+
+        // tamaño objetivo en PDF
+        const maxW = pageW - 20; // márgenes 10/10
+        const maxH = 90; // alto máximo
+
+        const ratio = width / height;
+        let drawW = maxW;
+        let drawH = drawW / ratio;
+
+        if (drawH > maxH) {
+          drawH = maxH;
+          drawW = drawH * ratio;
+        }
+
+        // si ya no cabe, nueva página
+        if (y + drawH + 10 > pageH) {
+          doc.addPage();
+          y = 20;
+        }
+
+        const x = (pageW - drawW) / 2;
+        doc.addImage(dataUrl, "PNG", x, y, drawW, drawH);
+      }
+    } catch {
+      // si falla la captura, no detengas el PDF
+    }
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`reporte_usuarios_${stamp}.pdf`);
@@ -868,7 +986,8 @@ export default function Usuarios() {
                   </div>
                 </div>
 
-                <div className="line-chart-wrap">
+                {/* ✅ ref para exportar la gráfica al PDF */}
+                <div className="line-chart-wrap" ref={chartRegistrosRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={lineData}

@@ -2,7 +2,7 @@
 import "../styles/comunidad.css";
 import Sidebar from "../components/sidebar";
 
-import logoSafeZone from "../assets/logo_rojo.png";
+import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconEdit from "../assets/icon_editar2.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
@@ -156,7 +156,7 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     if (c.estado === "RECHAZADA") p.rechazadas += 1;
   });
 
-  // fallback: si NO hay fechas, distribuimos “estético” por índice (para que el line chart no sea una línea plana)
+  // fallback: si NO hay fechas, distribuimos “estético” por índice
   if (!hasRealDates && comunidades.length > 0) {
     comunidades.forEach((c, idx) => {
       const i = idx % days;
@@ -188,6 +188,66 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
   });
 }
 
+/* =========================
+   Helpers export (logo -> dataURL)
+========================= */
+const toDataURL = async (url: string): Promise<string> => {
+  const res = await fetch(url);
+  const blob = await res.blob();
+  return await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+/* =========================
+   SVG (Recharts) -> PNG dataURL (sin libs)
+========================= */
+async function svgElementToPngDataUrl(
+  svgEl: SVGSVGElement,
+  outWidthPx = 1200
+): Promise<string> {
+  const xml = new XMLSerializer().serializeToString(svgEl);
+
+  const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
+  const svgUrl = URL.createObjectURL(svgBlob);
+
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+
+  const loaded = await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = (e) => reject(e);
+    img.src = svgUrl;
+  });
+
+  // @ts-ignore
+  void loaded;
+
+  const w = outWidthPx;
+  const h = Math.round((img.height / img.width) * w) || 600;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    URL.revokeObjectURL(svgUrl);
+    throw new Error("No se pudo crear canvas para exportar la gráfica.");
+  }
+
+  // fondo blanco (para que no salga transparente en PDF)
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+
+  URL.revokeObjectURL(svgUrl);
+  return canvas.toDataURL("image/png", 1.0);
+}
+
 export default function Comunidades() {
   const navigate = useNavigate();
 
@@ -202,6 +262,9 @@ export default function Comunidades() {
   // ✅ Dropdown export
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ ref del chart para export PDF
+  const chartWrapRef = useRef<HTMLDivElement | null>(null);
 
   function getSessionUser(): SessionUser {
     const candidates = [
@@ -322,6 +385,14 @@ export default function Comunidades() {
   };
 
   // =========================
+  // ✅ LINE CHART DATA
+  // =========================
+  const lineData = useMemo(
+    () => buildDailySeries(comunidades, 14),
+    [comunidades]
+  );
+
+  // =========================
   // EXPORT
   // =========================
   const buildExportRows = () =>
@@ -348,60 +419,136 @@ export default function Comunidades() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Comunidades");
 
+    // ✅ Hoja adicional con datos de la gráfica (pro)
+    const chartRows = lineData.map((p) => ({
+      Fecha: p.key,
+      Etiqueta: p.label,
+      Total: p.total,
+      Activas: p.activas,
+      Solicitadas: p.solicitadas,
+      Rechazadas: p.rechazadas,
+    }));
+    const ws2 = XLSX.utils.json_to_sheet(chartRows);
+    ws2["!cols"] = [
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 12 },
+    ];
+    XLSX.utils.book_append_sheet(wb, ws2, "Grafica_14d");
+
     const stamp = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(wb, `reporte_comunidades_${stamp}.xlsx`);
   };
 
-  const toDataURL = async (url: string): Promise<string> => {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
   const exportPDF = async () => {
-    const doc = new jsPDF("p", "mm", "a4");
+  const doc = new jsPDF("p", "mm", "a4");
 
-    try {
-      const logo = await toDataURL(logoSafeZone);
-      doc.addImage(logo, "PNG", 95, 10, 20, 28);
-    } catch {
-      // ignore
+  const pageW = doc.internal.pageSize.getWidth();
+
+  // ✅ LOGO 40x40 (mm) centrado
+  const logoSize = 40; // 40x40
+  const logoX = (pageW - logoSize) / 2;
+  const logoY = 10;
+
+  try {
+    const logo = await toDataURL(logoSafeZone);
+    doc.addImage(logo, "PNG", logoX, logoY, logoSize, logoSize);
+  } catch {
+    // ignore
+  }
+
+  // ✅ Título y fecha/hora debajo del logo (centrados)
+  const titleY = logoY + logoSize + 10; // espacio debajo del logo
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Reporte de Comunidades", pageW / 2, titleY, { align: "center" });
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, pageW / 2, titleY + 8, {
+    align: "center",
+  });
+
+  // ✅ tabla más abajo para que NO tape fecha/hora
+  autoTable(doc, {
+    startY: titleY + 18,
+    head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
+    body: comunidadesFiltradas.map((c) => [
+      c.codigoAcceso ?? "—",
+      c.nombre ?? "—",
+      String(c.miembrosCount ?? 0),
+      c.direccion ?? "—",
+      labelEstado(c.estado),
+    ]),
+    styles: { fontSize: 9, cellPadding: 2 },
+    headStyles: { fillColor: [30, 30, 30] },
+    columnStyles: {
+      0: { cellWidth: 22 },
+      1: { cellWidth: 36 },
+      2: { cellWidth: 18, halign: "center" },
+      3: { cellWidth: 86 },
+      4: { cellWidth: 22 },
+    },
+    margin: { left: 14, right: 14 },
+  });
+
+  // ✅ y después de la tabla, metemos la gráfica AL FINAL (si no cabe, nueva página)
+  const lastY =
+    ((doc as any)?.lastAutoTable?.finalY as number | undefined) ?? 64;
+    let y = lastY + 10;
+
+    // Si no cabe, nueva página
+    const pageH = doc.internal.pageSize.getHeight();
+    if (y + 90 > pageH) {
+      doc.addPage();
+      y = 20;
     }
 
-    doc.setFontSize(16);
-    doc.text("Reporte de Comunidades", 105, 45, { align: "center" });
-
-    doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, 105, 52, {
+    // Título gráfico centrado y en negrita
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Gráfica de comunidades (últimos 14 días)", 105, y, {
       align: "center",
     });
+    doc.setFont("helvetica", "normal");
 
-    autoTable(doc, {
-      startY: 60,
-      head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
-      body: comunidadesFiltradas.map((c) => [
-        c.codigoAcceso ?? "—",
-        c.nombre ?? "—",
-        String(c.miembrosCount ?? 0),
-        c.direccion ?? "—",
-        labelEstado(c.estado),
-      ]),
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [30, 30, 30] },
-      columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 36 },
-        2: { cellWidth: 18, halign: "center" },
-        3: { cellWidth: 86 },
-        4: { cellWidth: 22 },
-      },
-      margin: { left: 14, right: 14 },
-    });
+    y += 6;
+
+    // Capturar SVG del chart visible
+    try {
+      const wrap = chartWrapRef.current;
+      const svg = wrap?.querySelector("svg") as SVGSVGElement | null;
+
+      if (svg) {
+        const pngDataUrl = await svgElementToPngDataUrl(svg, 1400);
+
+        const pageW = doc.internal.pageSize.getWidth();
+        const maxW = pageW - 28; // márgenes similares a tabla
+        const imgW = maxW;
+        const imgH = 72; // ✅ altura controlada (sube a 80/90 si quieres más grande)
+        const x = (pageW - imgW) / 2;
+
+        doc.addImage(pngDataUrl, "PNG", x, y, imgW, imgH);
+      } else {
+        doc.setFontSize(10);
+        doc.text(
+          "No se pudo capturar la gráfica (SVG no encontrado).",
+          105,
+          y + 10,
+          { align: "center" }
+        );
+      }
+    } catch (e) {
+      console.error(e);
+      doc.setFontSize(10);
+      doc.text("No se pudo exportar la gráfica.", 105, y + 10, {
+        align: "center",
+      });
+    }
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`reporte_comunidades_${stamp}.pdf`);
@@ -427,14 +574,6 @@ export default function Comunidades() {
         )`
       : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
 
-  // =========================
-  // ✅ LINE CHART DATA
-  // =========================
-  const lineData = useMemo(
-    () => buildDailySeries(comunidades, 14),
-    [comunidades]
-  );
-
   const closeSidebar = () => setSidebarOpen(false);
 
   return (
@@ -456,10 +595,10 @@ export default function Comunidades() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-          <Sidebar
-            sidebarOpen={sidebarOpen}
-            closeSidebar={() => setSidebarOpen(false)}
-          />
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+        />
 
         {/* MAIN */}
         <main className="comunidades-main">
@@ -512,7 +651,7 @@ export default function Comunidades() {
                   </div>
                 </div>
 
-                {/* ✅ BOTONES ARREGLADOS (ya se ven) */}
+                {/* ✅ BOTONES ARREGLADOS */}
                 <div ref={exportRef} className="topbar-actions">
                   <button
                     className="action-pill"
@@ -625,16 +764,13 @@ export default function Comunidades() {
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">
-                      Tendencia de comunidades
-                    </div>
-                    <div className="chart-sub-v2">
-                      Últimos 14 días (acumulado)
-                    </div>
+                    <div className="chart-title-v2">Tendencia de comunidades</div>
+                    <div className="chart-sub-v2">Últimos 14 días (acumulado)</div>
                   </div>
                 </div>
 
-                <div className="line-chart-wrap1">
+                {/* ✅ ref para exportar la gráfica */}
+                <div className="line-chart-wrap1" ref={chartWrapRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={lineData}
@@ -821,9 +957,7 @@ export default function Comunidades() {
                           <td className="acciones">
                             <button
                               className="icon-button"
-                              onClick={() =>
-                                alert("Editar comunidad (pendiente)")
-                              }
+                              onClick={() => alert("Editar comunidad (pendiente)")}
                               title="Editar"
                               type="button"
                             >

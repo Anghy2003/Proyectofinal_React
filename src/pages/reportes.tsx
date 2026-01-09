@@ -2,10 +2,10 @@
 import "../styles/reporte.css";
 import Sidebar from "../components/sidebar";
 
-import logoSafeZone from "../assets/logo_rojo.png";
+import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import {
@@ -18,6 +18,7 @@ import {
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import html2canvas from "html2canvas";
 
 // ✅ Animaciones + UI pro
 import { AnimatePresence, motion } from "framer-motion";
@@ -244,6 +245,7 @@ export default function Reportes() {
   // ✅ Export dropdown
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
+  const barChartRef = useRef<HTMLDivElement | null>(null);
 
   const [me] = useState<SessionUser>(() => getSessionUser());
 
@@ -578,26 +580,62 @@ export default function Reportes() {
     });
   };
 
+  const captureBarChartPNG = async (): Promise<string | null> => {
+    const node = barChartRef.current;
+    if (!node) return null;
+
+    node.classList.add("export-capture");
+
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+    });
+
+    node.classList.remove("export-capture");
+    return canvas.toDataURL("image/png", 1.0);
+  };
+
   const exportPDF = async () => {
     const doc = new jsPDF("p", "mm", "a4");
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginX = 14;
 
+    // ===== Logo =====
     try {
       const logo = await toDataURL(logoSafeZone);
-      doc.addImage(logo, "PNG", 95, 10, 20, 28);
-    } catch {
-      // ignore
-    }
+      const logoW = 40; // antes 20
+      const logoH = 40; // antes 28
 
+      doc.addImage(
+        logo,
+        "PNG",
+        (pageW - logoW) / 2, // centrado
+        10,
+        logoW,
+        logoH
+      );
+    } catch {}
+
+    // ===== Header =====
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Reporte de Incidentes", 105, 45, { align: "center" });
+    doc.text("Reporte de Incidentes", pageW / 2, 58, { align: "center" });
 
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, 105, 52, {
+    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, pageW / 2, 65, {
       align: "center",
     });
 
+    // ✅ STARTY REAL (para que no quede hueco)
+    const startYTabla = 75; // (60-68 es lo ideal)
+
+    // ===== TABLA =====
     autoTable(doc, {
-      startY: 60,
+      startY: startYTabla,
       head: [["ID", "Usuario", "Tipo", "Comunidad", "Fecha", "Estado"]],
       body: reportesFiltrados.map((r) => [
         r.id ?? "—",
@@ -609,7 +647,7 @@ export default function Reportes() {
       ]),
       styles: { fontSize: 9, cellPadding: 2 },
       headStyles: { fillColor: [30, 30, 30] },
-      margin: { left: 14, right: 14 },
+      margin: { left: marginX, right: marginX },
       columnStyles: {
         0: { cellWidth: 14 },
         1: { cellWidth: 34 },
@@ -619,6 +657,35 @@ export default function Reportes() {
         5: { cellWidth: 26 },
       },
     });
+
+    // ===== GRÁFICA AL FINAL =====
+    try {
+      const img = await captureBarChartPNG();
+      if (img) {
+        let y = (doc as any).lastAutoTable?.finalY ?? startYTabla + 20;
+        y += 14;
+
+        const w = pageW - marginX * 2;
+        const h = 95;
+
+        // si no entra => nueva hoja
+        if (y + h + 18 > pageH) {
+          doc.addPage();
+          y = 24;
+        }
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(`Gráfica por ${granularity.toUpperCase()}`, pageW / 2, y - 6, {
+          align: "center",
+        });
+        doc.setFont("helvetica", "normal");
+
+        const xChart = (pageW - w) / 2;
+
+        doc.addImage(img, "PNG", xChart, y, w, h);
+      }
+    } catch {}
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`reporte_reportes_${stamp}.pdf`);
@@ -879,7 +946,7 @@ export default function Reportes() {
                   </select>
                 </div>
 
-                <div className="line-chart-wrap6">
+                <div className="line-chart-wrap6 " ref={barChartRef}>
                   {barData.length === 0 ? (
                     <div className="chart-empty">
                       No hay datos para graficar con esos filtros.
