@@ -641,20 +641,30 @@ export default function Comunidades() {
   // =========================
   // ✅ EDIT (modal)
   // =========================
-  const openEdit = (c: Comunidad) => {
-    setEditError(null);
-    setEditOriginal(c); // ✅ guardamos todo el objeto que recibimos del API (DTO)
+  const openEdit = async (c: Comunidad) => {
+    try {
+      setEditError(null);
 
-    setEditForm({
-      id: c.id,
-      nombre: c.nombre ?? "",
-      direccion: (c.direccion ?? "") as string,
-      codigoAcceso: c.codigoAcceso ?? "",
-      miembrosCount: c.miembrosCount ?? 0,
-      fotoUrl: c.fotoUrl ?? null,
-    });
+      // ✅ Traer versión más completa del backend
+      const full = await comunidadesService.obtener(c.id);
 
-    setEditOpen(true);
+      setEditOriginal(full);
+
+      setEditForm({
+        id: full.id,
+        nombre: full.nombre ?? "",
+        direccion: (full.direccion ?? "") as string,
+        codigoAcceso: full.codigoAcceso ?? "",
+        miembrosCount: full.miembrosCount ?? 0,
+        fotoUrl: full.fotoUrl ?? null,
+      });
+
+      setEditOpen(true);
+    } catch (e) {
+      console.error(e);
+      setEditError("No se pudo cargar la comunidad para editar.");
+      setEditOpen(true);
+    }
   };
 
   const trim = (s: string) => (s ?? "").trim();
@@ -683,14 +693,17 @@ export default function Comunidades() {
         nombre: trim(editForm.nombre),
         direccion: trim(editForm.direccion) || null,
 
-        // conservar lo que no se edita
-        codigoAcceso: editOriginal.codigoAcceso ?? null,
+        // ✅ conservar campos existentes para que NO se borren
+        codigoAcceso: editOriginal.codigoAcceso ?? null,  
         fotoUrl: editOriginal.fotoUrl ?? null,
-        radioKm: (editOriginal.radioKm ?? null) as any,
-        activa: (editOriginal.activa ?? null) as any,
-        estado: editOriginal.estado, // "ACTIVA" | "SOLICITADA" | "RECHAZADA"
+        radioKm: (editOriginal.radioKm ?? 1.0) as any,
+        activa: (editOriginal.activa ?? true) as any,
+        estado: (editOriginal.estado ?? "ACTIVA") as any,
         solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ??
           null) as any,
+
+        // ✅ CLAVE: conservar fecha
+        fechaCreacion: (editOriginal.fechaCreacion ?? null) as any,
       };
 
       const updated = await comunidadesService.actualizar(
@@ -1263,89 +1276,88 @@ export default function Comunidades() {
       </AnimatePresence>
 
       <AnimatePresence>
-  {delOpen && (
-    <motion.div
-      className="sz-modal-backdrop"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={() => setDelOpen(false)}
-    >
-      <motion.div
-        className="sz-modal-card sz-modal-danger"
-        initial={{ opacity: 0, y: 18, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.98 }}
-        transition={{ duration: 0.18 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sz-modal-head">
-          <div>
-            <div className="sz-modal-title">¿Eliminar comunidad?</div>
-            <div className="sz-modal-sub">
-              Estás por eliminar: <b>{delTarget?.nombre ?? "—"}</b>
-            </div>
-          </div>
-
-          <button
-            className="sz-modal-x"
-            type="button"
+        {delOpen && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={() => setDelOpen(false)}
-            aria-label="Cerrar"
-            title="Cerrar"
           >
-            <X size={18} />
-          </button>
-        </div>
+            <motion.div
+              className="sz-modal-card sz-modal-danger"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">¿Eliminar comunidad?</div>
+                  <div className="sz-modal-sub">
+                    Estás por eliminar: <b>{delTarget?.nombre ?? "—"}</b>
+                  </div>
+                </div>
 
-        <div className="sz-danger-box">
-          <div className="sz-danger-name">{delTarget?.nombre ?? "—"}</div>
-          <div className="sz-danger-meta">
-            Miembros dentro de la comunidad:{" "}
-            <b>{delTarget?.miembrosCount ?? 0}</b>
-          </div>
-          <div className="sz-danger-meta">
-            Dirección: {delTarget?.direccion ?? "—"}
-          </div>
-          <div className="sz-danger-meta">
-            Código: <b>{delTarget?.codigoAcceso ?? "—"}</b>
-          </div>
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => setDelOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-          {(delTarget?.miembrosCount ?? 0) > 0 && (
-            <div className="sz-danger-warning">
-              ⚠️ Esta comunidad tiene miembros. Si la eliminas, podrían quedar
-              usuarios sin comunidad.
-            </div>
-          )}
-        </div>
+              <div className="sz-danger-box">
+                <div className="sz-danger-name">{delTarget?.nombre ?? "—"}</div>
+                <div className="sz-danger-meta">
+                  Miembros dentro de la comunidad:{" "}
+                  <b>{delTarget?.miembrosCount ?? 0}</b>
+                </div>
+                <div className="sz-danger-meta">
+                  Dirección: {delTarget?.direccion ?? "—"}
+                </div>
+                <div className="sz-danger-meta">
+                  Código: <b>{delTarget?.codigoAcceso ?? "—"}</b>
+                </div>
 
-        {delError && <div className="sz-modal-error">{delError}</div>}
+                {(delTarget?.miembrosCount ?? 0) > 0 && (
+                  <div className="sz-danger-warning">
+                    ⚠️ Esta comunidad tiene miembros. Si la eliminas, podrían
+                    quedar usuarios sin comunidad.
+                  </div>
+                )}
+              </div>
 
-        <div className="sz-modal-actions">
-          <button
-            className="sz-btn-light"
-            type="button"
-            onClick={() => setDelOpen(false)}
-            disabled={delLoading}
-          >
-            Cancelar
-          </button>
+              {delError && <div className="sz-modal-error">{delError}</div>}
 
-          <button
-            className="sz-btn-danger"
-            type="button"
-            onClick={confirmDelete}
-            disabled={delLoading}
-            title="Eliminar definitivamente"
-          >
-            {delLoading ? "Eliminando..." : "Sí, eliminar"}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+              <div className="sz-modal-actions">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => setDelOpen(false)}
+                  disabled={delLoading}
+                >
+                  Cancelar
+                </button>
 
+                <button
+                  className="sz-btn-danger"
+                  type="button"
+                  onClick={confirmDelete}
+                  disabled={delLoading}
+                  title="Eliminar definitivamente"
+                >
+                  {delLoading ? "Eliminando..." : "Sí, eliminar"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

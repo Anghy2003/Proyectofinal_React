@@ -34,7 +34,10 @@ type ComunidadUpdatePayload = {
   activa: boolean | null;
   estado: EstadoComunidad;
   solicitadaPorUsuarioId: number | null;
+
+  fechaCreacion: string | null; // ✅ nuevo
 };
+
 
 export const comunidadesService = {
   listar: async (): Promise<Comunidad[]> => {
