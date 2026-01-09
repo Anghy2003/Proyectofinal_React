@@ -687,13 +687,13 @@ export default function Comunidades() {
 
       const usuarioId = getAdminUserIdOrThrow();
 
-      // ✅ PAYLOAD SEGURO según ENTIDAD REAL (sin centroLat/centroLng, sin fechaCreacion, sin miembrosCount)
+      // PAYLOAD SEGURO 
       const payload = {
         id: editOriginal.id,
         nombre: trim(editForm.nombre),
         direccion: trim(editForm.direccion) || null,
 
-        // ✅ conservar campos existentes para que NO se borren
+        // conservar campos existentes para que NO se borren
         codigoAcceso: editOriginal.codigoAcceso ?? null,  
         fotoUrl: editOriginal.fotoUrl ?? null,
         radioKm: (editOriginal.radioKm ?? 1.0) as any,
@@ -702,7 +702,7 @@ export default function Comunidades() {
         solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ??
           null) as any,
 
-        // ✅ CLAVE: conservar fecha
+        // CLAVE: conservar fecha
         fechaCreacion: (editOriginal.fechaCreacion ?? null) as any,
       };
 
