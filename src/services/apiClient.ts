@@ -13,10 +13,20 @@ export class ApiError extends Error {
 }
 
 async function parseBody(resp: Response) {
+  // ✅ Para 204/205 o respuestas vacías
+  if (resp.status === 204 || resp.status === 205) return null;
+
   const ct = resp.headers.get("content-type") || "";
-  if (ct.includes("application/json")) return resp.json();
-  return resp.text();
+
+  if (ct.includes("application/json")) {
+    const text = await resp.text();
+    return text ? JSON.parse(text) : null;
+  }
+
+  const t = await resp.text();
+  return t || null;
 }
+
 
 function buildUrl(path: string, query?: Record<string, any>) {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;

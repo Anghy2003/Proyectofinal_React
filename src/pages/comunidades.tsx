@@ -55,6 +55,16 @@ type SessionUser = {
   email?: string;
 };
 
+type SessionData = {
+  userId: number;
+  email: string;
+  rol: string | null;
+  communityId: number | null;
+  nombre: string;
+  apellido: string;
+  fotoUrl: string | null;
+};
+
 type DailyPoint = {
   key: string; // YYYY-MM-DD
   label: string; // "04 Ene"
@@ -63,10 +73,6 @@ type DailyPoint = {
   solicitadas: number;
   rechazadas: number;
 };
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
 
 function isValidDate(d: Date) {
   return d instanceof Date && !Number.isNaN(d.getTime());
@@ -120,7 +126,6 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // base: últimos N días
   const base: DailyPoint[] = Array.from({ length: days }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (days - 1 - i));
@@ -136,8 +141,6 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
   });
 
   const byKey = new Map(base.map((p) => [p.key, p]));
-
-  // si hay fechas reales, agregamos por día
   let hasRealDates = false;
 
   comunidades.forEach((c) => {
@@ -148,7 +151,7 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     d.setHours(0, 0, 0, 0);
     const key = toKey(d);
     const p = byKey.get(key);
-    if (!p) return; // fuera de rango (no lo mostramos)
+    if (!p) return;
 
     p.total += 1;
     if (c.estado === "ACTIVA") p.activas += 1;
@@ -156,7 +159,6 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     if (c.estado === "RECHAZADA") p.rechazadas += 1;
   });
 
-  // fallback: si NO hay fechas, distribuimos “estético” por índice
   if (!hasRealDates && comunidades.length > 0) {
     comunidades.forEach((c, idx) => {
       const i = idx % days;
@@ -168,7 +170,6 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     });
   }
 
-  // acumulado (para que se vea como tendencia real)
   let accTotal = 0,
     accA = 0,
     accS = 0,
@@ -210,21 +211,17 @@ async function svgElementToPngDataUrl(
   outWidthPx = 1200
 ): Promise<string> {
   const xml = new XMLSerializer().serializeToString(svgEl);
-
   const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
   const svgUrl = URL.createObjectURL(svgBlob);
 
   const img = new Image();
   img.crossOrigin = "anonymous";
 
-  const loaded = await new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve();
     img.onerror = (e) => reject(e);
     img.src = svgUrl;
   });
-
-  // @ts-ignore
-  void loaded;
 
   const w = outWidthPx;
   const h = Math.round((img.height / img.width) * w) || 600;
@@ -239,13 +236,31 @@ async function svgElementToPngDataUrl(
     throw new Error("No se pudo crear canvas para exportar la gráfica.");
   }
 
-  // fondo blanco (para que no salga transparente en PDF)
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
 
   URL.revokeObjectURL(svgUrl);
   return canvas.toDataURL("image/png", 1.0);
+}
+
+/* =========================
+   Session helpers
+========================= */
+function getSession(): SessionData | null {
+  const raw = localStorage.getItem("session");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as SessionData;
+  } catch {
+    return null;
+  }
+}
+function getAdminUserIdOrThrow(): number {
+  const s = getSession();
+  const userId = Number(s?.userId ?? 0);
+  if (!userId) throw new Error("No se encontró session.userId (admin).");
+  return userId;
 }
 
 export default function Comunidades() {
@@ -256,40 +271,88 @@ export default function Comunidades() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Sidebar (móvil)
+  // Sidebar (móvil)
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ✅ Dropdown export
+  // Dropdown export
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ ref del chart para export PDF
+  // ref del chart para export PDF
   const chartWrapRef = useRef<HTMLDivElement | null>(null);
 
-  function getSessionUser(): SessionUser {
-    const candidates = [
-      "usuario",
-      "user",
-      "authUser",
-      "safezone_user",
-      "sessionUser",
-    ];
-    for (const k of candidates) {
-      const raw = localStorage.getItem(k);
-      if (!raw) continue;
-      try {
-        const obj = JSON.parse(raw);
-        return {
-          nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
-          rol: obj?.rol ?? obj?.role ?? "Admin",
-          fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
-          email: obj?.email,
-        };
-      } catch {
-        // ignore
-      }
+  // MODAL EDITAR
+  const [editOpen, setEditOpen] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editOriginal, setEditOriginal] = useState<Comunidad | null>(null);
+
+  // MODAL ELIMINAR
+  const [delOpen, setDelOpen] = useState(false);
+  const [delLoading, setDelLoading] = useState(false);
+  const [delError, setDelError] = useState<string | null>(null);
+  const [delTarget, setDelTarget] = useState<Comunidad | null>(null);
+
+  const [editForm, setEditForm] = useState<{
+    id: number;
+    nombre: string;
+    direccion: string;
+    codigoAcceso: string;
+    miembrosCount: number;
+    fotoUrl: string | null;
+  }>({
+    id: 0,
+    nombre: "",
+    direccion: "",
+    codigoAcceso: "",
+    miembrosCount: 0,
+    fotoUrl: null,
+  });
+
+  const openDelete = (c: Comunidad) => {
+    setDelError(null);
+    setDelTarget(c);
+    setDelOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      if (!delTarget) return;
+
+      setDelLoading(true);
+      setDelError(null);
+
+      const usuarioId = getAdminUserIdOrThrow();
+
+      await comunidadesService.eliminar(delTarget.id, usuarioId);
+
+      // ✅ quitar de la tabla sin recargar
+      setComunidades((prev) => prev.filter((x) => x.id !== delTarget.id));
+
+      setDelOpen(false);
+      setDelTarget(null);
+    } catch (e: any) {
+      console.error(e);
+      setDelError(
+        e?.message ||
+          "No se pudo eliminar la comunidad. Puede tener restricciones o relaciones."
+      );
+    } finally {
+      setDelLoading(false);
     }
-    return { nombre: "Equipo SafeZone", rol: "Admin" };
+  };
+
+  function getSessionUser(): SessionUser {
+    const s = getSession();
+    if (s) {
+      return {
+        nombre: `${s.nombre} ${s.apellido}`.trim(),
+        rol: s.rol ?? "ADMIN",
+        fotoUrl: s.fotoUrl ?? undefined,
+        email: s.email,
+      };
+    }
+    return { nombre: "Equipo SafeZone", rol: "ADMIN" };
   }
 
   const [me] = useState<SessionUser>(() => getSessionUser());
@@ -321,7 +384,7 @@ export default function Comunidades() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ✅ Cerrar dropdown al click fuera / ESC
+  // ✅ Cerrar dropdown export al click fuera / ESC
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
       if (!openExport) return;
@@ -338,6 +401,15 @@ export default function Comunidades() {
       window.removeEventListener("keydown", onKey);
     };
   }, [openExport]);
+
+  // ✅ Cerrar modal editar con ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setEditOpen(false);
+    };
+    if (editOpen) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [editOpen]);
 
   // =========================
   // KPIs + métricas
@@ -419,7 +491,6 @@ export default function Comunidades() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Comunidades");
 
-    // ✅ Hoja adicional con datos de la gráfica (pro)
     const chartRows = lineData.map((p) => ({
       Fecha: p.key,
       Etiqueta: p.label,
@@ -444,94 +515,86 @@ export default function Comunidades() {
   };
 
   const exportPDF = async () => {
-  const doc = new jsPDF("p", "mm", "a4");
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageW = doc.internal.pageSize.getWidth();
 
-  const pageW = doc.internal.pageSize.getWidth();
+    const logoSize = 40;
+    const logoX = (pageW - logoSize) / 2;
+    const logoY = 10;
 
-  // ✅ LOGO 40x40 (mm) centrado
-  const logoSize = 40; // 40x40
-  const logoX = (pageW - logoSize) / 2;
-  const logoY = 10;
+    try {
+      const logo = await toDataURL(logoSafeZone);
+      doc.addImage(logo, "PNG", logoX, logoY, logoSize, logoSize);
+    } catch {}
 
-  try {
-    const logo = await toDataURL(logoSafeZone);
-    doc.addImage(logo, "PNG", logoX, logoY, logoSize, logoSize);
-  } catch {
-    // ignore
-  }
+    const titleY = logoY + logoSize + 10;
 
-  // ✅ Título y fecha/hora debajo del logo (centrados)
-  const titleY = logoY + logoSize + 10; // espacio debajo del logo
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Reporte de Comunidades", pageW / 2, titleY, { align: "center" });
 
-  doc.setFontSize(18);
-  doc.setFont("helvetica", "bold");
-  doc.text("Reporte de Comunidades", pageW / 2, titleY, { align: "center" });
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Generado: ${new Date().toLocaleString("es-EC")}`,
+      pageW / 2,
+      titleY + 8,
+      {
+        align: "center",
+      }
+    );
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, pageW / 2, titleY + 8, {
-    align: "center",
-  });
+    autoTable(doc, {
+      startY: titleY + 18,
+      head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
+      body: comunidadesFiltradas.map((c) => [
+        c.codigoAcceso ?? "—",
+        c.nombre ?? "—",
+        String(c.miembrosCount ?? 0),
+        c.direccion ?? "—",
+        labelEstado(c.estado),
+      ]),
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [30, 30, 30] },
+      columnStyles: {
+        0: { cellWidth: 22 },
+        1: { cellWidth: 36 },
+        2: { cellWidth: 18, halign: "center" },
+        3: { cellWidth: 86 },
+        4: { cellWidth: 22 },
+      },
+      margin: { left: 14, right: 14 },
+    });
 
-  // ✅ tabla más abajo para que NO tape fecha/hora
-  autoTable(doc, {
-    startY: titleY + 18,
-    head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
-    body: comunidadesFiltradas.map((c) => [
-      c.codigoAcceso ?? "—",
-      c.nombre ?? "—",
-      String(c.miembrosCount ?? 0),
-      c.direccion ?? "—",
-      labelEstado(c.estado),
-    ]),
-    styles: { fontSize: 9, cellPadding: 2 },
-    headStyles: { fillColor: [30, 30, 30] },
-    columnStyles: {
-      0: { cellWidth: 22 },
-      1: { cellWidth: 36 },
-      2: { cellWidth: 18, halign: "center" },
-      3: { cellWidth: 86 },
-      4: { cellWidth: 22 },
-    },
-    margin: { left: 14, right: 14 },
-  });
-
-  // ✅ y después de la tabla, metemos la gráfica AL FINAL (si no cabe, nueva página)
-  const lastY =
-    ((doc as any)?.lastAutoTable?.finalY as number | undefined) ?? 64;
+    const lastY =
+      ((doc as any)?.lastAutoTable?.finalY as number | undefined) ?? 64;
     let y = lastY + 10;
 
-    // Si no cabe, nueva página
     const pageH = doc.internal.pageSize.getHeight();
     if (y + 90 > pageH) {
       doc.addPage();
       y = 20;
     }
 
-    // Título gráfico centrado y en negrita
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("Gráfica de comunidades (últimos 14 días)", 105, y, {
       align: "center",
     });
     doc.setFont("helvetica", "normal");
-
     y += 6;
 
-    // Capturar SVG del chart visible
     try {
       const wrap = chartWrapRef.current;
       const svg = wrap?.querySelector("svg") as SVGSVGElement | null;
 
       if (svg) {
         const pngDataUrl = await svgElementToPngDataUrl(svg, 1400);
-
-        const pageW = doc.internal.pageSize.getWidth();
-        const maxW = pageW - 28; // márgenes similares a tabla
+        const pageW2 = doc.internal.pageSize.getWidth();
+        const maxW = pageW2 - 28;
         const imgW = maxW;
-        const imgH = 72; // ✅ altura controlada (sube a 80/90 si quieres más grande)
-        const x = (pageW - imgW) / 2;
-
+        const imgH = 72;
+        const x = (pageW2 - imgW) / 2;
         doc.addImage(pngDataUrl, "PNG", x, y, imgW, imgH);
       } else {
         doc.setFontSize(10);
@@ -539,7 +602,9 @@ export default function Comunidades() {
           "No se pudo capturar la gráfica (SVG no encontrado).",
           105,
           y + 10,
-          { align: "center" }
+          {
+            align: "center",
+          }
         );
       }
     } catch (e) {
@@ -563,7 +628,6 @@ export default function Comunidades() {
     totalComunidades > 0 ? (n / totalComunidades) * 100 : 0;
   const pAct = pct(activasCount);
   const pSol = pct(solicitadasCount);
-  const pRec = pct(rechazadasCount);
 
   const donutBg =
     totalComunidades > 0
@@ -574,7 +638,81 @@ export default function Comunidades() {
         )`
       : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
 
-  const closeSidebar = () => setSidebarOpen(false);
+  // =========================
+  // ✅ EDIT (modal)
+  // =========================
+  const openEdit = (c: Comunidad) => {
+    setEditError(null);
+    setEditOriginal(c); // ✅ guardamos todo el objeto que recibimos del API (DTO)
+
+    setEditForm({
+      id: c.id,
+      nombre: c.nombre ?? "",
+      direccion: (c.direccion ?? "") as string,
+      codigoAcceso: c.codigoAcceso ?? "",
+      miembrosCount: c.miembrosCount ?? 0,
+      fotoUrl: c.fotoUrl ?? null,
+    });
+
+    setEditOpen(true);
+  };
+
+  const trim = (s: string) => (s ?? "").trim();
+
+  const editDirty = useMemo(() => {
+    if (!editOriginal) return false;
+    const n0 = trim(editOriginal.nombre ?? "");
+    const d0 = trim((editOriginal.direccion ?? "") as string);
+    const n1 = trim(editForm.nombre);
+    const d1 = trim(editForm.direccion);
+    return n0 !== n1 || d0 !== d1;
+  }, [editOriginal, editForm.nombre, editForm.direccion]);
+
+  const saveEdit = async () => {
+    try {
+      if (!editOriginal) return;
+
+      setEditLoading(true);
+      setEditError(null);
+
+      const usuarioId = getAdminUserIdOrThrow();
+
+      // ✅ PAYLOAD SEGURO según ENTIDAD REAL (sin centroLat/centroLng, sin fechaCreacion, sin miembrosCount)
+      const payload = {
+        id: editOriginal.id,
+        nombre: trim(editForm.nombre),
+        direccion: trim(editForm.direccion) || null,
+
+        // conservar lo que no se edita
+        codigoAcceso: editOriginal.codigoAcceso ?? null,
+        fotoUrl: editOriginal.fotoUrl ?? null,
+        radioKm: (editOriginal.radioKm ?? null) as any,
+        activa: (editOriginal.activa ?? null) as any,
+        estado: editOriginal.estado, // "ACTIVA" | "SOLICITADA" | "RECHAZADA"
+        solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ??
+          null) as any,
+      };
+
+      const updated = await comunidadesService.actualizar(
+        editForm.id,
+        usuarioId,
+        payload
+      );
+
+      // ✅ Actualiza tabla sin recargar
+      setComunidades((prev) =>
+        prev.map((x) => (x.id === updated.id ? updated : x))
+      );
+
+      setEditOpen(false);
+      setEditOriginal(null);
+    } catch (e: any) {
+      console.error(e);
+      setEditError(e?.message || "Error al actualizar la comunidad.");
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
   return (
     <>
@@ -651,7 +789,7 @@ export default function Comunidades() {
                   </div>
                 </div>
 
-                {/* ✅ BOTONES ARREGLADOS */}
+                {/* ✅ BOTONES */}
                 <div ref={exportRef} className="topbar-actions">
                   <button
                     className="action-pill"
@@ -764,12 +902,15 @@ export default function Comunidades() {
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">Tendencia de comunidades</div>
-                    <div className="chart-sub-v2">Últimos 14 días (acumulado)</div>
+                    <div className="chart-title-v2">
+                      Tendencia de comunidades
+                    </div>
+                    <div className="chart-sub-v2">
+                      Últimos 14 días (acumulado)
+                    </div>
                   </div>
                 </div>
 
-                {/* ✅ ref para exportar la gráfica */}
                 <div className="line-chart-wrap1" ref={chartWrapRef}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
@@ -783,7 +924,6 @@ export default function Comunidades() {
                         formatter={(v: any, name: any) => [v, name]}
                         labelFormatter={(l) => `Día: ${l}`}
                       />
-                      {/* Total en rojo (marca) */}
                       <Line
                         type="monotone"
                         dataKey="total"
@@ -792,7 +932,6 @@ export default function Comunidades() {
                         strokeWidth={3}
                         dot={false}
                       />
-                      {/* líneas suaves por estado */}
                       <Line
                         type="monotone"
                         dataKey="activas"
@@ -957,7 +1096,7 @@ export default function Comunidades() {
                           <td className="acciones">
                             <button
                               className="icon-button"
-                              onClick={() => alert("Editar comunidad (pendiente)")}
+                              onClick={() => openEdit(c)}
                               title="Editar"
                               type="button"
                             >
@@ -965,10 +1104,8 @@ export default function Comunidades() {
                             </button>
 
                             <button
-                              className="icon-button"
-                              onClick={() =>
-                                alert("Eliminar / desactivar (pendiente)")
-                              }
+                              className="icon-button icon-danger"
+                              onClick={() => openDelete(c)}
                               title="Eliminar"
                               type="button"
                             >
@@ -989,6 +1126,226 @@ export default function Comunidades() {
           </motion.div>
         </main>
       </div>
+
+      {/* ✅ MODAL EDITAR (solo campos de la tabla) */}
+      <AnimatePresence>
+        {editOpen && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setEditOpen(false)}
+          >
+            <motion.div
+              className="sz-modal-card"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">Editar comunidad</div>
+                  <div className="sz-modal-sub">
+                    Solo se permite editar <b>Nombre</b> y <b>Dirección</b>
+                  </div>
+                </div>
+
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => setEditOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {editError && <div className="sz-modal-error">{editError}</div>}
+
+              <div className="sz-modal-grid">
+                {/* FOTO (bloqueado) */}
+                <div className="sz-field" style={{ gridColumn: "1 / -1" }}>
+                  <span>Foto (bloqueado)</span>
+
+                  <div className="sz-photo-row">
+                    {editForm.fotoUrl ? (
+                      <img
+                        src={editForm.fotoUrl}
+                        alt="foto comunidad"
+                        className="sz-photo"
+                      />
+                    ) : (
+                      <div className="sz-photo sz-photo-empty" />
+                    )}
+
+                    <input
+                      value={editForm.fotoUrl ?? "—"}
+                      disabled
+                      className="sz-input"
+                    />
+                  </div>
+                </div>
+
+                {/* CÓDIGO (bloqueado) */}
+                <label className="sz-field">
+                  <span>Código (bloqueado)</span>
+                  <input
+                    value={editForm.codigoAcceso || "—"}
+                    disabled
+                    className="sz-input"
+                  />
+                </label>
+
+                {/* MIEMBROS (bloqueado) */}
+                <label className="sz-field">
+                  <span>Miembros (bloqueado)</span>
+                  <input
+                    value={String(editForm.miembrosCount ?? 0)}
+                    disabled
+                    className="sz-input"
+                  />
+                </label>
+
+                {/* NOMBRE (editable) */}
+                <label className="sz-field" style={{ gridColumn: "1 / -1" }}>
+                  <span>Nombre</span>
+                  <input
+                    value={editForm.nombre}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, nombre: e.target.value }))
+                    }
+                    placeholder="Nombre de la comunidad"
+                    className="sz-input"
+                  />
+                </label>
+
+                {/* DIRECCIÓN (editable) */}
+                <label className="sz-field" style={{ gridColumn: "1 / -1" }}>
+                  <span>Dirección</span>
+                  <input
+                    value={editForm.direccion}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, direccion: e.target.value }))
+                    }
+                    placeholder="Dirección"
+                    className="sz-input"
+                  />
+                </label>
+              </div>
+
+              <div className="sz-modal-actions">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => setEditOpen(false)}
+                  disabled={editLoading}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  className="sz-btn-primary"
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={editLoading || !editDirty}
+                  title={!editDirty ? "No hay cambios para guardar" : "Guardar"}
+                >
+                  {editLoading ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+  {delOpen && (
+    <motion.div
+      className="sz-modal-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={() => setDelOpen(false)}
+    >
+      <motion.div
+        className="sz-modal-card sz-modal-danger"
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+        transition={{ duration: 0.18 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sz-modal-head">
+          <div>
+            <div className="sz-modal-title">¿Eliminar comunidad?</div>
+            <div className="sz-modal-sub">
+              Estás por eliminar: <b>{delTarget?.nombre ?? "—"}</b>
+            </div>
+          </div>
+
+          <button
+            className="sz-modal-x"
+            type="button"
+            onClick={() => setDelOpen(false)}
+            aria-label="Cerrar"
+            title="Cerrar"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="sz-danger-box">
+          <div className="sz-danger-name">{delTarget?.nombre ?? "—"}</div>
+          <div className="sz-danger-meta">
+            Miembros dentro de la comunidad:{" "}
+            <b>{delTarget?.miembrosCount ?? 0}</b>
+          </div>
+          <div className="sz-danger-meta">
+            Dirección: {delTarget?.direccion ?? "—"}
+          </div>
+          <div className="sz-danger-meta">
+            Código: <b>{delTarget?.codigoAcceso ?? "—"}</b>
+          </div>
+
+          {(delTarget?.miembrosCount ?? 0) > 0 && (
+            <div className="sz-danger-warning">
+              ⚠️ Esta comunidad tiene miembros. Si la eliminas, podrían quedar
+              usuarios sin comunidad.
+            </div>
+          )}
+        </div>
+
+        {delError && <div className="sz-modal-error">{delError}</div>}
+
+        <div className="sz-modal-actions">
+          <button
+            className="sz-btn-light"
+            type="button"
+            onClick={() => setDelOpen(false)}
+            disabled={delLoading}
+          >
+            Cancelar
+          </button>
+
+          <button
+            className="sz-btn-danger"
+            type="button"
+            onClick={confirmDelete}
+            disabled={delLoading}
+            title="Eliminar definitivamente"
+          >
+            {delLoading ? "Eliminando..." : "Sí, eliminar"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
     </>
   );
 }

@@ -899,3 +899,233 @@ body {
   outline: none;
 }
 
+/* =========================
+   MODAL EDITAR (SafeZone)
+   Añadir al final de comunidad.css
+========================= */
+.sz-modal-backdrop{
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 8, 20, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  z-index: 9999;
+}
+
+.sz-modal-card{
+  width: min(680px, 96vw);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  border: 1px solid rgba(15,23,42,0.12);
+  padding: 16px;
+}
+
+.sz-modal-head{
+  display:flex;
+  justify-content: space-between;
+  align-items:flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sz-modal-title{
+  font-weight: 900;
+  color: rgba(15,23,42,0.92);
+  font-size: 18px;
+}
+
+.sz-modal-sub{
+  color: rgba(15,23,42,0.62);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.sz-modal-x{
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: rgba(15,23,42,0.70);
+  padding: 6px;
+  border-radius: 10px;
+}
+.sz-modal-x:hover{ background: rgba(15,23,42,0.06); }
+
+.sz-modal-error{
+  background: rgba(249,81,80,0.12);
+  border: 1px solid rgba(249,81,80,0.35);
+  color: rgba(120,10,10,0.95);
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+
+.sz-modal-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 560px){
+  .sz-modal-grid{ grid-template-columns: 1fr; }
+}
+
+.sz-field span{
+  display:block;
+  font-size: 12px;
+  color: rgba(15,23,42,0.65);
+  margin-bottom: 6px;
+}
+
+.sz-input{
+  width: 100%;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.14);
+  outline: none;
+  background: rgba(255,255,255,0.9);
+}
+
+.sz-input:disabled{
+  background: rgba(15,23,42,0.06);
+  color: rgba(15,23,42,0.55);
+  cursor: not-allowed;
+}
+
+.sz-photo-row{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+
+.sz-photo{
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  object-fit: cover;
+  border: 1px solid rgba(15,23,42,0.12);
+  background: rgba(255,255,255,0.7);
+  flex: 0 0 auto;
+}
+
+.sz-photo-empty{
+  background: rgba(15,23,42,0.06);
+}
+
+.sz-modal-actions{
+  display:flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sz-btn-light{
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(15,23,42,0.18);
+  background: rgba(255,255,255,0.85);
+  cursor:pointer;
+  font-weight: 700;
+}
+
+.sz-btn-primary{
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(249,81,80,0.55);
+  background: rgba(249,81,80,0.12);
+  color: rgba(140, 12, 12, 0.95);
+  font-weight: 800;
+  cursor:pointer;
+  transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+}
+
+.sz-btn-primary:hover{
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+.sz-btn-primary:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* FIX: texto "Cancelar" no visible por estilos globales */
+.sz-btn-light{
+  color: rgba(15,23,42,0.85) !important;
+}
+
+.sz-btn-light:disabled{
+  color: rgba(15,23,42,0.55) !important;
+}
+
+
+.icon-button.icon-danger:hover{
+  background: rgba(239,68,68,0.10);
+  border-color: rgba(239,68,68,0.35);
+}
+
+.sz-modal-danger{
+  border: 1px solid rgba(239,68,68,0.25);
+}
+
+.sz-danger-box{
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.22);
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 10px;
+}
+
+.sz-danger-name{
+  font-weight: 900;
+  color: rgba(15,23,42,0.92);
+  margin-bottom: 6px;
+}
+
+.sz-danger-meta{
+  font-size: 13px;
+  color: rgba(15,23,42,0.70);
+  line-height: 1.4;
+}
+
+.sz-danger-warning{
+  margin-top: 10px;
+  font-size: 13px;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.25);
+  color: rgba(120,70,10,0.95);
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.sz-btn-danger{
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(239,68,68,0.55);
+  background: rgba(239,68,68,0.12);
+  color: rgba(150, 10, 10, 0.95);
+  font-weight: 900;
+  cursor:pointer;
+  transition: transform .12s ease, filter .12s ease, opacity .12s ease;
+}
+
+.sz-btn-danger:hover{
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+}
+
+.sz-btn-danger:disabled{
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* FIX por si no se ve texto Cancelar */
+.sz-btn-light{
+  color: rgba(15,23,42,0.85) !important;
+}
