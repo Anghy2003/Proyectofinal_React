@@ -6,7 +6,6 @@ import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconEdit from "../assets/icon_editar2.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
-import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
@@ -48,12 +47,6 @@ import {
   FileText,
 } from "lucide-react";
 
-type SessionUser = {
-  nombre?: string;
-  rol?: string;
-  fotoUrl?: string;
-  email?: string;
-};
 
 type SessionData = {
   userId: number;
@@ -264,7 +257,6 @@ function getAdminUserIdOrThrow(): number {
 }
 
 export default function Comunidades() {
-  const navigate = useNavigate();
 
   const [comunidades, setComunidades] = useState<Comunidad[]>([]);
   const [search, setSearch] = useState("");
@@ -342,20 +334,6 @@ export default function Comunidades() {
     }
   };
 
-  function getSessionUser(): SessionUser {
-    const s = getSession();
-    if (s) {
-      return {
-        nombre: `${s.nombre} ${s.apellido}`.trim(),
-        rol: s.rol ?? "ADMIN",
-        fotoUrl: s.fotoUrl ?? undefined,
-        email: s.email,
-      };
-    }
-    return { nombre: "Equipo SafeZone", rol: "ADMIN" };
-  }
-
-  const [me] = useState<SessionUser>(() => getSessionUser());
 
   const cargarComunidades = async () => {
     try {

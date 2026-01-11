@@ -6,7 +6,6 @@ import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconImagen from "../assets/icon_imagen.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
 
-import { useNavigate } from "react-router-dom";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
@@ -44,12 +43,6 @@ import {
   LabelList,
 } from "recharts";
 
-type SessionUser = {
-  nombre?: string;
-  rol?: string;
-  fotoUrl?: string;
-  email?: string;
-};
 
 type EstadoUsuarioCuenta = "Activo" | "Suspendido";
 type EstadoUsuarioOnline = "Activo" | "Inactivo";
@@ -84,32 +77,6 @@ function pad2(n: number) {
 
 function isValidDate(d: Date) {
   return d instanceof Date && !Number.isNaN(d.getTime());
-}
-
-function getSessionUser(): SessionUser {
-  const candidates = [
-    "usuario",
-    "user",
-    "authUser",
-    "safezone_user",
-    "sessionUser",
-  ];
-  for (const k of candidates) {
-    const raw = localStorage.getItem(k);
-    if (!raw) continue;
-    try {
-      const obj = JSON.parse(raw);
-      return {
-        nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
-        rol: obj?.rol ?? obj?.role ?? "Admin",
-        fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
-        email: obj?.email,
-      };
-    } catch {
-      // ignore
-    }
-  }
-  return { nombre: "Equipo SafeZone", rol: "Admin" };
 }
 
 function isoToFechaHora(iso?: string | null) {
@@ -316,7 +283,6 @@ async function svgToPngDataUrl(
 }
 
 export default function Usuarios() {
-  const navigate = useNavigate();
 
   // ✅ sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -332,8 +298,6 @@ export default function Usuarios() {
 
   // ✅ Ref del chart (para export PDF)
   const chartRegistrosRef = useRef<HTMLDivElement | null>(null);
-
-  const [me] = useState<SessionUser>(() => getSessionUser());
 
   const cargarUsuarios = async () => {
     try {
@@ -699,8 +663,6 @@ export default function Usuarios() {
 
   const badgeOnlineClass = (s: EstadoUsuarioOnline) =>
     s === "Activo" ? "badge badge-success" : "badge badge-danger";
-
-  const closeSidebar = () => setSidebarOpen(false);
 
   // =========================
   //Custom tick (foto + texto) para Top Comunidades

@@ -142,19 +142,6 @@ function sum(arr: number[]) {
   return arr.reduce((a, b) => a + b, 0);
 }
 
-/*--Mapa Calor por filtro--*/
-function normalizeText(s: any) {
-  return String(s ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/_/g, "_");
-}
-
-// Intenta detectar el campo "tipo" en distintas estructuras
-function getIncidenteTipo(i: any): string {
-  return String(i?.tipo ?? i?.aiCategoria ?? "Sin tipo").trim() || "Sin tipo";
-}
 
 // ===============================
 // Helpers: Tipo incidente (robusto)
@@ -502,15 +489,6 @@ export default function Dashboard() {
           (countTotalByTipo.get(b) ?? 0) - (countTotalByTipo.get(a) ?? 0)
       );
   }, [baseRango, countTotalByTipo]);
-
-  const tiposCountMap = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const inc of baseRango) {
-      const t = canonTipo(getIncidenteTipoRaw(inc));
-      map.set(t, (map.get(t) ?? 0) + 1);
-    }
-    return map;
-  }, [baseRango]);
 
   const countMapaByTipo = useMemo(() => {
     const map = new Map<string, number>();

@@ -3,8 +3,6 @@ import "../styles/analisis.css";
 import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
-
-import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { AnimatePresence, motion } from "framer-motion";
@@ -42,12 +40,6 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
 
-type SessionUser = {
-  nombre?: string;
-  rol?: string;
-  fotoUrl?: string;
-  email?: string;
-};
 
 /* ===================== HELPERS ===================== */
 function parseJsonArrayString(value?: string | null): string[] {
@@ -88,31 +80,6 @@ function isValidDate(d: Date) {
   return d instanceof Date && !Number.isNaN(d.getTime());
 }
 
-function getSessionUser(): SessionUser {
-  const candidates = [
-    "usuario",
-    "user",
-    "authUser",
-    "safezone_user",
-    "sessionUser",
-  ];
-  for (const k of candidates) {
-    const raw = localStorage.getItem(k);
-    if (!raw) continue;
-    try {
-      const obj = JSON.parse(raw);
-      return {
-        nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
-        rol: obj?.rol ?? obj?.role ?? "Admin",
-        fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
-        email: obj?.email,
-      };
-    } catch {
-      // ignore
-    }
-  }
-  return { nombre: "Equipo SafeZone", rol: "Admin" };
-}
 
 /* =========================
    Line Chart — incidentes 14d
@@ -183,7 +150,6 @@ function buildDailyIncidentes(
 }
 
 export default function Analisis() {
-  const navigate = useNavigate();
 
   // ✅ sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -199,9 +165,6 @@ export default function Analisis() {
   const [filtroPrioridad, setFiltroPrioridad] = useState<string>("");
   const [filtroComunidad, setFiltroComunidad] = useState<string>("");
   const [filtroFecha, setFiltroFecha] = useState<string>(""); // yyyy-mm-dd
-
-  const [me] = useState<SessionUser>(() => getSessionUser());
-  const handleLogout = () => navigate("/login");
 
   const cargarIncidentes = async () => {
     try {
@@ -389,8 +352,6 @@ export default function Analisis() {
           rgba(15,23,42,0.18) ${pAlta + pMedia + pBaja}% 100%
         )`
       : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
-
-  const closeSidebar = () => setSidebarOpen(false);
 
   /* =====================
      EXPORT (PDF + EXCEL)

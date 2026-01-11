@@ -13,12 +13,6 @@ import { RefreshCcw } from "lucide-react";
 import { comunidadesService, type Comunidad } from "../services/comunidad.Service";
 import { authService } from "../services/auth.service";
 
-type SessionUser = {
-  nombre?: string;
-  rol?: string;
-  fotoUrl?: string;
-  email?: string;
-};
 
 type CodigoRow = {
   id: number;
@@ -28,25 +22,6 @@ type CodigoRow = {
   estado: "Activo" | "Inactivo";
 };
 
-function getSessionUser(): SessionUser {
-  const candidates = ["usuario", "user", "authUser", "safezone_user", "sessionUser"];
-  for (const k of candidates) {
-    const raw = localStorage.getItem(k);
-    if (!raw) continue;
-    try {
-      const obj = JSON.parse(raw);
-      return {
-        nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
-        rol: obj?.rol ?? obj?.role ?? "Admin",
-        fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
-        email: obj?.email,
-      };
-    } catch {
-      // ignore
-    }
-  }
-  return { nombre: "Equipo SafeZone", rol: "Admin" };
-}
 
 export default function CodigoAcceso() {
   const navigate = useNavigate();
@@ -63,13 +38,6 @@ export default function CodigoAcceso() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [me] = useState<SessionUser>(() => getSessionUser());
-
-  const handleLogout = () => {
-    authService.logout();
-    navigate("/login");
-  };
 
   const pendientes = useMemo(() => todas.filter((c) => c.estado === "SOLICITADA"), [todas]);
 

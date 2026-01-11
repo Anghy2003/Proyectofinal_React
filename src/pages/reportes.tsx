@@ -4,8 +4,6 @@ import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconEliminar from "../assets/icon_eliminar2.svg";
-
-import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import {
@@ -50,12 +48,6 @@ import {
   Cell,
 } from "recharts";
 
-type SessionUser = {
-  nombre?: string;
-  rol?: string;
-  fotoUrl?: string;
-  email?: string;
-};
 
 type Granularity = "dia" | "mes" | "anio";
 
@@ -72,32 +64,6 @@ function getBadgeClass(estado: EstadoReporte): string {
   if (estado === "Atendido") return "badge badge-ok";
   if (estado === "Pendiente") return "badge badge-warning";
   return "badge badge-bad";
-}
-
-function getSessionUser(): SessionUser {
-  const candidates = [
-    "usuario",
-    "user",
-    "authUser",
-    "safezone_user",
-    "sessionUser",
-  ];
-  for (const k of candidates) {
-    const raw = localStorage.getItem(k);
-    if (!raw) continue;
-    try {
-      const obj = JSON.parse(raw);
-      return {
-        nombre: obj?.nombre ?? obj?.name ?? obj?.fullName,
-        rol: obj?.rol ?? obj?.role ?? "Admin",
-        fotoUrl: obj?.fotoUrl ?? obj?.foto ?? obj?.photoURL ?? obj?.avatarUrl,
-        email: obj?.email,
-      };
-    } catch {
-      // ignore
-    }
-  }
-  return { nombre: "Equipo SafeZone", rol: "Admin" };
 }
 
 // helper para comparar fecha del filtro con la del reporte
@@ -220,7 +186,6 @@ function normalizeMaybeUrl(raw?: string | null) {
 }
 
 export default function Reportes() {
-  const navigate = useNavigate();
 
   // ✅ sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -246,11 +211,6 @@ export default function Reportes() {
   const [openExport, setOpenExport] = useState(false);
   const exportRef = useRef<HTMLDivElement | null>(null);
   const barChartRef = useRef<HTMLDivElement | null>(null);
-
-  const [me] = useState<SessionUser>(() => getSessionUser());
-
-  const handleLogout = () => navigate("/login");
-  const closeSidebar = () => setSidebarOpen(false);
 
   // =====================
   // CARGAR REPORTES
