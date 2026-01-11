@@ -1445,11 +1445,11 @@ export default function Dashboard() {
                                   incidentesFiltrados?.length ?? 0
                                 ).toLocaleString()}
                               </span>
-                            </button>
+                             </button>
 
-                            <div className="type-sep-v2" />
+                             <div className="type-sep-v2" />
 
-                            {tiposDisponibles.map((t) => {
+                             {tiposDisponibles.map((t) => {
                               const total = countTotalByTipo.get(t) ?? 0;
                               const enMapa = countMapaByTipo.get(t) ?? 0;
                               const sinUb = Math.max(0, total - enMapa);
