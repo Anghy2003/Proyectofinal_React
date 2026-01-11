@@ -834,9 +834,9 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                {/* ✅ ref para exportar la gráfica */}
+                {/*ref para exportar la gráfica */}
                 <div className="line-chart-wrap5" ref={lineChartRef}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={480}>
                     <LineChart
                       data={lineData}
                       margin={{ top: 10, right: 16, left: 0, bottom: 0 }}

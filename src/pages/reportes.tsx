@@ -946,13 +946,13 @@ export default function Reportes() {
                   </select>
                 </div>
 
-                <div className="line-chart-wrap6 " ref={barChartRef}>
+                <div className="line-chart-wrap6" ref={barChartRef}>
                   {barData.length === 0 ? (
                     <div className="chart-empty">
                       No hay datos para graficar con esos filtros.
                     </div>
                   ) : (
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={530}>
                       <BarChart
                         data={barData}
                         margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
@@ -1040,7 +1040,7 @@ export default function Reportes() {
                   ) : (
                     <>
                       <div className="donut-chart-v2">
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height={260}>
                           <PieChart>
                             <Pie
                               data={donutData}

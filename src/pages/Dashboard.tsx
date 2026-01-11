@@ -142,6 +142,46 @@ function sum(arr: number[]) {
   return arr.reduce((a, b) => a + b, 0);
 }
 
+/*--Mapa Calor por filtro--*/
+function normalizeText(s: any) {
+  return String(s ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/_/g, "_");
+}
+
+// Intenta detectar el campo "tipo" en distintas estructuras
+function getIncidenteTipo(i: any): string {
+  return String(i?.tipo ?? i?.aiCategoria ?? "Sin tipo").trim() || "Sin tipo";
+}
+
+// ===============================
+// Helpers: Tipo incidente (robusto)
+// ===============================
+function canonTipo(raw: unknown): string {
+  // "SOS-VIOLENCIA", "sos violencia", " SOS_VIOLENCIA " => "SOS_VIOLENCIA"
+  return String(raw ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-+/g, "_")
+    .replace(/_+/g, "_");
+}
+
+function getIncidenteTipoRaw(inc: any): string {
+  // ✅ backend: tipo
+  // fallback IA: aiCategoria
+  return String(inc?.tipo ?? inc?.aiCategoria ?? "SIN_TIPO");
+}
+
+function prettyTipo(canon: string): string {
+  return canon
+    .toLowerCase()
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
 /* ===============================
    Animations
 ================================ */
@@ -195,6 +235,11 @@ export default function Dashboard() {
   // filtros
   const [range, setRange] = useState<RangeKey>("hoy");
   const [analyticsRange, setAnalyticsRange] = useState<AnalyticsRange>("14d");
+
+  // filtro por tipo (heatmap)
+  const [tipoFiltro, setTipoFiltro] = useState<string>("ALL");
+  const [tipoMenuOpen, setTipoMenuOpen] = useState(false);
+  const tipoMenuRef = useRef<HTMLDivElement | null>(null);
 
   // sidebar responsive
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -326,6 +371,55 @@ export default function Dashboard() {
     return () => window.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    if (!tipoMenuOpen) return;
+
+    const onDown = (e: MouseEvent) => {
+      const el = tipoMenuRef.current;
+      if (!el) return;
+      if (!el.contains(e.target as Node)) setTipoMenuOpen(false);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setTipoMenuOpen(false);
+    };
+
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [tipoMenuOpen]);
+
+  // cerrar dropdown tipo al click fuera + ESC
+  useEffect(() => {
+    if (!tipoMenuOpen) return;
+
+    const onDown = (e: MouseEvent) => {
+      const el = tipoMenuRef.current;
+      if (!el) return;
+      if (!el.contains(e.target as Node)) setTipoMenuOpen(false);
+    };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setTipoMenuOpen(false);
+    };
+
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [tipoMenuOpen]);
+
+  useEffect(() => {
+    setTipoFiltro("ALL");
+    setTipoMenuOpen(false);
+  }, [range]);
+
   /* ===============================
      Heatmap filter (tiempo real)
   ================================ */
@@ -368,6 +462,75 @@ export default function Dashboard() {
       return t >= start && t <= end;
     });
   }, [incidentes, range]);
+
+  const baseRango = useMemo(
+    () => (incidentesFiltrados as any[]) || [],
+    [incidentesFiltrados]
+  );
+
+  const baseMapeable = useMemo(() => {
+    return baseRango.filter((inc) => {
+      const lat = Number(inc?.lat);
+      const lng = Number(inc?.lng);
+      // válido + evita (0,0)
+      return (
+        Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        !(Math.abs(lat) < 0.000001 && Math.abs(lng) < 0.000001)
+      );
+    });
+  }, [baseRango]);
+
+  const countTotalByTipo = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const inc of baseRango) {
+      const t = canonTipo(getIncidenteTipoRaw(inc));
+      map.set(t, (map.get(t) ?? 0) + 1);
+    }
+    return map;
+  }, [baseRango]);
+  // Tipos disponibles (según el rango seleccionado)
+  const tiposDisponibles = useMemo(() => {
+    const set = new Set<string>();
+    for (const inc of baseRango) set.add(canonTipo(getIncidenteTipoRaw(inc)));
+
+    // ✅ ordena por "Total" desc (más útil para admin)
+    return [...set]
+      .filter((x) => !!x)
+      .sort(
+        (a, b) =>
+          (countTotalByTipo.get(b) ?? 0) - (countTotalByTipo.get(a) ?? 0)
+      );
+  }, [baseRango, countTotalByTipo]);
+
+  const tiposCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const inc of baseRango) {
+      const t = canonTipo(getIncidenteTipoRaw(inc));
+      map.set(t, (map.get(t) ?? 0) + 1);
+    }
+    return map;
+  }, [baseRango]);
+
+  const countMapaByTipo = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const inc of baseMapeable) {
+      const t = canonTipo(getIncidenteTipoRaw(inc));
+      map.set(t, (map.get(t) ?? 0) + 1);
+    }
+    return map;
+  }, [baseMapeable]);
+
+  const incidentesHeatmapFinal = useMemo(() => {
+    if (!baseMapeable.length) return [];
+
+    if (tipoFiltro === "ALL") return baseMapeable;
+
+    const wanted = canonTipo(tipoFiltro);
+    return baseMapeable.filter(
+      (inc) => canonTipo(getIncidenteTipoRaw(inc)) === wanted
+    );
+  }, [baseMapeable, tipoFiltro]);
 
   /* ===============================
      Analytics time series (Current vs Previous)
@@ -651,6 +814,15 @@ export default function Dashboard() {
     return m || 1;
   }, [topUsers]);
 
+  const totalTipoRango = useMemo(() => {
+    if (tipoFiltro === "ALL") return baseRango.length;
+    const wanted = canonTipo(tipoFiltro);
+    return baseRango.filter((i) => canonTipo(getIncidenteTipoRaw(i)) === wanted)
+      .length;
+  }, [baseRango, tipoFiltro]);
+
+  const totalTipoMapeable = incidentesHeatmapFinal.length;
+
   return (
     <>
       <div className="background" />
@@ -662,7 +834,12 @@ export default function Dashboard() {
         aria-hidden="true"
       />
 
-      <motion.div className={`dashboard ${sidebarOpen ? "sidebar-open" : ""}`} initial="hidden" animate="show" variants={pageIn}>
+      <motion.div
+        className={`dashboard ${sidebarOpen ? "sidebar-open" : ""}`}
+        initial="hidden"
+        animate="show"
+        variants={pageIn}
+      >
         {/* ========== SIDEBAR ========== */}
         <Sidebar
           sidebarOpen={sidebarOpen}
@@ -1034,9 +1211,9 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* ✅ más alta para ocupar el espacio */}
+                {/*más alta para ocupar el espacio */}
                 <div className="chart-wrap-v2 chart-wrap-v2--tall">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={420}>
                     <AreaChart
                       data={series}
                       margin={{ top: 12, right: 10, left: 0, bottom: 0 }}
@@ -1222,11 +1399,122 @@ export default function Dashboard() {
                     >
                       30 días
                     </button>
+                    <div className="typefilter-v2" ref={tipoMenuRef}>
+                      <button
+                        type="button"
+                        className={`tab-v2 type-btn-v2 ${
+                          tipoFiltro !== "ALL" ? "active" : ""
+                        }`}
+                        onClick={() => setTipoMenuOpen((v) => !v)}
+                        aria-haspopup="listbox"
+                        aria-expanded={tipoMenuOpen}
+                        title="Filtrar por tipo de incidente"
+                      >
+                        Tipo
+                        <span className="type-pill-v2">
+                          {tipoFiltro === "ALL" ? "Todos" : tipoFiltro}
+                        </span>
+                        <span className={`chev-v2 ${tipoMenuOpen ? "up" : ""}`}>
+                          ▾
+                        </span>
+                      </button>
+
+                      <AnimatePresence>
+                        {tipoMenuOpen && (
+                          <motion.div
+                            className="type-menu-v2"
+                            initial={{ opacity: 0, y: 6, filter: "blur(6px)" }}
+                            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            exit={{ opacity: 0, y: 6, filter: "blur(6px)" }}
+                            transition={{ duration: 0.16, ease: "easeOut" }}
+                            role="listbox"
+                          >
+                            <button
+                              type="button"
+                              className={`type-item-v2 ${
+                                tipoFiltro === "ALL" ? "active" : ""
+                              }`}
+                              onClick={() => {
+                                setTipoFiltro("ALL");
+                                setTipoMenuOpen(false);
+                              }}
+                            >
+                              <span className="type-name-v2">Todos</span>
+                              <span className="type-count-v2">
+                                {(
+                                  incidentesFiltrados?.length ?? 0
+                                ).toLocaleString()}
+                              </span>
+                            </button>
+
+                            <div className="type-sep-v2" />
+
+                            {tiposDisponibles.map((t) => {
+                              const total = countTotalByTipo.get(t) ?? 0;
+                              const enMapa = countMapaByTipo.get(t) ?? 0;
+                              const sinUb = Math.max(0, total - enMapa);
+
+                              return (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  className={`type-item-v2 ${
+                                    canonTipo(tipoFiltro) === t ? "active" : ""
+                                  }`}
+                                  onClick={() => {
+                                    setTipoFiltro(t);
+                                    setTipoMenuOpen(false);
+                                  }}
+                                  title={t}
+                                >
+                                  <span className="type-name-v2">
+                                    {prettyTipo(t)}
+                                  </span>
+
+                                  <span className="type-badges-v2">
+                                    <span className="type-badge-v2">
+                                      Total {total}
+                                    </span>
+
+                                    <span
+                                      className={`type-badge-v2 ${
+                                        enMapa === 0 ? "zero" : ""
+                                      }`}
+                                    >
+                                      Mapa {enMapa}
+                                    </span>
+
+                                    {sinUb > 0 && (
+                                      <span className="type-badge-v2 warn">
+                                        Sin ub. {sinUb}
+                                      </span>
+                                    )}
+                                  </span>
+                                </button>
+                              );
+                            })}
+
+                            {tiposDisponibles.length === 0 && (
+                              <div className="type-empty-v2">
+                                No hay tipos disponibles.
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
 
                 <div className="heat-wrap-v2">
-                  <IncidentHeatmap incidentes={incidentesFiltrados} />
+                  {totalTipoRango > 0 && totalTipoMapeable === 0 && (
+                    <div className="heatmap-empty-info">
+                      ⚠️ Hay reportes del tipo seleccionado, pero ninguno tiene
+                      ubicación registrada.
+                    </div>
+                  )}
+
+                  <IncidentHeatmap incidentes={incidentesHeatmapFinal} />
                 </div>
               </motion.article>
 

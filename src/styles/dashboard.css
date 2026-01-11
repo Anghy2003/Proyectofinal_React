@@ -897,22 +897,22 @@ body {
   background: rgba(100, 116, 139, 0.85);
 }
 
-/* ✅ OCUPA EL ESPACIO QUE FALTA */
+/*OCUPA EL ESPACIO QUE FALTA */
 .chart-wrap-v2 {
   margin-top: 12px;
-  height: auto;
-  flex: 1;           /* ✅ crece dentro del card */
-  min-height: 340px; /* ✅ grande */
+  height: 340px;
+  flex: 1;         
+  min-height: 340px; 
 }
 
 /* si usas la variante --tall */
 .chart-wrap-v2--tall {
-  height: auto;
+  height: 420px;
   flex: 1;
   min-height: 420px;
 }
 
-/* ✅ fuerza 100% para ApexCharts */
+/* fuerza 100% para ApexCharts */
 .chart-wrap-v2 .apexcharts-canvas,
 .chart-wrap-v2 .apexcharts-svg {
   width: 100% !important;
@@ -1053,6 +1053,8 @@ body {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  
+  align-items: center; 
 }
 
 .tab-v2 {
@@ -1064,6 +1066,7 @@ body {
   font-weight: 950;
   color: rgba(71, 85, 105, 0.95);
   transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  flex: 0 0 auto;
 }
 
 .tab-v2:hover {
@@ -1086,6 +1089,7 @@ body {
   overflow: hidden;
   border: 1px solid var(--glass-border);
   background: rgba(15, 23, 42, 0.06);
+  position: relative; 
 }
 
 .heat-wrap-v2 .leaflet-container {
@@ -1299,4 +1303,217 @@ body {
     width: 28px !important;
     height: 28px !important;
   }
+}
+
+
+/* =========filtro mapa calor===========*/
+/* ===========================
+   Heatmap: filtro por tipo
+=========================== */
+.typefilter-v2 {
+  position: relative;
+}
+
+.type-btn-v2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.type-pill-v2 {
+    width: 150px;          /* ✅ ancho fijo */
+  min-width: 150px;
+  max-width: 140px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.58);
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.86);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chev-v2 {
+  font-weight: 950;
+  opacity: 0.8;
+  transform: translateY(0px);
+  transition: transform 160ms ease;
+}
+
+.chev-v2.up {
+  transform: rotate(180deg);
+}
+
+.type-menu-v2 {
+  position: absolute;
+  right: 0;
+  top: 48px;
+  width: min(320px, 88vw);
+  max-height: 320px;
+  overflow: auto;
+
+  border-radius: 18px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: var(--shadow-strong);
+  padding: 8px;
+  z-index: 10010;
+}
+
+.type-menu-v2::-webkit-scrollbar {
+  width: 10px;
+}
+.type-menu-v2::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+}
+.type-menu-v2::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.16);
+  border-radius: 999px;
+}
+
+.type-item-v2{
+  width: 100%;
+  border-radius: 18px;
+  padding: 12px 12px;
+
+  cursor: pointer;
+  text-align: left;
+
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+
+    background: rgba(255,255,255,0.70);
+  border: 1px solid rgba(255,255,255,0.86);
+  box-shadow: 0 18px 60px rgba(15,23,42,0.10);
+  position: relative;
+  overflow: hidden;
+}
+
+.type-item-v2:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(249,81,80,0.22);
+  box-shadow: 0 18px 55px rgba(15,23,42,0.10);
+}
+
+.type-item-v2.active{
+  background: rgba(249,81,80,0.11);
+  border-color: rgba(249,81,80,0.30);
+  box-shadow: 0 26px 80px rgba(249,81,80,0.12);
+}
+
+.type-item-v2.active::before{
+  opacity: 1;
+}
+.type-badges-v2{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* BADGE */
+.type-badge-v2{
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 950;
+  white-space: nowrap;
+
+  background: rgba(248,250,252,0.85);
+  border: 1px solid rgba(226,232,240,0.90);
+  color: rgba(15,23,42,0.86);
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+}
+
+/* BADGE cuando Mapa=0 */
+.type-badge-v2.zero{
+  background: rgba(15,23,42,0.05);
+  border-color: rgba(148,163,184,0.45);
+  color: rgba(15,23,42,0.78);
+}
+
+/* BADGE sin ubicación */
+.type-badge-v2.warn{
+  background: rgba(249,81,80,0.10);
+  border-color: rgba(249,81,80,0.22);
+  color: rgba(185,28,28,0.95);
+}
+
+.type-badge-v2.warn::before{
+  content:"";
+  display:inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  margin-right: 6px;
+  background: rgba(249,81,80,0.9);
+  box-shadow: 0 0 0 3px rgba(249,81,80,0.16);
+  vertical-align: middle;
+}
+
+
+.type-name-v2{
+  font-weight: 950;
+  font-size: 1.02rem;
+  letter-spacing: -0.01em;
+  color: rgba(15,23,42,0.92);
+
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.type-count-v2 {
+  margin-left: auto;
+  font-weight: 950;
+  color: rgba(71, 85, 105, 0.92);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.60);
+}
+
+.type-sep-v2 {
+  height: 1px;
+  margin: 8px 4px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.type-empty-v2 {
+  padding: 12px 10px;
+  font-weight: 850;
+  color: rgba(71, 85, 105, 0.92);
+}
+
+.heatmap-empty-info {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 9999; /* ✅ por encima de Leaflet */
+  pointer-events: none; /* ✅ no bloquea zoom / arrastre del mapa */
+
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: #92400e;
+  background: rgba(251, 191, 36, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  backdrop-filter: blur(6px);
 }

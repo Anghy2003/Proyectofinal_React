@@ -15,15 +15,15 @@ import {
   type EstadoComunidad,
 } from "../services/comunidad.Service";
 
-// ✅ Export libs
+//Export libs
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// ✅ Animaciones
+//Animaciones
 import { AnimatePresence, motion } from "framer-motion";
 
-// ✅ Gráfico de líneas (mismo estilo dashboard)
+//Gráfico de líneas (mismo estilo dashboard)
 import {
   ResponsiveContainer,
   LineChart,
@@ -34,7 +34,7 @@ import {
   Tooltip,
 } from "recharts";
 
-// ✅ Íconos pro
+//Íconos pro
 import {
   Search,
   X,
@@ -910,7 +910,7 @@ export default function Comunidades() {
               </div>
             </div>
 
-            {/* ✅ INSIGHTS: LINE CHART + DONUT */}
+            {/*INSIGHTS: LINE CHART + DONUT */}
             <div className="grid-2col">
               <section className="chart-card-v2 card">
                 <div className="chart-head">
@@ -925,7 +925,7 @@ export default function Comunidades() {
                 </div>
 
                 <div className="line-chart-wrap1" ref={chartWrapRef}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={280}>
                     <LineChart
                       data={lineData}
                       margin={{ top: 10, right: 16, left: 0, bottom: 0 }}

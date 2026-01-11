@@ -703,7 +703,7 @@ export default function Usuarios() {
   const closeSidebar = () => setSidebarOpen(false);
 
   // =========================
-  // ✅ Custom tick (foto + texto) para Top Comunidades
+  //Custom tick (foto + texto) para Top Comunidades
   // =========================
   const CommunityTick = (props: any) => {
     const { x, y, payload, index } = props;
@@ -986,9 +986,9 @@ export default function Usuarios() {
                   </div>
                 </div>
 
-                {/* ✅ ref para exportar la gráfica al PDF */}
+                {/*ref para exportar la gráfica al PDF */}
                 <div className="line-chart-wrap" ref={chartRegistrosRef}>
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={460}>
                     <BarChart
                       data={lineData}
                       margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
@@ -1083,7 +1083,7 @@ export default function Usuarios() {
                   </div>
                 </div>
 
-                {/* ✅ TOP COMUNIDADES (estilo imagen: barras horizontales + valor a la derecha + foto) */}
+                {/*TOP COMUNIDADES (estilo imagen: barras horizontales + valor a la derecha + foto) */}
                 <div className="topbars">
                   <div className="topbars-head">
                     <div>
@@ -1096,7 +1096,7 @@ export default function Usuarios() {
                     {topComunidades.length === 0 ? (
                       <div className="toplist-empty">Sin datos</div>
                     ) : (
-                      <ResponsiveContainer width="100%" height="100%">
+                      <ResponsiveContainer width="100%" height={250}>
                         <BarChart
                           data={topComunidades}
                           layout="vertical"
