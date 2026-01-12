@@ -11,6 +11,8 @@ import {
   type MouseEvent,
 } from "react";
 
+import type React from "react";
+
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Lottie from "lottie-react";
 import SafeZoneAIChat from "../components/chatbotIA";
@@ -125,7 +127,7 @@ function TiltCard({
 
 /* ========================= HOME ========================= */
 
-const APK_URL = "https://tu-servidor.com/SafeZone-v1.apk";
+const APK_URL = "/safezone-v1.0.apk";
 const HERO_BACKGROUNDS = [heroBg1, heroBg2, heroBg3, heroBg4];
 
 /** Orden oficial de secciones (para HUD + snap) */
@@ -276,9 +278,9 @@ export default function Home() {
 
   // ====== SNAP "tipo Novaqua": cuando llegas al borde de una sección, salta suave a la siguiente/anterior.
   useEffect(() => {
-    const sections = SNAP_SECTIONS
-      .map((s) => document.querySelector(s.id) as HTMLElement | null)
-      .filter(Boolean) as HTMLElement[];
+    const sections = SNAP_SECTIONS.map(
+      (s) => document.querySelector(s.id) as HTMLElement | null
+    ).filter(Boolean) as HTMLElement[];
 
     sectionElsRef.current = sections;
 
@@ -382,7 +384,10 @@ export default function Home() {
     };
 
     // Captura: antes que Lenis procese el wheel
-    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    window.addEventListener("wheel", onWheel, {
+      passive: false,
+      capture: true,
+    });
     window.addEventListener("keydown", onKeyDown, { passive: false });
     window.addEventListener("scroll", onScroll, { passive: true });
 
@@ -390,7 +395,8 @@ export default function Home() {
       window.removeEventListener("wheel", onWheel, true);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("scroll", onScroll);
-      if (snapUnlockTimerRef.current) window.clearTimeout(snapUnlockTimerRef.current);
+      if (snapUnlockTimerRef.current)
+        window.clearTimeout(snapUnlockTimerRef.current);
     };
   }, []);
 
@@ -495,7 +501,7 @@ export default function Home() {
         opacity: 0,
         y: 22,
         duration: 0.9,
-        stagger: 0.10,
+        stagger: 0.1,
         ease: "power3.out",
         scrollTrigger: { trigger: ".footer", start: "top 86%" },
       });
@@ -503,7 +509,18 @@ export default function Home() {
     { scope: pageRef }
   );
 
-  const handleDownloadApk = () => window.open(APK_URL, "_blank");
+  /*--Variable DESCARGAR APK--*/
+
+  const handleDownloadApk = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // ✅ construye la URL exacta a tu origen: http://localhost:5173/safezone-v1.0.apk
+    const url = `${window.location.origin}${APK_URL}`;
+
+    // ✅ fuerza navegación al archivo (misma pestaña)
+    window.location.assign(url);
+  };
 
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -564,7 +581,6 @@ export default function Home() {
   const showScrollHint = activeSectionIdx < SNAP_SECTIONS.length - 1;
 
   return (
-
     <div ref={pageRef} className="page-root">
       {/* ===== overlay snap (sutil) ===== */}
       <AnimatePresence>
@@ -584,7 +600,9 @@ export default function Home() {
         {SNAP_SECTIONS.map((s, idx) => (
           <button
             key={s.id}
-            className={`pager-dot ${idx === activeSectionIdx ? "is-active" : ""}`}
+            className={`pager-dot ${
+              idx === activeSectionIdx ? "is-active" : ""
+            }`}
             onClick={() => scrollToIndex(idx, true)}
             aria-label={s.label}
             aria-current={idx === activeSectionIdx ? "page" : undefined}
@@ -599,7 +617,12 @@ export default function Home() {
         {showScrollHint && (
           <motion.button
             className="scroll-hint"
-            onClick={() => scrollToIndex(Math.min(activeSectionIdx + 1, SNAP_SECTIONS.length - 1), true)}
+            onClick={() =>
+              scrollToIndex(
+                Math.min(activeSectionIdx + 1, SNAP_SECTIONS.length - 1),
+                true
+              )
+            }
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -613,7 +636,6 @@ export default function Home() {
           </motion.button>
         )}
       </AnimatePresence>
-
 
       {/* CHAT IA FLOTANTE EN TODA LA HOME */}
       <SafeZoneAIChat />
@@ -688,7 +710,10 @@ export default function Home() {
             </motion.a>
           </nav>
 
-          <motion.div whileHover={{ y: -2, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div
+            whileHover={{ y: -2, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
             <Link to="/login" className="hero-login-btn btn-shine">
               LOGIN ADMINISTRADOR
             </Link>
@@ -847,9 +872,9 @@ export default function Home() {
         >
           <h2 className="about-title">¿Qué es SafeZone?</h2>
           <p className="about-text">
-            Un sistema digital de alerta comunitaria inteligente con comunicación
-            híbrida e IA, diseñado para optimizar la respuesta ciudadana ante
-            emergencias.
+            Un sistema digital de alerta comunitaria inteligente con
+            comunicación híbrida e IA, diseñado para optimizar la respuesta
+            ciudadana ante emergencias.
           </p>
           <div className="about-tags">
             <span>WIFI + SMS</span>
@@ -883,8 +908,9 @@ export default function Home() {
             <h2>Comunidad</h2>
 
             <p>
-              SafeZone no es solo una app; es el vínculo digital con tus vecinos.
-              Aquí construyes tu círculo de confianza para apoyarse mutuamente.
+              SafeZone no es solo una app; es el vínculo digital con tus
+              vecinos. Aquí construyes tu círculo de confianza para apoyarse
+              mutuamente.
             </p>
             <p>
               Al activar una alerta, movilizas a tu red cercana para una
@@ -932,7 +958,7 @@ export default function Home() {
         <div className="download-bg" aria-hidden="true">
           <AnimatePresence mode="wait">
             <motion.img
-              key={`dl-${HERO_BACKGROUNDS[bgIndex]}`}
+              key={`dl-${HERO_BACKGROUNDS[bgIndex]}`} // ✅ CORREGIDO
               src={HERO_BACKGROUNDS[bgIndex]}
               alt=""
               className="download-bg-photo"
@@ -963,7 +989,9 @@ export default function Home() {
               ahora.
             </p>
 
+            {/* ✅ SOLUCIÓN FINAL */}
             <motion.button
+              type="button"
               className="download-btn btn-shine"
               onClick={handleDownloadApk}
               whileHover={{ y: -2, scale: 1.03 }}
@@ -995,7 +1023,6 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
-
       {/* ================= OPINIONES ================= */}
       <section className="reviews-section has-grain" id="opiniones">
         <div className="reviews-bg" aria-hidden="true">

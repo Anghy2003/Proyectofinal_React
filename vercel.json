@@ -1,3 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  "rewrites": [
+    { "source": "/safezone-v1.0.apk", "destination": "/safezone-v1.0.apk" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
 }
