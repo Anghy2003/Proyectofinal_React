@@ -21,17 +21,17 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ✅ Un SOLO mensaje superior (banner)
+  // Un SOLO mensaje superior (banner)
   const [formError, setFormError] = useState<string | null>(null);
 
-  // ✅ Normaliza mensajes (por si el backend sí responde con error)
+  // Normaliza mensajes (por si el backend sí responde con error)
   const normalizeAuthError = (err: any): string => {
     const status = err?.response?.status;
     const rawMsg = String(
       err?.response?.data?.message || err?.message || ""
     ).toLowerCase();
 
-    // 🟧 Permisos admin (detectar por texto, SIN depender del status)
+    //Permisos admin (detectar por texto, SIN depender del status)
     if (
       rawMsg.includes("permiso") ||
       rawMsg.includes("permisos") ||
@@ -44,7 +44,7 @@ export default function Login() {
       return "Tu cuenta no tiene permisos de administrador.";
     }
 
-    // 🟥 Usuario no existe
+    // Usuario no existe
     if (
       rawMsg.includes("usuario no encontrado") ||
       rawMsg.includes("user not found") ||
@@ -53,7 +53,7 @@ export default function Login() {
       return "Correo o contraseña incorrectos.";
     }
 
-    // 🟨 Credenciales incorrectas
+    // Credenciales incorrectas
     if (
       status === 401 ||
       status === 403 ||
@@ -70,7 +70,7 @@ export default function Login() {
     return "No se pudo iniciar sesión. Inténtalo nuevamente.";
   };
 
-  // ✅ Verifica rol admin en el objeto usuario (SOLUCIÓN DEFINITIVA)
+  //Verifica rol admin en el objeto usuario (SOLUCIÓN DEFINITIVA)
   const isAdminUser = (usuario: any) => {
     const rol = String(usuario?.rol ?? usuario?.role ?? "").toUpperCase();
     // Acepta variantes comunes: "ADMIN", "ROLE_ADMIN"
@@ -87,7 +87,7 @@ export default function Login() {
     const c = correo.trim();
     const p = password.trim();
 
-    // ✅ Validación pro: SOLO banner
+    // Validación pro: SOLO banner
     if (!c || !p) {
       setFormError("Ingresa tu correo y contraseña.");
       return;
@@ -97,13 +97,13 @@ export default function Login() {
     try {
       const usuario = await authService.login(c, p);
 
-      // ✅ Si el usuario existe pero NO es admin → mensaje correcto
+      //Si el usuario existe pero NO es admin → mensaje correcto
       if (!isAdminUser(usuario)) {
         setFormError("Tu cuenta no tiene permisos de administrador.");
         return; // 👈 no guarda sesión ni navega
       }
 
-      // ✅ Solo si es admin
+      // Solo si es admin
       authService.saveSession(usuario);
       navigate("/dashboard");
     } catch (err: any) {
@@ -124,7 +124,7 @@ export default function Login() {
     try {
       const usuario = await authService.loginWithGoogle();
 
-      // ✅ También aplica para Google
+      //También aplica para Google
       if (!isAdminUser(usuario)) {
         setFormError("Tu cuenta no tiene permisos de administrador.");
         return;
@@ -178,7 +178,7 @@ export default function Login() {
           <h1 className="title2">Bienvenido</h1>
           <p className="subtitle2">Inicia sesión para continuar</p>
 
-          {/* ✅ Banner superior (único error visible) */}
+          {/*Banner superior (único error visible) */}
           {formError && (
             <div className="login-alert" role="alert" aria-live="polite">
               {formError}
