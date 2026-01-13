@@ -90,7 +90,7 @@ function isoToFechaHora(iso?: string | null) {
 }
 
 /** Presencia aproximada */
-const ONLINE_THRESHOLD_MIN = 2;
+const ONLINE_THRESHOLD_MIN = 3;
 
 function minutesDiffFromNow(iso?: string | null) {
   if (!iso) return Number.POSITIVE_INFINITY;
@@ -432,7 +432,7 @@ export default function Usuarios() {
   );
 
   // =========================
-  // ✅ Top comunidades (con foto representativa)
+  //Top comunidades (con foto representativa)
   // =========================
   const topComunidades = useMemo(() => {
     const by = new Map<string, { total: number; fotoUrl?: string }>();

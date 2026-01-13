@@ -13,7 +13,7 @@ export class ApiError extends Error {
 }
 
 async function parseBody(resp: Response) {
-  // ✅ Para 204/205 o respuestas vacías
+  // Para 204/205 o respuestas vacías
   if (resp.status === 204 || resp.status === 205) return null;
 
   const ct = resp.headers.get("content-type") || "";
