@@ -1129,3 +1129,15 @@ body {
 .sz-btn-light{
   color: rgba(15,23,42,0.85) !important;
 }
+
+/* Badge para estado SUSPENDIDA */
+.badge-suspended {
+  background: rgba(100, 116, 139, 0.14);
+  border: 1px solid rgba(100, 116, 139, 0.35);
+  color: #334155;
+}
+
+/* (Opcional) Filas suspendidas un poco atenuadas */
+.row-suspended td {
+  opacity: 0.92;
+}

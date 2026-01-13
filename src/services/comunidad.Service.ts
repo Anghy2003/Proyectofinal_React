@@ -1,7 +1,10 @@
+// ===============================
 // src/services/comunidad.Service.ts
+// ===============================
 import { apiClient } from "./apiClient";
 
-export type EstadoComunidad = "SOLICITADA" | "ACTIVA" | "RECHAZADA";
+// ✅ Agregamos SUSPENDIDA para alinear con backend
+export type EstadoComunidad = "SOLICITADA" | "ACTIVA" | "RECHAZADA" | "SUSPENDIDA";
 
 export type Comunidad = {
   id: number;
@@ -35,9 +38,8 @@ type ComunidadUpdatePayload = {
   estado: EstadoComunidad;
   solicitadaPorUsuarioId: number | null;
 
-  fechaCreacion: string | null; // ✅ nuevo
+  fechaCreacion: string | null; // ✅ conservar
 };
-
 
 export const comunidadesService = {
   listar: async (): Promise<Comunidad[]> => {
@@ -50,13 +52,10 @@ export const comunidadesService = {
 
   // ✅ Backend real: POST /api/comunidades/{id}/aprobar/usuario/{usuarioId}
   aprobar: async (id: number, usuarioId: number): Promise<Comunidad> => {
-    return apiClient.post<Comunidad>(
-      `/comunidades/${id}/aprobar/usuario/${usuarioId}`
-    );
+    return apiClient.post<Comunidad>(`/comunidades/${id}/aprobar/usuario/${usuarioId}`);
   },
 
   // ✅ PUT /api/comunidades/{id}/usuario/{usuarioId}
-  // ⚠️ Enviamos solo campos REALES y seguros de la entidad (sin centroLat/centroLng, sin miembrosCount, sin fechaCreacion)
   actualizar: async (
     id: number,
     usuarioId: number,
@@ -65,8 +64,8 @@ export const comunidadesService = {
     return apiClient.put<Comunidad>(`/comunidades/${id}/usuario/${usuarioId}`, payload);
   },
 
-  eliminar: async (id: number, usuarioId: number): Promise<void> => {
-  await apiClient.del(`/comunidades/${id}/usuario/${usuarioId}`);
-},
-
+  // ✅ NUEVO: POST /api/comunidades/{id}/suspender/usuario/{usuarioId}
+  suspender: async (id: number, usuarioId: number): Promise<void> => {
+    await apiClient.post(`/comunidades/${id}/suspender/usuario/${usuarioId}`);
+  },
 };

@@ -1,4 +1,6 @@
+// ===============================
 // src/services/Usuario.Service.ts
+// ===============================
 import { apiClient } from "./apiClient";
 
 /**
@@ -18,7 +20,7 @@ export interface UsuarioApi {
 
   comunidadId?: number | null;
   comunidadNombre?: string | null;
-  rol?: string | null;              // ej: "vecino"
+  rol?: string | null;               // ej: "vecino"
   estadoEnComunidad?: string | null; // ej: "activo"
 }
 
@@ -29,5 +31,11 @@ export const usuariosService = {
 
   obtener: async (id: number): Promise<UsuarioApi> => {
     return apiClient.get<UsuarioApi>(`/usuarios/${id}`);
+  },
+
+  // Suspender (desactivar) usuario (borrado lógico)
+  // PUT /api/usuarios/{id}/desactivar
+  desactivar: async (id: number): Promise<UsuarioApi> => {
+    return apiClient.put<UsuarioApi>(`/usuarios/${id}/desactivar`, {});
   },
 };

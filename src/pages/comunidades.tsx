@@ -1,4 +1,6 @@
+// ===============================
 // src/pages/Comunidades.tsx
+// ===============================
 import "../styles/comunidad.css";
 import Sidebar from "../components/sidebar";
 
@@ -14,15 +16,15 @@ import {
   type EstadoComunidad,
 } from "../services/comunidad.Service";
 
-//Export libs
+// Export libs
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-//Animaciones
+// Animaciones
 import { AnimatePresence, motion } from "framer-motion";
 
-//Gráfico de líneas (mismo estilo dashboard)
+// Gráfico de líneas (mismo estilo dashboard)
 import {
   ResponsiveContainer,
   LineChart,
@@ -33,7 +35,7 @@ import {
   Tooltip,
 } from "recharts";
 
-//Íconos pro
+// Íconos pro
 import {
   Search,
   X,
@@ -46,7 +48,6 @@ import {
   FileSpreadsheet,
   FileText,
 } from "lucide-react";
-
 
 type SessionData = {
   userId: number;
@@ -65,6 +66,7 @@ type DailyPoint = {
   activas: number;
   solicitadas: number;
   rechazadas: number;
+  suspendidas: number;
 };
 
 function isValidDate(d: Date) {
@@ -90,20 +92,7 @@ function getCommunityDate(c: any): Date | null {
 }
 
 function fmtLabel(d: Date) {
-  const meses = [
-    "Ene",
-    "Feb",
-    "Mar",
-    "Abr",
-    "May",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dic",
-  ];
+  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const dd = String(d.getDate()).padStart(2, "0");
   return `${dd} ${meses[d.getMonth()]}`;
 }
@@ -130,6 +119,7 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
       activas: 0,
       solicitadas: 0,
       rechazadas: 0,
+      suspendidas: 0,
     };
   });
 
@@ -150,6 +140,7 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     if (c.estado === "ACTIVA") p.activas += 1;
     if (c.estado === "SOLICITADA") p.solicitadas += 1;
     if (c.estado === "RECHAZADA") p.rechazadas += 1;
+    if (c.estado === "SUSPENDIDA") p.suspendidas += 1;
   });
 
   if (!hasRealDates && comunidades.length > 0) {
@@ -160,24 +151,24 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
       if (c.estado === "ACTIVA") p.activas += 1;
       if (c.estado === "SOLICITADA") p.solicitadas += 1;
       if (c.estado === "RECHAZADA") p.rechazadas += 1;
+      if (c.estado === "SUSPENDIDA") p.suspendidas += 1;
     });
   }
 
-  let accTotal = 0,
-    accA = 0,
-    accS = 0,
-    accR = 0;
+  let accTotal = 0, accA = 0, accS = 0, accR = 0, accSu = 0;
   return base.map((p) => {
     accTotal += p.total;
     accA += p.activas;
     accS += p.solicitadas;
     accR += p.rechazadas;
+    accSu += p.suspendidas;
     return {
       ...p,
       total: accTotal,
       activas: accA,
       solicitadas: accS,
       rechazadas: accR,
+      suspendidas: accSu,
     };
   });
 }
@@ -257,7 +248,6 @@ function getAdminUserIdOrThrow(): number {
 }
 
 export default function Comunidades() {
-
   const [comunidades, setComunidades] = useState<Comunidad[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -279,7 +269,7 @@ export default function Comunidades() {
   const [editError, setEditError] = useState<string | null>(null);
   const [editOriginal, setEditOriginal] = useState<Comunidad | null>(null);
 
-  // MODAL ELIMINAR
+  // MODAL SUSPENDER (ANTES ELIMINAR)
   const [delOpen, setDelOpen] = useState(false);
   const [delLoading, setDelLoading] = useState(false);
   const [delError, setDelError] = useState<string | null>(null);
@@ -301,13 +291,14 @@ export default function Comunidades() {
     fotoUrl: null,
   });
 
-  const openDelete = (c: Comunidad) => {
+  const openSuspend = (c: Comunidad) => {
     setDelError(null);
     setDelTarget(c);
     setDelOpen(true);
   };
 
-  const confirmDelete = async () => {
+  // ✅ Suspender (borrado lógico)
+  const confirmSuspend = async () => {
     try {
       if (!delTarget) return;
 
@@ -316,24 +307,26 @@ export default function Comunidades() {
 
       const usuarioId = getAdminUserIdOrThrow();
 
-      await comunidadesService.eliminar(delTarget.id, usuarioId);
+      await comunidadesService.suspender(delTarget.id, usuarioId);
 
-      // ✅ quitar de la tabla sin recargar
-      setComunidades((prev) => prev.filter((x) => x.id !== delTarget.id));
+      // ✅ Actualizar en tabla sin recargar (NO eliminar fila)
+      setComunidades((prev) =>
+        prev.map((x) =>
+          x.id === delTarget.id
+            ? { ...x, activa: false, estado: "SUSPENDIDA" }
+            : x
+        )
+      );
 
       setDelOpen(false);
       setDelTarget(null);
     } catch (e: any) {
       console.error(e);
-      setDelError(
-        e?.message ||
-          "No se pudo eliminar la comunidad. Puede tener restricciones o relaciones."
-      );
+      setDelError(e?.message || "No se pudo suspender la comunidad. Inténtalo nuevamente.");
     } finally {
       setDelLoading(false);
     }
   };
-
 
   const cargarComunidades = async () => {
     try {
@@ -389,6 +382,15 @@ export default function Comunidades() {
     return () => window.removeEventListener("keydown", onKey);
   }, [editOpen]);
 
+  // ✅ Cerrar modal suspender con ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDelOpen(false);
+    };
+    if (delOpen) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [delOpen]);
+
   // =========================
   // KPIs + métricas
   // =========================
@@ -409,6 +411,12 @@ export default function Comunidades() {
     [comunidades]
   );
 
+  // ✅ (se usa en chart/export/tabla aunque no esté como KPI visual)
+  const suspendidasCount = useMemo(
+    () => comunidades.filter((c) => c.estado === "SUSPENDIDA").length,
+    [comunidades]
+  );
+
   // Filtro
   const comunidadesFiltradas = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -425,22 +433,21 @@ export default function Comunidades() {
   const badgeClass = (estado: EstadoComunidad) => {
     if (estado === "ACTIVA") return "badge badge-success";
     if (estado === "RECHAZADA") return "badge badge-danger";
+    if (estado === "SUSPENDIDA") return "badge badge-suspended";
     return "badge badge-warning";
   };
 
   const labelEstado = (estado: EstadoComunidad) => {
     if (estado === "ACTIVA") return "Activa";
     if (estado === "RECHAZADA") return "Rechazada";
+    if (estado === "SUSPENDIDA") return "Suspendida";
     return "Solicitada";
   };
 
   // =========================
   // ✅ LINE CHART DATA
   // =========================
-  const lineData = useMemo(
-    () => buildDailySeries(comunidades, 14),
-    [comunidades]
-  );
+  const lineData = useMemo(() => buildDailySeries(comunidades, 14), [comunidades]);
 
   // =========================
   // EXPORT
@@ -476,6 +483,7 @@ export default function Comunidades() {
       Activas: p.activas,
       Solicitadas: p.solicitadas,
       Rechazadas: p.rechazadas,
+      Suspendidas: p.suspendidas,
     }));
     const ws2 = XLSX.utils.json_to_sheet(chartRows);
     ws2["!cols"] = [
@@ -483,6 +491,7 @@ export default function Comunidades() {
       { wch: 10 },
       { wch: 10 },
       { wch: 10 },
+      { wch: 12 },
       { wch: 12 },
       { wch: 12 },
     ];
@@ -517,9 +526,7 @@ export default function Comunidades() {
       `Generado: ${new Date().toLocaleString("es-EC")}`,
       pageW / 2,
       titleY + 8,
-      {
-        align: "center",
-      }
+      { align: "center" }
     );
 
     autoTable(doc, {
@@ -576,21 +583,14 @@ export default function Comunidades() {
         doc.addImage(pngDataUrl, "PNG", x, y, imgW, imgH);
       } else {
         doc.setFontSize(10);
-        doc.text(
-          "No se pudo capturar la gráfica (SVG no encontrado).",
-          105,
-          y + 10,
-          {
-            align: "center",
-          }
-        );
+        doc.text("No se pudo capturar la gráfica (SVG no encontrado).", 105, y + 10, {
+          align: "center",
+        });
       }
     } catch (e) {
       console.error(e);
       doc.setFontSize(10);
-      doc.text("No se pudo exportar la gráfica.", 105, y + 10, {
-        align: "center",
-      });
+      doc.text("No se pudo exportar la gráfica.", 105, y + 10, { align: "center" });
     }
 
     const stamp = new Date().toISOString().slice(0, 10);
@@ -602,8 +602,7 @@ export default function Comunidades() {
   // =========================
   // Donut (CSS conic-gradient)
   // =========================
-  const pct = (n: number) =>
-    totalComunidades > 0 ? (n / totalComunidades) * 100 : 0;
+  const pct = (n: number) => (totalComunidades > 0 ? (n / totalComunidades) * 100 : 0);
   const pAct = pct(activasCount);
   const pSol = pct(solicitadasCount);
 
@@ -622,8 +621,6 @@ export default function Comunidades() {
   const openEdit = async (c: Comunidad) => {
     try {
       setEditError(null);
-
-      // ✅ Traer versión más completa del backend
       const full = await comunidadesService.obtener(c.id);
 
       setEditOriginal(full);
@@ -665,35 +662,24 @@ export default function Comunidades() {
 
       const usuarioId = getAdminUserIdOrThrow();
 
-      // PAYLOAD SEGURO 
+      // PAYLOAD SEGURO (conservar campos para evitar null)
       const payload = {
         id: editOriginal.id,
         nombre: trim(editForm.nombre),
         direccion: trim(editForm.direccion) || null,
 
-        // conservar campos existentes para que NO se borren
-        codigoAcceso: editOriginal.codigoAcceso ?? null,  
+        codigoAcceso: editOriginal.codigoAcceso ?? null,
         fotoUrl: editOriginal.fotoUrl ?? null,
         radioKm: (editOriginal.radioKm ?? 1.0) as any,
         activa: (editOriginal.activa ?? true) as any,
         estado: (editOriginal.estado ?? "ACTIVA") as any,
-        solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ??
-          null) as any,
-
-        // CLAVE: conservar fecha
+        solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ?? null) as any,
         fechaCreacion: (editOriginal.fechaCreacion ?? null) as any,
       };
 
-      const updated = await comunidadesService.actualizar(
-        editForm.id,
-        usuarioId,
-        payload
-      );
+      const updated = await comunidadesService.actualizar(editForm.id, usuarioId, payload);
 
-      // ✅ Actualiza tabla sin recargar
-      setComunidades((prev) =>
-        prev.map((x) => (x.id === updated.id ? updated : x))
-      );
+      setComunidades((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
 
       setEditOpen(false);
       setEditOriginal(null);
@@ -724,10 +710,7 @@ export default function Comunidades() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <Sidebar
-          sidebarOpen={sidebarOpen}
-          closeSidebar={() => setSidebarOpen(false)}
-        />
+        <Sidebar sidebarOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
 
         {/* MAIN */}
         <main className="comunidades-main">
@@ -893,12 +876,8 @@ export default function Comunidades() {
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">
-                      Tendencia de comunidades
-                    </div>
-                    <div className="chart-sub-v2">
-                      Últimos 14 días (acumulado)
-                    </div>
+                    <div className="chart-title-v2">Tendencia de comunidades</div>
+                    <div className="chart-sub-v2">Últimos 14 días (acumulado)</div>
                   </div>
                 </div>
 
@@ -915,38 +894,11 @@ export default function Comunidades() {
                         formatter={(v: any, name: any) => [v, name]}
                         labelFormatter={(l) => `Día: ${l}`}
                       />
-                      <Line
-                        type="monotone"
-                        dataKey="total"
-                        name="Total"
-                        stroke="#f95150"
-                        strokeWidth={3}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="activas"
-                        name="Activas"
-                        stroke="#16a34a"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="solicitadas"
-                        name="Solicitadas"
-                        stroke="#f59e0b"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="rechazadas"
-                        name="Rechazadas"
-                        stroke="#ef4444"
-                        strokeWidth={2}
-                        dot={false}
-                      />
+                      <Line type="monotone" dataKey="total" name="Total" stroke="#f95150" strokeWidth={3} dot={false} />
+                      <Line type="monotone" dataKey="activas" name="Activas" stroke="#16a34a" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="solicitadas" name="Solicitadas" stroke="#f59e0b" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="rechazadas" name="Rechazadas" stroke="#ef4444" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="suspendidas" name="Suspendidas" stroke="#64748b" strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -961,11 +913,7 @@ export default function Comunidades() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div
-                    className="donut"
-                    style={{ background: donutBg }}
-                    aria-label="Donut de estados"
-                  >
+                  <div className="donut" style={{ background: donutBg }} aria-label="Donut de estados">
                     <div className="donut-hole">
                       <div className="donut-total1">{totalComunidades}</div>
                       <div className="donut-label1">Comunidades</div>
@@ -974,30 +922,27 @@ export default function Comunidades() {
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span
-                        className="donut-dot"
-                        style={{ background: "#16a34a" }}
-                      />
+                      <span className="donut-dot" style={{ background: "#16a34a" }} />
                       <span className="donut-name">Activas</span>
                       <span className="donut-val">{activasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span
-                        className="donut-dot"
-                        style={{ background: "#f59e0b" }}
-                      />
+                      <span className="donut-dot" style={{ background: "#f59e0b" }} />
                       <span className="donut-name">Solicitadas</span>
                       <span className="donut-val">{solicitadasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span
-                        className="donut-dot"
-                        style={{ background: "#ef4444" }}
-                      />
+                      <span className="donut-dot" style={{ background: "#ef4444" }} />
                       <span className="donut-name">Rechazadas</span>
                       <span className="donut-val">{rechazadasCount}</span>
+                    </div>
+
+                    <div className="donut-li">
+                      <span className="donut-dot" style={{ background: "#64748b" }} />
+                      <span className="donut-name">Suspendidas</span>
+                      <span className="donut-val">{suspendidasCount}</span>
                     </div>
                   </div>
                 </div>
@@ -1023,25 +968,19 @@ export default function Comunidades() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td
-                          colSpan={7}
-                          style={{ textAlign: "center", fontWeight: 900 }}
-                        >
+                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
                           Cargando comunidades...
                         </td>
                       </tr>
                     ) : comunidadesFiltradas.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={7}
-                          style={{ textAlign: "center", fontWeight: 900 }}
-                        >
+                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
                           No se encontraron comunidades.
                         </td>
                       </tr>
                     ) : (
                       comunidadesFiltradas.map((c) => (
-                        <tr key={c.id}>
+                        <tr key={c.id} className={c.estado === "SUSPENDIDA" ? "row-suspended" : ""}>
                           <td>
                             {c.fotoUrl ? (
                               <img
@@ -1071,17 +1010,11 @@ export default function Comunidades() {
 
                           <td>{c.codigoAcceso ?? "—"}</td>
                           <td>{c.nombre}</td>
-                          <td style={{ textAlign: "center" }}>
-                            {c.miembrosCount ?? 0}
-                          </td>
-                          <td title={c.direccion ?? ""}>
-                            {c.direccion ?? "—"}
-                          </td>
+                          <td style={{ textAlign: "center" }}>{c.miembrosCount ?? 0}</td>
+                          <td title={c.direccion ?? ""}>{c.direccion ?? "—"}</td>
 
                           <td>
-                            <span className={badgeClass(c.estado)}>
-                              {labelEstado(c.estado)}
-                            </span>
+                            <span className={badgeClass(c.estado)}>{labelEstado(c.estado)}</span>
                           </td>
 
                           <td className="acciones">
@@ -1090,17 +1023,21 @@ export default function Comunidades() {
                               onClick={() => openEdit(c)}
                               title="Editar"
                               type="button"
+                              disabled={c.estado === "SUSPENDIDA"}
+                              style={c.estado === "SUSPENDIDA" ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
                             >
                               <img src={iconEdit} alt="Editar" />
                             </button>
 
                             <button
                               className="icon-button icon-danger"
-                              onClick={() => openDelete(c)}
-                              title="Eliminar"
+                              onClick={() => openSuspend(c)}
+                              title="Suspender"
                               type="button"
+                              disabled={c.estado === "SUSPENDIDA"}
+                              style={c.estado === "SUSPENDIDA" ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
                             >
-                              <img src={iconEliminar} alt="Eliminar" />
+                              <img src={iconEliminar} alt="Suspender" />
                             </button>
                           </td>
                         </tr>
@@ -1111,14 +1048,12 @@ export default function Comunidades() {
               </div>
             </section>
 
-            <p className="panel-update">
-              Última actualización: {new Date().toLocaleString("es-EC")}
-            </p>
+            <p className="panel-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
           </motion.div>
         </main>
       </div>
 
-      {/* ✅ MODAL EDITAR (solo campos de la tabla) */}
+      {/* ✅ MODAL EDITAR */}
       <AnimatePresence>
         {editOpen && (
           <motion.div
@@ -1158,70 +1093,45 @@ export default function Comunidades() {
               {editError && <div className="sz-modal-error">{editError}</div>}
 
               <div className="sz-modal-grid">
-                {/* FOTO (bloqueado) */}
                 <div className="sz-field" style={{ gridColumn: "1 / -1" }}>
                   <span>Foto (bloqueado)</span>
 
                   <div className="sz-photo-row">
                     {editForm.fotoUrl ? (
-                      <img
-                        src={editForm.fotoUrl}
-                        alt="foto comunidad"
-                        className="sz-photo"
-                      />
+                      <img src={editForm.fotoUrl} alt="foto comunidad" className="sz-photo" />
                     ) : (
                       <div className="sz-photo sz-photo-empty" />
                     )}
 
-                    <input
-                      value={editForm.fotoUrl ?? "—"}
-                      disabled
-                      className="sz-input"
-                    />
+                    <input value={editForm.fotoUrl ?? "—"} disabled className="sz-input" />
                   </div>
                 </div>
 
-                {/* CÓDIGO (bloqueado) */}
                 <label className="sz-field">
                   <span>Código (bloqueado)</span>
-                  <input
-                    value={editForm.codigoAcceso || "—"}
-                    disabled
-                    className="sz-input"
-                  />
+                  <input value={editForm.codigoAcceso || "—"} disabled className="sz-input" />
                 </label>
 
-                {/* MIEMBROS (bloqueado) */}
                 <label className="sz-field">
                   <span>Miembros (bloqueado)</span>
-                  <input
-                    value={String(editForm.miembrosCount ?? 0)}
-                    disabled
-                    className="sz-input"
-                  />
+                  <input value={String(editForm.miembrosCount ?? 0)} disabled className="sz-input" />
                 </label>
 
-                {/* NOMBRE (editable) */}
                 <label className="sz-field" style={{ gridColumn: "1 / -1" }}>
                   <span>Nombre</span>
                   <input
                     value={editForm.nombre}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, nombre: e.target.value }))
-                    }
+                    onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))}
                     placeholder="Nombre de la comunidad"
                     className="sz-input"
                   />
                 </label>
 
-                {/* DIRECCIÓN (editable) */}
                 <label className="sz-field" style={{ gridColumn: "1 / -1" }}>
                   <span>Dirección</span>
                   <input
                     value={editForm.direccion}
-                    onChange={(e) =>
-                      setEditForm((p) => ({ ...p, direccion: e.target.value }))
-                    }
+                    onChange={(e) => setEditForm((p) => ({ ...p, direccion: e.target.value }))}
                     placeholder="Dirección"
                     className="sz-input"
                   />
@@ -1253,6 +1163,7 @@ export default function Comunidades() {
         )}
       </AnimatePresence>
 
+      {/* ✅ MODAL SUSPENDER */}
       <AnimatePresence>
         {delOpen && (
           <motion.div
@@ -1272,9 +1183,9 @@ export default function Comunidades() {
             >
               <div className="sz-modal-head">
                 <div>
-                  <div className="sz-modal-title">¿Eliminar comunidad?</div>
+                  <div className="sz-modal-title">¿Suspender comunidad?</div>
                   <div className="sz-modal-sub">
-                    Estás por eliminar: <b>{delTarget?.nombre ?? "—"}</b>
+                    Estás por suspender: <b>{delTarget?.nombre ?? "—"}</b>
                   </div>
                 </div>
 
@@ -1292,22 +1203,17 @@ export default function Comunidades() {
               <div className="sz-danger-box">
                 <div className="sz-danger-name">{delTarget?.nombre ?? "—"}</div>
                 <div className="sz-danger-meta">
-                  Miembros dentro de la comunidad:{" "}
-                  <b>{delTarget?.miembrosCount ?? 0}</b>
+                  Miembros dentro de la comunidad: <b>{delTarget?.miembrosCount ?? 0}</b>
                 </div>
-                <div className="sz-danger-meta">
-                  Dirección: {delTarget?.direccion ?? "—"}
-                </div>
+                <div className="sz-danger-meta">Dirección: {delTarget?.direccion ?? "—"}</div>
                 <div className="sz-danger-meta">
                   Código: <b>{delTarget?.codigoAcceso ?? "—"}</b>
                 </div>
 
-                {(delTarget?.miembrosCount ?? 0) > 0 && (
-                  <div className="sz-danger-warning">
-                    ⚠️ Esta comunidad tiene miembros. Si la eliminas, podrían
-                    quedar usuarios sin comunidad.
-                  </div>
-                )}
+                <div className="sz-danger-warning">
+                  ⚠️ Al suspender, la comunidad quedará <b>inactiva</b> y no podrá operar en el sistema,{" "}
+                  pero <b>no se elimina</b> su historial.
+                </div>
               </div>
 
               {delError && <div className="sz-modal-error">{delError}</div>}
@@ -1325,11 +1231,11 @@ export default function Comunidades() {
                 <button
                   className="sz-btn-danger"
                   type="button"
-                  onClick={confirmDelete}
+                  onClick={confirmSuspend}
                   disabled={delLoading}
-                  title="Eliminar definitivamente"
+                  title="Suspender comunidad"
                 >
-                  {delLoading ? "Eliminando..." : "Sí, eliminar"}
+                  {delLoading ? "Suspendiendo..." : "Sí, suspender"}
                 </button>
               </div>
             </motion.div>

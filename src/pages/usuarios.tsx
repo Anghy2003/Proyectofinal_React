@@ -1,11 +1,12 @@
+// ===============================
 // src/pages/Usuarios.tsx
+// ===============================
 import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconImagen from "../assets/icon_imagen.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
-
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
@@ -42,7 +43,6 @@ import {
   Tooltip,
   LabelList,
 } from "recharts";
-
 
 type EstadoUsuarioCuenta = "Activo" | "Suspendido";
 type EstadoUsuarioOnline = "Activo" | "Inactivo";
@@ -119,18 +119,7 @@ function toKey(d: Date) {
 
 function fmtLabel(d: Date) {
   const meses = [
-    "Ene",
-    "Feb",
-    "Mar",
-    "Abr",
-    "May",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dic",
+    "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
   ];
   return `${pad2(d.getDate())} ${meses[d.getMonth()]}`;
 }
@@ -142,11 +131,7 @@ function buildDailyRegistros(users: UsuarioUI[], days = 14): DailyPoint[] {
   const base: DailyPoint[] = Array.from({ length: days }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (days - 1 - i));
-    return {
-      key: toKey(d),
-      label: fmtLabel(d),
-      registros: 0,
-    };
+    return { key: toKey(d), label: fmtLabel(d), registros: 0 };
   });
 
   const byKey = new Map(base.map((p) => [p.key, p]));
@@ -189,7 +174,6 @@ function RegistrosTooltip({
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
-
   const v = Number(payload[0]?.value ?? 0);
 
   return (
@@ -267,23 +251,16 @@ async function svgToPngDataUrl(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("No canvas context");
 
-  // Fondo blanco para PDF
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
   URL.revokeObjectURL(url);
 
-  return {
-    dataUrl: canvas.toDataURL("image/png", 1.0),
-    width: w,
-    height: h,
-  };
+  return { dataUrl: canvas.toDataURL("image/png", 1.0), width: w, height: h };
 }
 
 export default function Usuarios() {
-
   // ✅ sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -298,6 +275,45 @@ export default function Usuarios() {
 
   // ✅ Ref del chart (para export PDF)
   const chartRegistrosRef = useRef<HTMLDivElement | null>(null);
+
+  // ✅ MODAL SUSPENDER
+  const [suspOpen, setSuspOpen] = useState(false);
+  const [suspLoading, setSuspLoading] = useState(false);
+  const [suspError, setSuspError] = useState<string | null>(null);
+  const [suspTarget, setSuspTarget] = useState<UsuarioUI | null>(null);
+
+  const openSuspend = (u: UsuarioUI) => {
+    setSuspError(null);
+    setSuspTarget(u);
+    setSuspOpen(true);
+  };
+
+  const confirmSuspend = async () => {
+    try {
+      if (!suspTarget) return;
+
+      setSuspLoading(true);
+      setSuspError(null);
+
+      // ✅ Llama al backend para desactivar
+      await usuariosService.desactivar(suspTarget.id);
+
+      // ✅ Update UI sin recargar: marcar como Suspendido
+      setUsuarios((prev) =>
+        prev.map((x) =>
+          x.id === suspTarget.id ? { ...x, estadoCuenta: "Suspendido" } : x
+        )
+      );
+
+      setSuspOpen(false);
+      setSuspTarget(null);
+    } catch (e: any) {
+      console.error(e);
+      setSuspError(e?.message || "No se pudo suspender al usuario. Inténtalo nuevamente.");
+    } finally {
+      setSuspLoading(false);
+    }
+  };
 
   const cargarUsuarios = async () => {
     try {
@@ -396,6 +412,15 @@ export default function Usuarios() {
     };
   }, [openExport]);
 
+  // ✅ Cerrar modal suspender con ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSuspOpen(false);
+    };
+    if (suspOpen) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [suspOpen]);
+
   const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) =>
     setBusqueda(e.target.value);
 
@@ -432,7 +457,7 @@ export default function Usuarios() {
   );
 
   // =========================
-  //Top comunidades (con foto representativa)
+  // Top comunidades
   // =========================
   const topComunidades = useMemo(() => {
     const by = new Map<string, { total: number; fotoUrl?: string }>();
@@ -445,7 +470,6 @@ export default function Usuarios() {
         by.set(k, { total: 1, fotoUrl: u.fotoUrl });
       } else {
         current.total += 1;
-        // guarda primera foto disponible
         if (!current.fotoUrl && u.fotoUrl) current.fotoUrl = u.fotoUrl;
       }
     }
@@ -463,8 +487,7 @@ export default function Usuarios() {
   // =========================
   // Donut Cuenta (CSS conic)
   // =========================
-  const pct = (n: number) =>
-    totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0;
+  const pct = (n: number) => (totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0);
   const pAct = pct(cuentaActivos);
 
   const donutBg =
@@ -478,7 +501,7 @@ export default function Usuarios() {
   const lineData = useMemo(() => buildDailyRegistros(usuarios, 14), [usuarios]);
 
   // =========================
-  // EXPORT (sin foto) + ✅ hoja con datos de gráfica + ✅ PDF con gráfica
+  // EXPORT
   // =========================
   const buildExportRows = () =>
     usuariosFiltrados.map((u) => ({
@@ -489,29 +512,26 @@ export default function Usuarios() {
       Rol: u.rol ?? "—",
       "Estado cuenta": u.estadoCuenta ?? "—",
       Online: u.estadoOnline ?? "—",
-      Registro:
-        `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
+      Registro: `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
       "Ultimo acceso": u.ultimoAcceso ?? "—",
     }));
 
   const exportExcel = () => {
-    // Hoja 1: tabla usuarios
     const rows = buildExportRows();
     const ws = XLSX.utils.json_to_sheet(rows);
 
     ws["!cols"] = [
-      { wch: 26 }, // Nombre
-      { wch: 32 }, // Correo
-      { wch: 16 }, // Telefono
-      { wch: 22 }, // Comunidad
-      { wch: 16 }, // Rol
-      { wch: 14 }, // Estado cuenta
-      { wch: 10 }, // Online
-      { wch: 18 }, // Registro
-      { wch: 18 }, // Ultimo acceso
+      { wch: 26 },
+      { wch: 32 },
+      { wch: 16 },
+      { wch: 22 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 10 },
+      { wch: 18 },
+      { wch: 18 },
     ];
 
-    // Hoja 2: datos de gráfica (últimos 14 días)
     const chartRows = lineData.map((p) => ({
       Dia: p.label,
       Registros: p.registros,
@@ -541,14 +561,10 @@ export default function Usuarios() {
   const exportPDF = async () => {
     const doc = new jsPDF("p", "mm", "a4");
 
-    // ===== HEADER =====
     try {
       const logo = await toDataURL(logoSafeZone);
-      // un poco más ancho
       doc.addImage(logo, "PNG", 92, 10, 26, 26);
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     doc.setFontSize(16);
     doc.text("Reporte de Usuarios", 105, 45, { align: "center" });
@@ -558,22 +574,11 @@ export default function Usuarios() {
       align: "center",
     });
 
-    // ===== TABLA =====
     autoTable(doc, {
       startY: 60,
-      head: [
-        [
-          "Nombre",
-          "Correo",
-          "Teléfono",
-          "Comunidad",
-          "Rol",
-          "Estado cuenta",
-          "Online",
-          "Registro",
-          "Último acceso",
-        ],
-      ],
+      head: [[
+        "Nombre","Correo","Teléfono","Comunidad","Rol","Estado cuenta","Online","Registro","Último acceso",
+      ]],
       body: usuariosFiltrados.map((u) => [
         u.nombre ?? "—",
         u.email ?? "—",
@@ -601,34 +606,25 @@ export default function Usuarios() {
       },
     });
 
-    // ===== GRAFICA AL FINAL =====
     const afterTableY = (doc as any).lastAutoTable?.finalY ?? 60;
     let y = afterTableY + 10;
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Gráfica de registros (últimos 14 días)", 105, y, {
-      align: "center",
-    });
-
+    doc.text("Gráfica de registros (últimos 14 días)", 105, y, { align: "center" });
     doc.setFont("helvetica", "normal");
-
     y += 6;
 
     try {
-      const svg = chartRegistrosRef.current?.querySelector(
-        "svg"
-      ) as SVGSVGElement | null;
-
+      const svg = chartRegistrosRef.current?.querySelector("svg") as SVGSVGElement | null;
       if (svg) {
         const { dataUrl, width, height } = await svgToPngDataUrl(svg, 2);
 
         const pageW = doc.internal.pageSize.getWidth();
         const pageH = doc.internal.pageSize.getHeight();
 
-        // tamaño objetivo en PDF
-        const maxW = pageW - 20; // márgenes 10/10
-        const maxH = 90; // alto máximo
+        const maxW = pageW - 20;
+        const maxH = 90;
 
         const ratio = width / height;
         let drawW = maxW;
@@ -639,7 +635,6 @@ export default function Usuarios() {
           drawW = drawH * ratio;
         }
 
-        // si ya no cabe, nueva página
         if (y + drawH + 10 > pageH) {
           doc.addPage();
           y = 20;
@@ -648,9 +643,7 @@ export default function Usuarios() {
         const x = (pageW - drawW) / 2;
         doc.addImage(dataUrl, "PNG", x, y, drawW, drawH);
       }
-    } catch {
-      // si falla la captura, no detengas el PDF
-    }
+    } catch {}
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`reporte_usuarios_${stamp}.pdf`);
@@ -665,7 +658,7 @@ export default function Usuarios() {
     s === "Activo" ? "badge badge-success" : "badge badge-danger";
 
   // =========================
-  //Custom tick (foto + texto) para Top Comunidades
+  // Custom tick (foto + texto) para Top Comunidades
   // =========================
   const CommunityTick = (props: any) => {
     const { x, y, payload, index } = props;
@@ -684,7 +677,6 @@ export default function Usuarios() {
           </clipPath>
         </defs>
 
-        {/* avatar */}
         {fotoUrl ? (
           <>
             <circle cx={10} cy={0} r={10} fill="rgba(15,23,42,0.06)" />
@@ -728,14 +720,7 @@ export default function Usuarios() {
           </>
         )}
 
-        {/* label */}
-        <text
-          x={26}
-          y={4}
-          fontSize="12"
-          fontWeight="900"
-          fill="rgba(15,23,42,0.78)"
-        >
+        <text x={26} y={4} fontSize="12" fontWeight="900" fill="rgba(15,23,42,0.78)">
           {name.length > 18 ? `${name.slice(0, 18)}…` : name}
         </text>
       </g>
@@ -745,13 +730,7 @@ export default function Usuarios() {
   const ComunidadValueLabel = (props: any) => {
     const { x, y, width, value } = props;
     return (
-      <text
-        x={x + width + 10}
-        y={y + 12}
-        fontSize="12"
-        fontWeight="950"
-        fill="rgba(15,23,42,0.70)"
-      >
+      <text x={x + width + 10} y={y + 12} fontSize="12" fontWeight="950" fill="rgba(15,23,42,0.70)">
         {Number(value ?? 0).toLocaleString("es-EC")}
       </text>
     );
@@ -776,10 +755,7 @@ export default function Usuarios() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <Sidebar
-          sidebarOpen={sidebarOpen}
-          closeSidebar={() => setSidebarOpen(false)}
-        />
+        <Sidebar sidebarOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
 
         {/* MAIN */}
         <main className="usuarios-main">
@@ -932,9 +908,7 @@ export default function Usuarios() {
                   </div>
                 </div>
                 <div className="kpi-value">{onlineActivos}</div>
-                <div className="kpi-sub">
-                  Último acceso ≤ {ONLINE_THRESHOLD_MIN} min
-                </div>
+                <div className="kpi-sub">Último acceso ≤ {ONLINE_THRESHOLD_MIN} min</div>
               </div>
             </div>
 
@@ -948,7 +922,6 @@ export default function Usuarios() {
                   </div>
                 </div>
 
-                {/*ref para exportar la gráfica al PDF */}
                 <div className="line-chart-wrap" ref={chartRegistrosRef}>
                   <ResponsiveContainer width="100%" height={460}>
                     <BarChart
@@ -956,41 +929,10 @@ export default function Usuarios() {
                       margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
                       barCategoryGap="28%"
                     >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        opacity={0.18}
-                        vertical={false}
-                      />
-
-                      <XAxis
-                        dataKey="label"
-                        tickMargin={10}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{
-                          fill: "rgba(15,23,42,0.65)",
-                          fontSize: 12,
-                          fontWeight: 700,
-                        }}
-                      />
-
-                      <YAxis
-                        tickMargin={10}
-                        allowDecimals={false}
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{
-                          fill: "rgba(15,23,42,0.55)",
-                          fontSize: 12,
-                          fontWeight: 700,
-                        }}
-                      />
-
-                      <Tooltip
-                        cursor={{ fill: "rgba(249,81,80,0.08)" }}
-                        content={<RegistrosTooltip />}
-                      />
-
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.18} vertical={false} />
+                      <XAxis dataKey="label" tickMargin={10} axisLine={false} tickLine={false} />
+                      <YAxis tickMargin={10} allowDecimals={false} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: "rgba(249,81,80,0.08)" }} content={<RegistrosTooltip />} />
                       <Bar
                         dataKey="registros"
                         fill="#f95150"
@@ -1013,11 +955,7 @@ export default function Usuarios() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div
-                    className="donut"
-                    style={{ background: donutBg }}
-                    aria-label="Donut cuenta"
-                  >
+                  <div className="donut" style={{ background: donutBg }} aria-label="Donut cuenta">
                     <div className="donut-hole">
                       <div className="donut-total2">{totalUsuarios}</div>
                       <div className="donut-label2">Usuarios</div>
@@ -1026,26 +964,18 @@ export default function Usuarios() {
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span
-                        className="donut-dot"
-                        style={{ background: "#16a34a" }}
-                      />
+                      <span className="donut-dot" style={{ background: "#16a34a" }} />
                       <span className="donut-name">Activos</span>
                       <span className="donut-val">{cuentaActivos}</span>
                     </div>
-
                     <div className="donut-li">
-                      <span
-                        className="donut-dot"
-                        style={{ background: "#ef4444" }}
-                      />
+                      <span className="donut-dot" style={{ background: "#ef4444" }} />
                       <span className="donut-name">Suspendidos</span>
                       <span className="donut-val">{cuentaSuspendidos}</span>
                     </div>
                   </div>
                 </div>
 
-                {/*TOP COMUNIDADES (estilo imagen: barras horizontales + valor a la derecha + foto) */}
                 <div className="topbars">
                   <div className="topbars-head">
                     <div>
@@ -1074,10 +1004,7 @@ export default function Usuarios() {
                             width={90}
                             tick={CommunityTick}
                           />
-                          <Tooltip
-                            cursor={{ fill: "rgba(15,23,42,0.04)" }}
-                            content={<ComunidadesTooltip />}
-                          />
+                          <Tooltip cursor={{ fill: "rgba(15,23,42,0.04)" }} content={<ComunidadesTooltip />} />
                           <Bar
                             dataKey="total"
                             fill="rgba(16,185,129,0.40)"
@@ -1086,10 +1013,7 @@ export default function Usuarios() {
                             barSize={16}
                             animationDuration={650}
                           >
-                            <LabelList
-                              dataKey="total"
-                              content={ComunidadValueLabel}
-                            />
+                            <LabelList dataKey="total" content={ComunidadValueLabel} />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
@@ -1122,78 +1046,71 @@ export default function Usuarios() {
                   </thead>
 
                   <tbody>
-                    {usuariosFiltrados.map((u) => (
-                      <tr key={u.id}>
-                        <td>
-                          {u.fotoUrl ? (
-                            <img
-                              src={u.fotoUrl}
-                              alt="foto"
-                              className="user-photo-icon"
-                            />
-                          ) : (
-                            <img
-                              src={iconImagen}
-                              alt="foto"
-                              className="user-photo-icon"
-                            />
-                          )}
-                        </td>
+                    {usuariosFiltrados.map((u) => {
+                      const isSusp = u.estadoCuenta === "Suspendido";
 
-                        <td title={u.nombre}>{u.nombre}</td>
-                        <td title={u.email}>{u.email}</td>
-                        <td title={u.telefono}>{u.telefono}</td>
-                        <td title={u.comunidad}>{u.comunidad}</td>
-                        <td>{u.rol}</td>
+                      return (
+                        <tr key={u.id} className={isSusp ? "row-suspended" : ""}>
+                          <td>
+                            {u.fotoUrl ? (
+                              <img src={u.fotoUrl} alt="foto" className="user-photo-icon" />
+                            ) : (
+                              <img src={iconImagen} alt="foto" className="user-photo-icon" />
+                            )}
+                          </td>
 
-                        <td>
-                          <span className={badgeCuentaClass(u.estadoCuenta)}>
-                            {u.estadoCuenta}
-                          </span>
-                        </td>
+                          <td title={u.nombre}>{u.nombre}</td>
+                          <td title={u.email}>{u.email}</td>
+                          <td title={u.telefono}>{u.telefono}</td>
+                          <td title={u.comunidad}>{u.comunidad}</td>
+                          <td>{u.rol}</td>
 
-                        <td>
-                          <span
-                            className={badgeOnlineClass(u.estadoOnline)}
-                            title={
-                              u.ultimoAccesoIso
-                                ? `Último acceso: ${u.ultimoAccesoIso}`
-                                : "Sin registro de acceso"
-                            }
-                          >
-                            {u.estadoOnline}
-                          </span>
-                        </td>
+                          <td>
+                            <span className={badgeCuentaClass(u.estadoCuenta)}>
+                              {u.estadoCuenta}
+                            </span>
+                          </td>
 
-                        <td>
-                          {u.fechaRegistro || "—"}
-                          <br />
-                          <span className="time">{u.horaRegistro || ""}</span>
-                        </td>
+                          <td>
+                            <span
+                              className={badgeOnlineClass(u.estadoOnline)}
+                              title={
+                                u.ultimoAccesoIso
+                                  ? `Último acceso: ${u.ultimoAccesoIso}`
+                                  : "Sin registro de acceso"
+                              }
+                            >
+                              {u.estadoOnline}
+                            </span>
+                          </td>
 
-                        <td title={u.ultimoAcceso}>{u.ultimoAcceso}</td>
+                          <td>
+                            {u.fechaRegistro || "—"}
+                            <br />
+                            <span className="time">{u.horaRegistro || ""}</span>
+                          </td>
 
-                        <td className="acciones">
-                          <button
-                            className="icon-button"
-                            title="Eliminar"
-                            onClick={() =>
-                              alert("Eliminar usuario: pendiente backend")
-                            }
-                            type="button"
-                          >
-                            <img src={iconEliminar} alt="Eliminar" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                          <td title={u.ultimoAcceso}>{u.ultimoAcceso}</td>
+
+                          <td className="acciones">
+                            <button
+                              className="icon-button icon-danger"
+                              title={isSusp ? "Usuario ya suspendido" : "Suspender usuario"}
+                              onClick={() => openSuspend(u)}
+                              type="button"
+                              disabled={isSusp}
+                              style={isSusp ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
+                            >
+                              <img src={iconEliminar} alt="Suspender" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
                     {usuariosFiltrados.length === 0 && (
                       <tr>
-                        <td
-                          colSpan={11}
-                          style={{ textAlign: "center", fontWeight: 900 }}
-                        >
+                        <td colSpan={11} style={{ textAlign: "center", fontWeight: 900 }}>
                           No se encontraron usuarios.
                         </td>
                       </tr>
@@ -1209,6 +1126,84 @@ export default function Usuarios() {
           </motion.div>
         </main>
       </div>
+
+      {/* ✅ MODAL SUSPENDER USUARIO */}
+      <AnimatePresence>
+        {suspOpen && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSuspOpen(false)}
+          >
+            <motion.div
+              className="sz-modal-card sz-modal-danger"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">¿Suspender usuario?</div>
+                  <div className="sz-modal-sub">
+                    Estás por suspender a: <b>{suspTarget?.nombre ?? "—"}</b>
+                  </div>
+                </div>
+
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => setSuspOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="sz-danger-box">
+                <div className="sz-danger-name">{suspTarget?.nombre ?? "—"}</div>
+                <div className="sz-danger-meta">
+                  Correo: <b>{suspTarget?.email ?? "—"}</b>
+                </div>
+                <div className="sz-danger-meta">
+                  Comunidad: {suspTarget?.comunidad ?? "—"}
+                </div>
+                <div className="sz-danger-warning">
+                  ⚠️ Al suspender, el usuario quedará <b>inactivo</b> y no podrá iniciar sesión,
+                  pero <b>no se elimina</b> su información ni su historial.
+                </div>
+              </div>
+
+              {suspError && <div className="sz-modal-error">{suspError}</div>}
+
+              <div className="sz-modal-actions">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => setSuspOpen(false)}
+                  disabled={suspLoading}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  className="sz-btn-danger"
+                  type="button"
+                  onClick={confirmSuspend}
+                  disabled={suspLoading}
+                  title="Suspender usuario"
+                >
+                  {suspLoading ? "Suspendiendo..." : "Sí, suspender"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

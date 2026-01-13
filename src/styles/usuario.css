@@ -1021,3 +1021,8 @@ body {
     height: 250px;
   }
 }
+
+/*Suspender usuario*/
+.row-suspended td {
+  opacity: 0.92;
+}
