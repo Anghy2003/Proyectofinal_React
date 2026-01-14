@@ -50,12 +50,12 @@ export const comunidadesService = {
     return apiClient.get<Comunidad>(`/comunidades/${id}`);
   },
 
-  // ✅ Backend real: POST /api/comunidades/{id}/aprobar/usuario/{usuarioId}
+  //Backend real: POST /api/comunidades/{id}/aprobar/usuario/{usuarioId}
   aprobar: async (id: number, usuarioId: number): Promise<Comunidad> => {
     return apiClient.post<Comunidad>(`/comunidades/${id}/aprobar/usuario/${usuarioId}`);
   },
 
-  // ✅ PUT /api/comunidades/{id}/usuario/{usuarioId}
+  //PUT /api/comunidades/{id}/usuario/{usuarioId}
   actualizar: async (
     id: number,
     usuarioId: number,
@@ -64,8 +64,13 @@ export const comunidadesService = {
     return apiClient.put<Comunidad>(`/comunidades/${id}/usuario/${usuarioId}`, payload);
   },
 
-  // ✅ NUEVO: POST /api/comunidades/{id}/suspender/usuario/{usuarioId}
+  //SUSPENDER COMUNIDAD
   suspender: async (id: number, usuarioId: number): Promise<void> => {
     await apiClient.post(`/comunidades/${id}/suspender/usuario/${usuarioId}`);
+  },
+
+    //REACTIVAR COMUNIDAD
+  reactivar: async (id: number, usuarioId: number): Promise<void> => {
+    await apiClient.post(`/comunidades/${id}/reactivar/usuario/${usuarioId}`, {});
   },
 };

@@ -7,6 +7,7 @@ import Sidebar from "../components/sidebar";
 import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconEdit from "../assets/icon_editar2.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
+import { Power, PowerOff } from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -92,7 +93,20 @@ function getCommunityDate(c: any): Date | null {
 }
 
 function fmtLabel(d: Date) {
-  const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const meses = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
   const dd = String(d.getDate()).padStart(2, "0");
   return `${dd} ${meses[d.getMonth()]}`;
 }
@@ -155,7 +169,11 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     });
   }
 
-  let accTotal = 0, accA = 0, accS = 0, accR = 0, accSu = 0;
+  let accTotal = 0,
+    accA = 0,
+    accS = 0,
+    accR = 0,
+    accSu = 0;
   return base.map((p) => {
     accTotal += p.total;
     accA += p.activas;
@@ -269,11 +287,11 @@ export default function Comunidades() {
   const [editError, setEditError] = useState<string | null>(null);
   const [editOriginal, setEditOriginal] = useState<Comunidad | null>(null);
 
-  // MODAL SUSPENDER (ANTES ELIMINAR)
-  const [delOpen, setDelOpen] = useState(false);
-  const [delLoading, setDelLoading] = useState(false);
-  const [delError, setDelError] = useState<string | null>(null);
-  const [delTarget, setDelTarget] = useState<Comunidad | null>(null);
+  // MODAL SUSPENDER / REACTIVAR
+  const [stateOpen, setStateOpen] = useState(false);
+  const [stateLoading, setStateLoading] = useState(false);
+  const [stateError, setStateError] = useState<string | null>(null);
+  const [stateTarget, setStateTarget] = useState<Comunidad | null>(null);
 
   const [editForm, setEditForm] = useState<{
     id: number;
@@ -291,40 +309,56 @@ export default function Comunidades() {
     fotoUrl: null,
   });
 
-  const openSuspend = (c: Comunidad) => {
-    setDelError(null);
-    setDelTarget(c);
-    setDelOpen(true);
+  const openToggleEstado = (c: Comunidad) => {
+    setStateError(null);
+    setStateTarget(c);
+    setStateOpen(true);
   };
 
-  // ✅ Suspender (borrado lógico)
-  const confirmSuspend = async () => {
+  // ✅ Suspender y reactivar (borrado lógico)
+  const confirmToggleEstado = async () => {
     try {
-      if (!delTarget) return;
+      if (!stateTarget) return;
 
-      setDelLoading(true);
-      setDelError(null);
+      setStateLoading(true);
+      setStateError(null);
 
       const usuarioId = getAdminUserIdOrThrow();
+      const isSuspendida = stateTarget.estado === "SUSPENDIDA";
 
-      await comunidadesService.suspender(delTarget.id, usuarioId);
+      if (isSuspendida) {
+        await comunidadesService.reactivar(stateTarget.id, usuarioId);
 
-      // ✅ Actualizar en tabla sin recargar (NO eliminar fila)
-      setComunidades((prev) =>
-        prev.map((x) =>
-          x.id === delTarget.id
-            ? { ...x, activa: false, estado: "SUSPENDIDA" }
-            : x
-        )
-      );
+        // ✅ update inmediato en tabla
+        setComunidades((prev) =>
+          prev.map((x) =>
+            x.id === stateTarget.id
+              ? { ...x, estado: "ACTIVA", activa: true }
+              : x
+          )
+        );
+      } else {
+        await comunidadesService.suspender(stateTarget.id, usuarioId);
 
-      setDelOpen(false);
-      setDelTarget(null);
+        // ✅ update inmediato en tabla
+        setComunidades((prev) =>
+          prev.map((x) =>
+            x.id === stateTarget.id
+              ? { ...x, estado: "SUSPENDIDA", activa: false }
+              : x
+          )
+        );
+      }
+
+      setStateOpen(false);
+      setStateTarget(null);
     } catch (e: any) {
       console.error(e);
-      setDelError(e?.message || "No se pudo suspender la comunidad. Inténtalo nuevamente.");
+      setStateError(
+        e?.message || "No se pudo actualizar el estado de la comunidad."
+      );
     } finally {
-      setDelLoading(false);
+      setStateLoading(false);
     }
   };
 
@@ -385,11 +419,11 @@ export default function Comunidades() {
   // ✅ Cerrar modal suspender con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setDelOpen(false);
+      if (e.key === "Escape") setStateOpen(false);
     };
-    if (delOpen) window.addEventListener("keydown", onKey);
+    if (stateOpen) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [delOpen]);
+  }, [stateOpen]);
 
   // =========================
   // KPIs + métricas
@@ -432,22 +466,25 @@ export default function Comunidades() {
 
   const badgeClass = (estado: EstadoComunidad) => {
     if (estado === "ACTIVA") return "badge badge-success";
+    if (estado === "SUSPENDIDA") return "badge badge-danger";
     if (estado === "RECHAZADA") return "badge badge-danger";
-    if (estado === "SUSPENDIDA") return "badge badge-suspended";
-    return "badge badge-warning";
+    return "badge badge-warning"; // SOLICITADA
   };
 
   const labelEstado = (estado: EstadoComunidad) => {
     if (estado === "ACTIVA") return "Activa";
-    if (estado === "RECHAZADA") return "Rechazada";
     if (estado === "SUSPENDIDA") return "Suspendida";
+    if (estado === "RECHAZADA") return "Rechazada";
     return "Solicitada";
   };
 
   // =========================
   // ✅ LINE CHART DATA
   // =========================
-  const lineData = useMemo(() => buildDailySeries(comunidades, 14), [comunidades]);
+  const lineData = useMemo(
+    () => buildDailySeries(comunidades, 14),
+    [comunidades]
+  );
 
   // =========================
   // EXPORT
@@ -583,14 +620,21 @@ export default function Comunidades() {
         doc.addImage(pngDataUrl, "PNG", x, y, imgW, imgH);
       } else {
         doc.setFontSize(10);
-        doc.text("No se pudo capturar la gráfica (SVG no encontrado).", 105, y + 10, {
-          align: "center",
-        });
+        doc.text(
+          "No se pudo capturar la gráfica (SVG no encontrado).",
+          105,
+          y + 10,
+          {
+            align: "center",
+          }
+        );
       }
     } catch (e) {
       console.error(e);
       doc.setFontSize(10);
-      doc.text("No se pudo exportar la gráfica.", 105, y + 10, { align: "center" });
+      doc.text("No se pudo exportar la gráfica.", 105, y + 10, {
+        align: "center",
+      });
     }
 
     const stamp = new Date().toISOString().slice(0, 10);
@@ -602,7 +646,8 @@ export default function Comunidades() {
   // =========================
   // Donut (CSS conic-gradient)
   // =========================
-  const pct = (n: number) => (totalComunidades > 0 ? (n / totalComunidades) * 100 : 0);
+  const pct = (n: number) =>
+    totalComunidades > 0 ? (n / totalComunidades) * 100 : 0;
   const pAct = pct(activasCount);
   const pSol = pct(solicitadasCount);
 
@@ -673,13 +718,20 @@ export default function Comunidades() {
         radioKm: (editOriginal.radioKm ?? 1.0) as any,
         activa: (editOriginal.activa ?? true) as any,
         estado: (editOriginal.estado ?? "ACTIVA") as any,
-        solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ?? null) as any,
+        solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ??
+          null) as any,
         fechaCreacion: (editOriginal.fechaCreacion ?? null) as any,
       };
 
-      const updated = await comunidadesService.actualizar(editForm.id, usuarioId, payload);
+      const updated = await comunidadesService.actualizar(
+        editForm.id,
+        usuarioId,
+        payload
+      );
 
-      setComunidades((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      setComunidades((prev) =>
+        prev.map((x) => (x.id === updated.id ? updated : x))
+      );
 
       setEditOpen(false);
       setEditOriginal(null);
@@ -710,7 +762,10 @@ export default function Comunidades() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <Sidebar sidebarOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+        />
 
         {/* MAIN */}
         <main className="comunidades-main">
@@ -876,8 +931,12 @@ export default function Comunidades() {
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">Tendencia de comunidades</div>
-                    <div className="chart-sub-v2">Últimos 14 días (acumulado)</div>
+                    <div className="chart-title-v2">
+                      Tendencia de comunidades
+                    </div>
+                    <div className="chart-sub-v2">
+                      Últimos 14 días (acumulado)
+                    </div>
                   </div>
                 </div>
 
@@ -894,11 +953,46 @@ export default function Comunidades() {
                         formatter={(v: any, name: any) => [v, name]}
                         labelFormatter={(l) => `Día: ${l}`}
                       />
-                      <Line type="monotone" dataKey="total" name="Total" stroke="#f95150" strokeWidth={3} dot={false} />
-                      <Line type="monotone" dataKey="activas" name="Activas" stroke="#16a34a" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="solicitadas" name="Solicitadas" stroke="#f59e0b" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="rechazadas" name="Rechazadas" stroke="#ef4444" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="suspendidas" name="Suspendidas" stroke="#64748b" strokeWidth={2} dot={false} />
+                      <Line
+                        type="monotone"
+                        dataKey="total"
+                        name="Total"
+                        stroke="#f95150"
+                        strokeWidth={3}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="activas"
+                        name="Activas"
+                        stroke="#16a34a"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="solicitadas"
+                        name="Solicitadas"
+                        stroke="#f59e0b"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="rechazadas"
+                        name="Rechazadas"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="suspendidas"
+                        name="Suspendidas"
+                        stroke="#64748b"
+                        strokeWidth={2}
+                        dot={false}
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -913,7 +1007,11 @@ export default function Comunidades() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div className="donut" style={{ background: donutBg }} aria-label="Donut de estados">
+                  <div
+                    className="donut"
+                    style={{ background: donutBg }}
+                    aria-label="Donut de estados"
+                  >
                     <div className="donut-hole">
                       <div className="donut-total1">{totalComunidades}</div>
                       <div className="donut-label1">Comunidades</div>
@@ -922,25 +1020,37 @@ export default function Comunidades() {
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#16a34a" }}
+                      />
                       <span className="donut-name">Activas</span>
                       <span className="donut-val">{activasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#f59e0b" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#f59e0b" }}
+                      />
                       <span className="donut-name">Solicitadas</span>
                       <span className="donut-val">{solicitadasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#ef4444" }}
+                      />
                       <span className="donut-name">Rechazadas</span>
                       <span className="donut-val">{rechazadasCount}</span>
                     </div>
 
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#64748b" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#64748b" }}
+                      />
                       <span className="donut-name">Suspendidas</span>
                       <span className="donut-val">{suspendidasCount}</span>
                     </div>
@@ -968,19 +1078,30 @@ export default function Comunidades() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
+                        <td
+                          colSpan={7}
+                          style={{ textAlign: "center", fontWeight: 900 }}
+                        >
                           Cargando comunidades...
                         </td>
                       </tr>
                     ) : comunidadesFiltradas.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ textAlign: "center", fontWeight: 900 }}>
+                        <td
+                          colSpan={7}
+                          style={{ textAlign: "center", fontWeight: 900 }}
+                        >
                           No se encontraron comunidades.
                         </td>
                       </tr>
                     ) : (
                       comunidadesFiltradas.map((c) => (
-                        <tr key={c.id} className={c.estado === "SUSPENDIDA" ? "row-suspended" : ""}>
+                        <tr
+                          key={c.id}
+                          className={
+                            c.estado === "SUSPENDIDA" ? "row-suspended" : ""
+                          }
+                        >
                           <td>
                             {c.fotoUrl ? (
                               <img
@@ -1010,11 +1131,17 @@ export default function Comunidades() {
 
                           <td>{c.codigoAcceso ?? "—"}</td>
                           <td>{c.nombre}</td>
-                          <td style={{ textAlign: "center" }}>{c.miembrosCount ?? 0}</td>
-                          <td title={c.direccion ?? ""}>{c.direccion ?? "—"}</td>
+                          <td style={{ textAlign: "center" }}>
+                            {c.miembrosCount ?? 0}
+                          </td>
+                          <td title={c.direccion ?? ""}>
+                            {c.direccion ?? "—"}
+                          </td>
 
                           <td>
-                            <span className={badgeClass(c.estado)}>{labelEstado(c.estado)}</span>
+                            <span className={badgeClass(c.estado)}>
+                              {labelEstado(c.estado)}
+                            </span>
                           </td>
 
                           <td className="acciones">
@@ -1024,20 +1151,37 @@ export default function Comunidades() {
                               title="Editar"
                               type="button"
                               disabled={c.estado === "SUSPENDIDA"}
-                              style={c.estado === "SUSPENDIDA" ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
+                              style={
+                                c.estado === "SUSPENDIDA"
+                                  ? { opacity: 0.55, cursor: "not-allowed" }
+                                  : undefined
+                              }
                             >
                               <img src={iconEdit} alt="Editar" />
                             </button>
 
                             <button
-                              className="icon-button icon-danger"
-                              onClick={() => openSuspend(c)}
-                              title="Suspender"
+                              className={`icon-button ${
+                                c.estado === "SUSPENDIDA"
+                                  ? "icon-success"
+                                  : "icon-danger"
+                              }`}
+                              onClick={() => openToggleEstado(c)}
+                              title={
+                                c.estado === "SUSPENDIDA"
+                                  ? "Reactivar"
+                                  : "Suspender"
+                              }
                               type="button"
-                              disabled={c.estado === "SUSPENDIDA"}
-                              style={c.estado === "SUSPENDIDA" ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
                             >
-                              <img src={iconEliminar} alt="Suspender" />
+                              <img
+                                src={iconEliminar}
+                                alt={
+                                  c.estado === "SUSPENDIDA"
+                                    ? "Reactivar"
+                                    : "Suspender"
+                                }
+                              />
                             </button>
                           </td>
                         </tr>
@@ -1048,7 +1192,9 @@ export default function Comunidades() {
               </div>
             </section>
 
-            <p className="panel-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
+            <p className="panel-update">
+              Última actualización: {new Date().toLocaleString("es-EC")}
+            </p>
           </motion.div>
         </main>
       </div>
@@ -1098,30 +1244,48 @@ export default function Comunidades() {
 
                   <div className="sz-photo-row">
                     {editForm.fotoUrl ? (
-                      <img src={editForm.fotoUrl} alt="foto comunidad" className="sz-photo" />
+                      <img
+                        src={editForm.fotoUrl}
+                        alt="foto comunidad"
+                        className="sz-photo"
+                      />
                     ) : (
                       <div className="sz-photo sz-photo-empty" />
                     )}
 
-                    <input value={editForm.fotoUrl ?? "—"} disabled className="sz-input" />
+                    <input
+                      value={editForm.fotoUrl ?? "—"}
+                      disabled
+                      className="sz-input"
+                    />
                   </div>
                 </div>
 
                 <label className="sz-field">
                   <span>Código (bloqueado)</span>
-                  <input value={editForm.codigoAcceso || "—"} disabled className="sz-input" />
+                  <input
+                    value={editForm.codigoAcceso || "—"}
+                    disabled
+                    className="sz-input"
+                  />
                 </label>
 
                 <label className="sz-field">
                   <span>Miembros (bloqueado)</span>
-                  <input value={String(editForm.miembrosCount ?? 0)} disabled className="sz-input" />
+                  <input
+                    value={String(editForm.miembrosCount ?? 0)}
+                    disabled
+                    className="sz-input"
+                  />
                 </label>
 
                 <label className="sz-field" style={{ gridColumn: "1 / -1" }}>
                   <span>Nombre</span>
                   <input
                     value={editForm.nombre}
-                    onChange={(e) => setEditForm((p) => ({ ...p, nombre: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, nombre: e.target.value }))
+                    }
                     placeholder="Nombre de la comunidad"
                     className="sz-input"
                   />
@@ -1131,7 +1295,9 @@ export default function Comunidades() {
                   <span>Dirección</span>
                   <input
                     value={editForm.direccion}
-                    onChange={(e) => setEditForm((p) => ({ ...p, direccion: e.target.value }))}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, direccion: e.target.value }))
+                    }
                     placeholder="Dirección"
                     className="sz-input"
                   />
@@ -1163,18 +1329,20 @@ export default function Comunidades() {
         )}
       </AnimatePresence>
 
-      {/* ✅ MODAL SUSPENDER */}
+      {/* ✅ MODAL SUSPENDER / REACTIVAR */}
       <AnimatePresence>
-        {delOpen && (
+        {stateOpen && (
           <motion.div
             className="sz-modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setDelOpen(false)}
+            onClick={() => setStateOpen(false)}
           >
             <motion.div
-              className="sz-modal-card sz-modal-danger"
+              className={`sz-modal-card ${
+                stateTarget?.estado === "SUSPENDIDA" ? "" : "sz-modal-danger"
+              }`}
               initial={{ opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.98 }}
@@ -1183,16 +1351,20 @@ export default function Comunidades() {
             >
               <div className="sz-modal-head">
                 <div>
-                  <div className="sz-modal-title">¿Suspender comunidad?</div>
+                  <div className="sz-modal-title">
+                    {stateTarget?.estado === "SUSPENDIDA"
+                      ? "¿Reactivar comunidad?"
+                      : "¿Suspender comunidad?"}
+                  </div>
                   <div className="sz-modal-sub">
-                    Estás por suspender: <b>{delTarget?.nombre ?? "—"}</b>
+                    Comunidad: <b>{stateTarget?.nombre ?? "—"}</b>
                   </div>
                 </div>
 
                 <button
                   className="sz-modal-x"
                   type="button"
-                  onClick={() => setDelOpen(false)}
+                  onClick={() => setStateOpen(false)}
                   aria-label="Cerrar"
                   title="Cerrar"
                 >
@@ -1201,41 +1373,61 @@ export default function Comunidades() {
               </div>
 
               <div className="sz-danger-box">
-                <div className="sz-danger-name">{delTarget?.nombre ?? "—"}</div>
-                <div className="sz-danger-meta">
-                  Miembros dentro de la comunidad: <b>{delTarget?.miembrosCount ?? 0}</b>
-                </div>
-                <div className="sz-danger-meta">Dirección: {delTarget?.direccion ?? "—"}</div>
-                <div className="sz-danger-meta">
-                  Código: <b>{delTarget?.codigoAcceso ?? "—"}</b>
+                <div className="sz-danger-name">
+                  {stateTarget?.nombre ?? "—"}
                 </div>
 
-                <div className="sz-danger-warning">
-                  ⚠️ Al suspender, la comunidad quedará <b>inactiva</b> y no podrá operar en el sistema,{" "}
-                  pero <b>no se elimina</b> su historial.
+                <div className="sz-danger-meta">
+                  Miembros: <b>{stateTarget?.miembrosCount ?? 0}</b>
                 </div>
+
+                <div className="sz-danger-meta">
+                  Dirección: {stateTarget?.direccion ?? "—"}
+                </div>
+
+                <div className="sz-danger-meta">
+                  Código: <b>{stateTarget?.codigoAcceso ?? "—"}</b>
+                </div>
+
+                {stateTarget?.estado === "SUSPENDIDA" ? (
+                  <div className="sz-danger-warning">
+                    ✅ La comunidad volverá a estar <b>ACTIVA</b> y operativa.
+                  </div>
+                ) : (
+                  <div className="sz-danger-warning">
+                    ⚠️ La comunidad quedará <b>SUSPENDIDA</b> (no se elimina
+                    información).
+                  </div>
+                )}
               </div>
 
-              {delError && <div className="sz-modal-error">{delError}</div>}
+              {stateError && <div className="sz-modal-error">{stateError}</div>}
 
               <div className="sz-modal-actions">
                 <button
                   className="sz-btn-light"
                   type="button"
-                  onClick={() => setDelOpen(false)}
-                  disabled={delLoading}
+                  onClick={() => setStateOpen(false)}
+                  disabled={stateLoading}
                 >
                   Cancelar
                 </button>
 
                 <button
-                  className="sz-btn-danger"
+                  className={
+                    stateTarget?.estado === "SUSPENDIDA"
+                      ? "sz-btn-primary"
+                      : "sz-btn-danger"
+                  }
                   type="button"
-                  onClick={confirmSuspend}
-                  disabled={delLoading}
-                  title="Suspender comunidad"
+                  onClick={confirmToggleEstado}
+                  disabled={stateLoading}
                 >
-                  {delLoading ? "Suspendiendo..." : "Sí, suspender"}
+                  {stateLoading
+                    ? "Procesando..."
+                    : stateTarget?.estado === "SUSPENDIDA"
+                    ? "Sí, reactivar"
+                    : "Sí, suspender"}
                 </button>
               </div>
             </motion.div>

@@ -305,7 +305,7 @@ export default function CodigoAcceso() {
                         <td>
                           <span className="badge badge-ok">{item.estado}</span>
                         </td>
-                        <td>
+                       <td>
                           <img
                             src={iconEliminar}
                             className="trash-icon"

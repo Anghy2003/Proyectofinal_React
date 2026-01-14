@@ -29,12 +29,11 @@ import HOW_4 from "../assets/celular8.png";
 
 import LOGO from "../assets/logo_rojo.png";
 
-// ✅ Configuración de descarga
+// CONFIG APK (AÚN NO DISPONIBLE)
+// ===============================
 const APK_CONFIG = {
-  filename: "safezone-v1.0.apk",
-  get url() {
-    return `${window.location.origin}/${this.filename}`;
-  },
+  available: false,
+  message: "Próximamente disponible",
 } as const;
 
 type Tab = {
@@ -724,14 +723,7 @@ export default function HomeGenieNova() {
     if (e.key === "Enter" || e.key === " ") scrollToId("top");
   };
 
-  /*-----ARCHIVO APK DESCARGA*/
-  const handleDownloadApk = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-
-    console.log("Iniciando descarga desde:", APK_CONFIG.url);
-
-    window.location.href = APK_CONFIG.url;
-  };
+ 
   return (
     <div className="sz-page" ref={rootRef}>
       {/* NAV */}
@@ -1148,8 +1140,6 @@ export default function HomeGenieNova() {
                 {/* ✅ BOTÓN CORREGIDO */}
                 <a
                   className="sz-btn sz-btn--primary"
-                  href={APK_CONFIG.url}
-                  onClick={handleDownloadApk}
                   data-magnetic="true"
                   aria-label="Descargar APK de SafeZone"
                 >
