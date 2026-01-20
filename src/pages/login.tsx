@@ -5,7 +5,7 @@ import iconEmail from "../assets/mage_email.svg";
 import iconPassword from "../assets/password-icon.svg";
 import iconGoogle from "../assets/iconoGoogle.svg";
 import flechaBack from "../assets/flecha_salir.png";
-import logoSafezone from "../assets/logo_rojo.png";
+import logoSafezone from "../assets/logo_SafeZone.png";
 
 import LiquidEther from "../components/backgrounds/LiquidEther";
 import { motion } from "framer-motion";

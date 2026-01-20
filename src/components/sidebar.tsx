@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { authService } from "../services/auth.service";
 
-import logoSafeZone from "../assets/logo_rojo.png";
+import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconDashboard from "../assets/icon_casa.svg";
 import iconUsuario from "../assets/icon_usuario.svg";
 import iconComu from "../assets/icon_comunidad.svg";

@@ -7,7 +7,6 @@ import Sidebar from "../components/sidebar";
 import logoSafeZone from "../assets/logo_SafeZone.png";
 import iconEdit from "../assets/icon_editar2.svg";
 import iconEliminar from "../assets/icon_eliminar2.svg";
-import { Power, PowerOff } from "lucide-react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 

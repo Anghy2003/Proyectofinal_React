@@ -27,14 +27,14 @@ import HOW_2 from "../assets/celular6.png";
 import HOW_3 from "../assets/celular7.png";
 import HOW_4 from "../assets/celular8.png";
 
-import LOGO from "../assets/logo_rojo.png";
+import LOGO from "../assets/logo_SafeZone.png";
 
 // CONFIG APK (AÚN NO DISPONIBLE)
 // ===============================
-const APK_CONFIG = {
+/*const APK_CONFIG = {
   available: false,
   message: "Próximamente disponible",
-} as const;
+} as const;*/
 
 type Tab = {
   key: string;
