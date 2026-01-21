@@ -5,8 +5,6 @@ import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
-import iconImagen from "../assets/icon_imagen.svg";
-import iconEliminar from "../assets/icon_eliminar2.svg";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
@@ -119,7 +117,18 @@ function toKey(d: Date) {
 
 function fmtLabel(d: Date) {
   const meses = [
-    "Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic",
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
   ];
   return `${pad2(d.getDate())} ${meses[d.getMonth()]}`;
 }
@@ -220,7 +229,7 @@ function ComunidadesTooltip({
 ========================================================= */
 async function svgToPngDataUrl(
   svgEl: SVGSVGElement,
-  scale = 2
+  scale = 2,
 ): Promise<{ dataUrl: string; width: number; height: number }> {
   const xml = new XMLSerializer().serializeToString(svgEl);
 
@@ -276,42 +285,55 @@ export default function Usuarios() {
   // ✅ Ref del chart (para export PDF)
   const chartRegistrosRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ MODAL SUSPENDER
-  const [suspOpen, setSuspOpen] = useState(false);
-  const [suspLoading, setSuspLoading] = useState(false);
-  const [suspError, setSuspError] = useState<string | null>(null);
-  const [suspTarget, setSuspTarget] = useState<UsuarioUI | null>(null);
+  // ✅ MODAL VER DETALLE (con suspender dentro)
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewTarget, setViewTarget] = useState<UsuarioUI | null>(null);
+  const [viewError, setViewError] = useState<string | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
-  const openSuspend = (u: UsuarioUI) => {
-    setSuspError(null);
-    setSuspTarget(u);
-    setSuspOpen(true);
+  const openView = (u: UsuarioUI) => {
+    setViewError(null);
+    setViewTarget(u);
+    setViewOpen(true);
   };
 
-  const confirmSuspend = async () => {
+  const closeView = () => {
+    setViewOpen(false);
+    setViewTarget(null);
+    setViewError(null);
+    setViewLoading(false);
+  };
+
+  const confirmSuspendUser = async () => {
     try {
-      if (!suspTarget) return;
+      if (!viewTarget) return;
+      if (viewTarget.estadoCuenta === "Suspendido") return;
 
-      setSuspLoading(true);
-      setSuspError(null);
+      setConfirmLoading(true);
+      setConfirmError(null);
 
-      // ✅ Llama al backend para desactivar
-      await usuariosService.desactivar(suspTarget.id);
+      await usuariosService.desactivar(viewTarget.id);
 
-      // ✅ Update UI sin recargar: marcar como Suspendido
+      // ✅ update UI tabla
       setUsuarios((prev) =>
         prev.map((x) =>
-          x.id === suspTarget.id ? { ...x, estadoCuenta: "Suspendido" } : x
-        )
+          x.id === viewTarget.id ? { ...x, estadoCuenta: "Suspendido" } : x,
+        ),
       );
 
-      setSuspOpen(false);
-      setSuspTarget(null);
+      // ✅ update modal target
+      setViewTarget((prev) =>
+        prev ? { ...prev, estadoCuenta: "Suspendido" } : prev,
+      );
+
+      setConfirmOpen(false);
     } catch (e: any) {
       console.error(e);
-      setSuspError(e?.message || "No se pudo suspender al usuario. Inténtalo nuevamente.");
+      setConfirmError(
+        e?.message || "No se pudo suspender al usuario. Inténtalo nuevamente.",
+      );
     } finally {
-      setSuspLoading(false);
+      setConfirmLoading(false);
     }
   };
 
@@ -379,7 +401,17 @@ export default function Usuarios() {
         prev.map((u) => ({
           ...u,
           estadoOnline: getEstadoOnline(u.ultimoAccesoIso ?? null),
-        }))
+        })),
+      );
+
+      // si el modal está abierto, reflejar online también
+      setViewTarget((prev) =>
+        prev
+          ? {
+              ...prev,
+              estadoOnline: getEstadoOnline(prev.ultimoAccesoIso ?? null),
+            }
+          : prev,
       );
     }, 30_000);
     return () => clearInterval(t);
@@ -412,14 +444,14 @@ export default function Usuarios() {
     };
   }, [openExport]);
 
-  // ✅ Cerrar modal suspender con ESC
+  // ✅ Cerrar modal VER con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSuspOpen(false);
+      if (e.key === "Escape") closeView();
     };
-    if (suspOpen) window.addEventListener("keydown", onKey);
+    if (viewOpen) window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [suspOpen]);
+  }, [viewOpen]);
 
   const handleChangeBusqueda = (e: ChangeEvent<HTMLInputElement>) =>
     setBusqueda(e.target.value);
@@ -443,17 +475,17 @@ export default function Usuarios() {
 
   const cuentaActivos = useMemo(
     () => usuarios.filter((u) => u.estadoCuenta === "Activo").length,
-    [usuarios]
+    [usuarios],
   );
 
   const cuentaSuspendidos = useMemo(
     () => usuarios.filter((u) => u.estadoCuenta === "Suspendido").length,
-    [usuarios]
+    [usuarios],
   );
 
   const onlineActivos = useMemo(
     () => usuarios.filter((u) => u.estadoOnline === "Activo").length,
-    [usuarios]
+    [usuarios],
   );
 
   // =========================
@@ -487,7 +519,8 @@ export default function Usuarios() {
   // =========================
   // Donut Cuenta (CSS conic)
   // =========================
-  const pct = (n: number) => (totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0);
+  const pct = (n: number) =>
+    totalUsuarios > 0 ? (n / totalUsuarios) * 100 : 0;
   const pAct = pct(cuentaActivos);
 
   const donutBg =
@@ -499,6 +532,11 @@ export default function Usuarios() {
   // Bar chart data (registros)
   // =========================
   const lineData = useMemo(() => buildDailyRegistros(usuarios, 14), [usuarios]);
+
+  // ✅ CONFIRM MODAL (seguro)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
 
   // =========================
   // EXPORT
@@ -512,7 +550,8 @@ export default function Usuarios() {
       Rol: u.rol ?? "—",
       "Estado cuenta": u.estadoCuenta ?? "—",
       Online: u.estadoOnline ?? "—",
-      Registro: `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
+      Registro:
+        `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
       "Ultimo acceso": u.ultimoAcceso ?? "—",
     }));
 
@@ -576,9 +615,19 @@ export default function Usuarios() {
 
     autoTable(doc, {
       startY: 60,
-      head: [[
-        "Nombre","Correo","Teléfono","Comunidad","Rol","Estado cuenta","Online","Registro","Último acceso",
-      ]],
+      head: [
+        [
+          "Nombre",
+          "Correo",
+          "Teléfono",
+          "Comunidad",
+          "Rol",
+          "Estado cuenta",
+          "Online",
+          "Registro",
+          "Último acceso",
+        ],
+      ],
       body: usuariosFiltrados.map((u) => [
         u.nombre ?? "—",
         u.email ?? "—",
@@ -611,12 +660,16 @@ export default function Usuarios() {
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Gráfica de registros (últimos 14 días)", 105, y, { align: "center" });
+    doc.text("Gráfica de registros (últimos 14 días)", 105, y, {
+      align: "center",
+    });
     doc.setFont("helvetica", "normal");
     y += 6;
 
     try {
-      const svg = chartRegistrosRef.current?.querySelector("svg") as SVGSVGElement | null;
+      const svg = chartRegistrosRef.current?.querySelector(
+        "svg",
+      ) as SVGSVGElement | null;
       if (svg) {
         const { dataUrl, width, height } = await svgToPngDataUrl(svg, 2);
 
@@ -720,7 +773,13 @@ export default function Usuarios() {
           </>
         )}
 
-        <text x={26} y={4} fontSize="12" fontWeight="900" fill="rgba(15,23,42,0.78)">
+        <text
+          x={26}
+          y={4}
+          fontSize="12"
+          fontWeight="900"
+          fill="rgba(15,23,42,0.78)"
+        >
           {name.length > 18 ? `${name.slice(0, 18)}…` : name}
         </text>
       </g>
@@ -730,7 +789,13 @@ export default function Usuarios() {
   const ComunidadValueLabel = (props: any) => {
     const { x, y, width, value } = props;
     return (
-      <text x={x + width + 10} y={y + 12} fontSize="12" fontWeight="950" fill="rgba(15,23,42,0.70)">
+      <text
+        x={x + width + 10}
+        y={y + 12}
+        fontSize="12"
+        fontWeight="950"
+        fill="rgba(15,23,42,0.70)"
+      >
         {Number(value ?? 0).toLocaleString("es-EC")}
       </text>
     );
@@ -755,7 +820,10 @@ export default function Usuarios() {
         </AnimatePresence>
 
         {/* SIDEBAR */}
-        <Sidebar sidebarOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          closeSidebar={() => setSidebarOpen(false)}
+        />
 
         {/* MAIN */}
         <main className="usuarios-main">
@@ -908,44 +976,115 @@ export default function Usuarios() {
                   </div>
                 </div>
                 <div className="kpi-value">{onlineActivos}</div>
-                <div className="kpi-sub">Último acceso ≤ {ONLINE_THRESHOLD_MIN} min</div>
+                <div className="kpi-sub">
+                  Último acceso ≤ {ONLINE_THRESHOLD_MIN} min
+                </div>
               </div>
             </div>
 
-            {/* Charts + Side card */}
+            {/* ✅ SWAP: TABLA (izquierda) + SIDE CARD (derecha) */}
             <div className="grid-2col">
+              {/* ✅ TABLA en el lugar de la gráfica */}
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">Registros de usuarios</div>
-                    <div className="chart-sub-v2">Últimos 14 días</div>
+                    <div className="chart-title-v2">Listado de usuarios</div>
+                    <div className="chart-sub-v2">
+                      Resultados: <b>{usuariosFiltrados.length}</b>
+                    </div>
                   </div>
                 </div>
 
-                <div className="line-chart-wrap" ref={chartRegistrosRef}>
-                  <ResponsiveContainer width="100%" height={460}>
-                    <BarChart
-                      data={lineData}
-                      margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
-                      barCategoryGap="28%"
-                    >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.18} vertical={false} />
-                      <XAxis dataKey="label" tickMargin={10} axisLine={false} tickLine={false} />
-                      <YAxis tickMargin={10} allowDecimals={false} axisLine={false} tickLine={false} />
-                      <Tooltip cursor={{ fill: "rgba(249,81,80,0.08)" }} content={<RegistrosTooltip />} />
-                      <Bar
-                        dataKey="registros"
-                        fill="#f95150"
-                        radius={[10, 10, 0, 0]}
-                        maxBarSize={34}
-                        animationDuration={650}
-                        background={{ fill: "rgba(15,23,42,0.06)" }}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+                <section className="tabla-panel tabla-panel-in-chart">
+                  <div className="tabla-inner">
+                    <table className="usuarios-tabla">
+                      <thead>
+                        <tr>
+                          <th>Nombre</th>
+                          <th>Correo</th>
+                          <th>Comunidad</th>
+                          <th style={{ textAlign: "center" }}>Online</th>
+                          <th style={{ textAlign: "center" }}>Ver</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {loading ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              style={{ textAlign: "center", fontWeight: 900 }}
+                            >
+                              Cargando usuarios...
+                            </td>
+                          </tr>
+                        ) : usuariosFiltrados.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              style={{ textAlign: "center", fontWeight: 900 }}
+                            >
+                              No se encontraron usuarios.
+                            </td>
+                          </tr>
+                        ) : (
+                          usuariosFiltrados.map((u) => {
+                            const isSusp = u.estadoCuenta === "Suspendido";
+
+                            return (
+                              <tr
+                                key={u.id}
+                                className={isSusp ? "row-suspended" : ""}
+                              >
+                                <td title={u.nombre} className="cell-ellipsis">
+                                  {u.nombre}
+                                </td>
+
+                                <td title={u.email} className="cell-ellipsis">
+                                  {u.email}
+                                </td>
+
+                                <td
+                                  title={u.comunidad}
+                                  className="cell-ellipsis"
+                                >
+                                  {u.comunidad}
+                                </td>
+
+                                <td style={{ textAlign: "center" }}>
+                                  <span
+                                    className={badgeOnlineClass(u.estadoOnline)}
+                                    title={
+                                      u.ultimoAccesoIso
+                                        ? `Último acceso: ${u.ultimoAccesoIso}`
+                                        : "Sin registro de acceso"
+                                    }
+                                  >
+                                    {u.estadoOnline}
+                                  </span>
+                                </td>
+
+                                <td style={{ textAlign: "center" }}>
+                                  <button
+                                    className="sz-mini-btn"
+                                    type="button"
+                                    onClick={() => openView(u)}
+                                    title="Ver detalles"
+                                  >
+                                    Ver
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
               </section>
 
+              {/* ✅ SIDE CARD igual (donut + top comunidades) */}
               <section className="side-card-v2 card">
                 <div className="chart-head">
                   <div>
@@ -955,7 +1094,11 @@ export default function Usuarios() {
                 </div>
 
                 <div className="donut-wrap">
-                  <div className="donut" style={{ background: donutBg }} aria-label="Donut cuenta">
+                  <div
+                    className="donut"
+                    style={{ background: donutBg }}
+                    aria-label="Donut cuenta"
+                  >
                     <div className="donut-hole">
                       <div className="donut-total2">{totalUsuarios}</div>
                       <div className="donut-label2">Usuarios</div>
@@ -964,12 +1107,18 @@ export default function Usuarios() {
 
                   <div className="donut-legend">
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#16a34a" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#16a34a" }}
+                      />
                       <span className="donut-name">Activos</span>
                       <span className="donut-val">{cuentaActivos}</span>
                     </div>
                     <div className="donut-li">
-                      <span className="donut-dot" style={{ background: "#ef4444" }} />
+                      <span
+                        className="donut-dot"
+                        style={{ background: "#ef4444" }}
+                      />
                       <span className="donut-name">Suspendidos</span>
                       <span className="donut-val">{cuentaSuspendidos}</span>
                     </div>
@@ -1004,7 +1153,10 @@ export default function Usuarios() {
                             width={90}
                             tick={CommunityTick}
                           />
-                          <Tooltip cursor={{ fill: "rgba(15,23,42,0.04)" }} content={<ComunidadesTooltip />} />
+                          <Tooltip
+                            cursor={{ fill: "rgba(15,23,42,0.04)" }}
+                            content={<ComunidadesTooltip />}
+                          />
                           <Bar
                             dataKey="total"
                             fill="rgba(16,185,129,0.40)"
@@ -1013,7 +1165,10 @@ export default function Usuarios() {
                             barSize={16}
                             animationDuration={650}
                           >
-                            <LabelList dataKey="total" content={ComunidadValueLabel} />
+                            <LabelList
+                              dataKey="total"
+                              content={ComunidadValueLabel}
+                            />
                           </Bar>
                         </BarChart>
                       </ResponsiveContainer>
@@ -1023,101 +1178,54 @@ export default function Usuarios() {
               </section>
             </div>
 
-            {/* Tabla */}
-            <section className="usuarios-card">
-              {loading ? (
-                <div className="ui-loading">Cargando usuarios…</div>
-              ) : (
-                <table className="usuarios-tabla">
-                  <thead>
-                    <tr>
-                      <th>Foto</th>
-                      <th>Nombre</th>
-                      <th>Correo</th>
-                      <th>Teléfono</th>
-                      <th>Comunidad</th>
-                      <th>Rol</th>
-                      <th>Cuenta</th>
-                      <th>Online</th>
-                      <th>Registro</th>
-                      <th>Último acceso</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
+            {/* ✅ SWAP: GRÁFICA ahora en el lugar donde estaba la tabla (full ancho) */}
+            <section className="chart-card-v2 card chart-card-full">
+              <div className="chart-head">
+                <div>
+                  <div className="chart-title-v2">Registros de usuarios</div>
+                  <div className="chart-sub-v2">Últimos 14 días</div>
+                </div>
+              </div>
 
-                  <tbody>
-                    {usuariosFiltrados.map((u) => {
-                      const isSusp = u.estadoCuenta === "Suspendido";
-
-                      return (
-                        <tr key={u.id} className={isSusp ? "row-suspended" : ""}>
-                          <td>
-                            {u.fotoUrl ? (
-                              <img src={u.fotoUrl} alt="foto" className="user-photo-icon" />
-                            ) : (
-                              <img src={iconImagen} alt="foto" className="user-photo-icon" />
-                            )}
-                          </td>
-
-                          <td title={u.nombre}>{u.nombre}</td>
-                          <td title={u.email}>{u.email}</td>
-                          <td title={u.telefono}>{u.telefono}</td>
-                          <td title={u.comunidad}>{u.comunidad}</td>
-                          <td>{u.rol}</td>
-
-                          <td>
-                            <span className={badgeCuentaClass(u.estadoCuenta)}>
-                              {u.estadoCuenta}
-                            </span>
-                          </td>
-
-                          <td>
-                            <span
-                              className={badgeOnlineClass(u.estadoOnline)}
-                              title={
-                                u.ultimoAccesoIso
-                                  ? `Último acceso: ${u.ultimoAccesoIso}`
-                                  : "Sin registro de acceso"
-                              }
-                            >
-                              {u.estadoOnline}
-                            </span>
-                          </td>
-
-                          <td>
-                            {u.fechaRegistro || "—"}
-                            <br />
-                            <span className="time">{u.horaRegistro || ""}</span>
-                          </td>
-
-                          <td title={u.ultimoAcceso}>{u.ultimoAcceso}</td>
-
-                          <td className="acciones">
-                            <button
-                              className="icon-button icon-danger"
-                              title={isSusp ? "Usuario ya suspendido" : "Suspender usuario"}
-                              onClick={() => openSuspend(u)}
-                              type="button"
-                              disabled={isSusp}
-                              style={isSusp ? { opacity: 0.55, cursor: "not-allowed" } : undefined}
-                            >
-                              <img src={iconEliminar} alt="Suspender" />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-
-                    {usuariosFiltrados.length === 0 && (
-                      <tr>
-                        <td colSpan={11} style={{ textAlign: "center", fontWeight: 900 }}>
-                          No se encontraron usuarios.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              )}
+              <div className="line-chart-wrap" ref={chartRegistrosRef}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <BarChart
+                    data={lineData}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                    barCategoryGap="28%"
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      opacity={0.18}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tickMargin={10}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickMargin={10}
+                      allowDecimals={false}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      cursor={{ fill: "rgba(249,81,80,0.08)" }}
+                      content={<RegistrosTooltip />}
+                    />
+                    <Bar
+                      dataKey="registros"
+                      fill="#f95150"
+                      radius={[10, 10, 0, 0]}
+                      maxBarSize={34}
+                      animationDuration={650}
+                      background={{ fill: "rgba(15,23,42,0.06)" }}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </section>
 
             <p className="usuarios-update">
@@ -1127,18 +1235,18 @@ export default function Usuarios() {
         </main>
       </div>
 
-      {/* ✅ MODAL SUSPENDER USUARIO */}
+      {/* ✅ MODAL VER DETALLE USUARIO (con suspender dentro) */}
       <AnimatePresence>
-        {suspOpen && (
+        {viewOpen && viewTarget && (
           <motion.div
             className="sz-modal-backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setSuspOpen(false)}
+            onClick={closeView}
           >
             <motion.div
-              className="sz-modal-card sz-modal-danger"
+              className="sz-modal-card sz-view-card"
               initial={{ opacity: 0, y: 18, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 18, scale: 0.98 }}
@@ -1147,16 +1255,16 @@ export default function Usuarios() {
             >
               <div className="sz-modal-head">
                 <div>
-                  <div className="sz-modal-title">¿Suspender usuario?</div>
+                  <div className="sz-modal-title">Detalle de usuario</div>
                   <div className="sz-modal-sub">
-                    Estás por suspender a: <b>{suspTarget?.nombre ?? "—"}</b>
+                    Correo: <b>{viewTarget.email ?? "—"}</b>
                   </div>
                 </div>
 
                 <button
                   className="sz-modal-x"
                   type="button"
-                  onClick={() => setSuspOpen(false)}
+                  onClick={closeView}
                   aria-label="Cerrar"
                   title="Cerrar"
                 >
@@ -1164,46 +1272,194 @@ export default function Usuarios() {
                 </button>
               </div>
 
-              <div className="sz-danger-box">
-                <div className="sz-danger-name">{suspTarget?.nombre ?? "—"}</div>
-                <div className="sz-danger-meta">
-                  Correo: <b>{suspTarget?.email ?? "—"}</b>
+              <div className="sz-view-top">
+                <div className="sz-view-photoWrap">
+                  {viewTarget.fotoUrl ? (
+                    <img
+                      src={viewTarget.fotoUrl}
+                      alt="Foto usuario"
+                      className="sz-view-photo"
+                    />
+                  ) : (
+                    <div className="sz-view-photo sz-view-photoEmpty" />
+                  )}
                 </div>
-                <div className="sz-danger-meta">
-                  Comunidad: {suspTarget?.comunidad ?? "—"}
-                </div>
-                <div className="sz-danger-warning">
-                  ⚠️ Al suspender, el usuario quedará <b>inactivo</b> y no podrá iniciar sesión,
-                  pero <b>no se elimina</b> su información ni su historial.
-                </div>
+
+                <div className="sz-view-name">{viewTarget.nombre ?? "—"}</div>
               </div>
 
-              {suspError && <div className="sz-modal-error">{suspError}</div>}
+              {viewError && <div className="sz-modal-error">{viewError}</div>}
+
+              <div className="sz-view-grid">
+                <div className="sz-view-item">
+                  <span>Comunidad</span>
+                  <div>{viewTarget.comunidad ?? "—"}</div>
+                </div>
+
+                <div className="sz-view-item">
+                  <span>Teléfono</span>
+                  <div>{viewTarget.telefono ?? "—"}</div>
+                </div>
+
+                <div className="sz-view-item">
+                  <span>Rol</span>
+                  <div>{viewTarget.rol ?? "—"}</div>
+                </div>
+
+                <div className="sz-view-item">
+                  <span>Estado cuenta</span>
+                  <div>
+                    <span className={badgeCuentaClass(viewTarget.estadoCuenta)}>
+                      {viewTarget.estadoCuenta}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="sz-view-item">
+                  <span>Online</span>
+                  <div>
+                    <span className={badgeOnlineClass(viewTarget.estadoOnline)}>
+                      {viewTarget.estadoOnline}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="sz-view-item">
+                  <span>Último acceso</span>
+                  <div>{viewTarget.ultimoAcceso ?? "—"}</div>
+                </div>
+
+                <div className="sz-view-item" style={{ gridColumn: "1 / -1" }}>
+                  <span>Registro</span>
+                  <div>
+                    {`${viewTarget.fechaRegistro ?? ""} ${
+                      viewTarget.horaRegistro ?? ""
+                    }`.trim() || "—"}
+                  </div>
+                </div>
+              </div>
 
               <div className="sz-modal-actions">
                 <button
                   className="sz-btn-light"
                   type="button"
-                  onClick={() => setSuspOpen(false)}
-                  disabled={suspLoading}
+                  onClick={closeView}
                 >
-                  Cancelar
+                  Cerrar
                 </button>
 
                 <button
                   className="sz-btn-danger"
                   type="button"
-                  onClick={confirmSuspend}
-                  disabled={suspLoading}
-                  title="Suspender usuario"
+                  onClick={() => {
+                    setConfirmError(null);
+                    setConfirmOpen(true);
+                  }}
+                  disabled={
+                    viewLoading || viewTarget.estadoCuenta === "Suspendido"
+                  }
+                  title={
+                    viewTarget.estadoCuenta === "Suspendido"
+                      ? "Usuario ya suspendido"
+                      : "Suspender usuario"
+                  }
+                  style={
+                    viewTarget.estadoCuenta === "Suspendido"
+                      ? { opacity: 0.55, cursor: "not-allowed" }
+                      : undefined
+                  }
                 >
-                  {suspLoading ? "Suspendiendo..." : "Sí, suspender"}
+                  {viewTarget.estadoCuenta === "Suspendido"
+                    ? "Suspendido"
+                    : "Suspender"}
                 </button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ✅ MODAL CONFIRMACIÓN SUSPENDER (PRO) */}
+<AnimatePresence>
+  {confirmOpen && viewTarget && (
+    <motion.div
+      className="sz-modal-backdrop"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={() => !confirmLoading && setConfirmOpen(false)}
+    >
+      <motion.div
+        className="sz-modal-card sz-modal-danger"
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+        transition={{ duration: 0.18 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sz-modal-head">
+          <div>
+            <div className="sz-modal-title">¿Suspender usuario?</div>
+            <div className="sz-modal-sub">
+              Estás por suspender a: <b>{viewTarget.nombre ?? "—"}</b>
+            </div>
+          </div>
+
+          <button
+            className="sz-modal-x"
+            type="button"
+            onClick={() => !confirmLoading && setConfirmOpen(false)}
+            aria-label="Cerrar"
+            title="Cerrar"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="sz-danger-box">
+          <div className="sz-danger-name">{viewTarget.nombre ?? "—"}</div>
+
+          <div className="sz-danger-meta">
+            Correo: <b>{viewTarget.email ?? "—"}</b>
+          </div>
+
+          <div className="sz-danger-meta">
+            Comunidad: {viewTarget.comunidad ?? "—"}
+          </div>
+
+          <div className="sz-danger-warning">
+            ⚠️ Al suspender, el usuario quedará <b>inactivo</b> y no podrá iniciar sesión,
+            pero <b>no se elimina</b> su información ni su historial.
+          </div>
+        </div>
+
+        {confirmError && <div className="sz-modal-error">{confirmError}</div>}
+
+        <div className="sz-modal-actions">
+          <button
+            className="sz-btn-light"
+            type="button"
+            onClick={() => setConfirmOpen(false)}
+            disabled={confirmLoading}
+          >
+            Cancelar
+          </button>
+
+          <button
+            className="sz-btn-danger"
+            type="button"
+            onClick={confirmSuspendUser}
+            disabled={confirmLoading}
+            title="Confirmar suspensión"
+          >
+            {confirmLoading ? "Suspendiendo..." : "Sí, suspender"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
     </>
   );
 }

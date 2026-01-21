@@ -11,7 +11,14 @@
 
 body {
   margin: 0;
-  font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Arial,
+    sans-serif;
 }
 
 /* ===========================
@@ -34,7 +41,7 @@ body {
   --radius: 20px;
 
   /* ✅ Top comunidades (tipo imagen) */
-  --topbar-bg: rgba(224, 242, 254, 0.60);
+  --topbar-bg: rgba(224, 242, 254, 0.6);
   --topbar-border: rgba(255, 255, 255, 0.78);
 }
 
@@ -136,14 +143,18 @@ body {
   color: rgba(15, 23, 42, 0.86);
   border: 1px solid transparent;
 
-  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .sidebar-item:hover {
-  background: rgba(249, 81, 80, 0.10);
+  background: rgba(249, 81, 80, 0.1);
   border-color: rgba(249, 81, 80, 0.55);
   transform: translateY(-1px);
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.1);
 }
 
 .sidebar-item.active {
@@ -181,10 +192,10 @@ body {
   border-radius: 16px;
   padding: 12px 14px;
   border: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.50);
+  background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.1);
 }
 
 .sidebar-connected-title {
@@ -200,7 +211,7 @@ body {
 }
 
 .sidebar-logout {
-  background: rgba(255, 255, 255, 0.60);
+  background: rgba(255, 255, 255, 0.6);
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.45);
   color: var(--ink);
@@ -208,7 +219,10 @@ body {
   cursor: pointer;
   font-size: 0.86rem;
   font-weight: 950;
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .sidebar-logout:hover {
@@ -342,14 +356,20 @@ body {
   border-radius: 999px;
   border: 1px solid var(--glass-border);
   background: rgba(248, 250, 252, 0.92);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 18px 55px rgba(15, 23, 42, 0.10);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 18px 55px rgba(15, 23, 42, 0.1);
   min-width: 0;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .search-pill-v2.open {
   border-color: rgba(249, 81, 80, 0.42);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 22px 65px rgba(249, 81, 80, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
+    0 22px 65px rgba(249, 81, 80, 0.14);
 }
 
 .search-ico-v2 {
@@ -366,7 +386,7 @@ body {
   outline: none;
   background: transparent;
   font-weight: 800;
-  color: rgba(15, 23, 42, 0.90);
+  color: rgba(15, 23, 42, 0.9);
   font-size: 0.92rem;
 }
 
@@ -412,8 +432,11 @@ body {
   color: rgba(15, 23, 42, 0.94) !important;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
 
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.10);
-  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.1);
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .action-pill:hover {
@@ -429,7 +452,7 @@ body {
 
 .action-pill-accent {
   border-color: rgba(249, 81, 80, 0.55);
-  background: rgba(249, 81, 80, 0.10);
+  background: rgba(249, 81, 80, 0.1);
 }
 
 /* Dropdown export */
@@ -465,7 +488,7 @@ body {
 }
 
 .export-option:hover {
-  background: rgba(249, 81, 80, 0.10);
+  background: rgba(249, 81, 80, 0.1);
 }
 
 /* ===========================
@@ -482,7 +505,7 @@ body {
   padding: 10px 12px;
   border-radius: 14px;
   border: 1px solid rgba(249, 81, 80, 0.35);
-  background: rgba(249, 81, 80, 0.10);
+  background: rgba(249, 81, 80, 0.1);
   color: rgba(15, 23, 42, 0.92);
   font-weight: 900;
 }
@@ -537,7 +560,7 @@ body {
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.92);
   background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.1);
   position: relative;
   overflow: hidden;
   color: rgba(15, 23, 42, 0.88);
@@ -548,8 +571,12 @@ body {
   position: absolute;
   inset: -2px;
   background:
-    radial-gradient(circle at 30% 30%, rgba(249, 81, 80, 0.22), transparent 62%),
-    radial-gradient(circle at 85% 75%, rgba(99, 102, 241, 0.10), transparent 62%);
+    radial-gradient(
+      circle at 30% 30%,
+      rgba(249, 81, 80, 0.22),
+      transparent 62%
+    ),
+    radial-gradient(circle at 85% 75%, rgba(99, 102, 241, 0.1), transparent 62%);
 }
 
 .kpi-icon svg {
@@ -558,15 +585,21 @@ body {
   opacity: 0.98;
 }
 
-.kpi-icon.kpi-ok { color: #16a34a; }
-.kpi-icon.kpi-warn { color: #f59e0b; }
-.kpi-icon.kpi-bad { color: #ef4444; }
+.kpi-icon.kpi-ok {
+  color: #16a34a;
+}
+.kpi-icon.kpi-warn {
+  color: #f59e0b;
+}
+.kpi-icon.kpi-bad {
+  color: #ef4444;
+}
 
 .kpi-sub {
   margin-top: 8px;
   font-size: 0.82rem;
   font-weight: 850;
-  color: rgba(71, 85, 105, 0.90);
+  color: rgba(71, 85, 105, 0.9);
 }
 
 /* ===========================
@@ -615,7 +648,7 @@ body {
   height: 460px;
   border-radius: 16px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.40);
+  background: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.75);
 }
 
@@ -633,7 +666,7 @@ body {
   border-radius: 999px;
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.86);
-  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.1);
 }
 
 .donut-hole {
@@ -721,7 +754,7 @@ body {
   margin-top: 2px;
   font-size: 0.84rem;
   font-weight: 750;
-  color: rgba(71, 85, 105, 0.90);
+  color: rgba(71, 85, 105, 0.9);
 }
 
 .topbars-chart {
@@ -738,7 +771,7 @@ body {
 .toplist-empty {
   padding: 10px;
   border-radius: 14px;
-  border: 1px dashed rgba(148, 163, 184, 0.60);
+  border: 1px dashed rgba(148, 163, 184, 0.6);
   color: rgba(71, 85, 105, 0.92);
   font-weight: 900;
 }
@@ -765,7 +798,7 @@ body {
   scrollbar-gutter: stable both-edges;
   -webkit-overflow-scrolling: touch;
 
-  background: rgba(255, 255, 255, 0.30);
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .usuarios-tabla {
@@ -794,7 +827,7 @@ body {
   position: sticky;
   top: 0;
   z-index: 2;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.10);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
 }
 
 .usuarios-tabla tbody tr:hover {
@@ -802,48 +835,14 @@ body {
   transition: background 0.18s ease;
 }
 
-/* Column widths (11 cols) */
-.usuarios-tabla th:nth-child(1),
-.usuarios-tabla td:nth-child(1) { width: 70px; text-align: center; }
-
-.usuarios-tabla th:nth-child(2),
-.usuarios-tabla td:nth-child(2) { width: 180px; }
-
-.usuarios-tabla th:nth-child(3),
-.usuarios-tabla td:nth-child(3) { width: 240px; }
-
-.usuarios-tabla th:nth-child(4),
-.usuarios-tabla td:nth-child(4) { width: 150px; }
-
-.usuarios-tabla th:nth-child(5),
-.usuarios-tabla td:nth-child(5) { width: 190px; }
-
-.usuarios-tabla th:nth-child(6),
-.usuarios-tabla td:nth-child(6) { width: 150px; }
-
-.usuarios-tabla th:nth-child(7),
-.usuarios-tabla td:nth-child(7) { width: 130px; }
-
-.usuarios-tabla th:nth-child(8),
-.usuarios-tabla td:nth-child(8) { width: 120px; }
-
-.usuarios-tabla th:nth-child(9),
-.usuarios-tabla td:nth-child(9) { width: 140px; }
-
-.usuarios-tabla th:nth-child(10),
-.usuarios-tabla td:nth-child(10) { width: 170px; }
-
-.usuarios-tabla th:nth-child(11),
-.usuarios-tabla td:nth-child(11) { width: 110px; text-align: center; }
-
 /* Foto */
 .user-photo-icon {
   width: 26px;
   height: 26px;
   border-radius: 8px;
   object-fit: cover;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: rgba(255, 255, 255, 0.70);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: rgba(255, 255, 255, 0.7);
 }
 
 /* Estado badges */
@@ -855,8 +854,12 @@ body {
   color: #fff;
 }
 
-.badge-success { background: #16a34a; }
-.badge-danger { background: #ef4444; }
+.badge-success {
+  background: #16a34a;
+}
+.badge-danger {
+  background: #ef4444;
+}
 
 .time {
   color: rgba(71, 85, 105, 0.92);
@@ -875,14 +878,17 @@ body {
   width: 34px;
   height: 34px;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.10);
+  border: 1px solid rgba(15, 23, 42, 0.1);
   background: rgba(255, 255, 255, 0.55);
   cursor: pointer;
-    display: flex;             
-  align-items: center;          
-  justify-content: center; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
   place-items: center;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .icon-button:hover {
@@ -955,19 +961,25 @@ body {
 .chart-tooltip-unit {
   font-size: 12px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.70);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ===========================
    Responsive
 =========================== */
 @media (max-width: 1200px) {
-  .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .grid-2col { grid-template-columns: 1fr; }
+  .kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {
-  .hamburger { display: grid; }
+  .hamburger {
+    display: grid;
+  }
 
   .sidebar {
     width: min(86vw, 320px);
@@ -991,7 +1003,9 @@ body {
 }
 
 @media (max-width: 650px) {
-  .kpi-row { grid-template-columns: 1fr; }
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
 
   .topbar-shell {
     flex-direction: column;
@@ -1026,3 +1040,108 @@ body {
 .row-suspended td {
   opacity: 0.92;
 }
+/* ===============================
+   Hacer que la tabla llene el espacio vacío del card
+================================ */
+
+/* El card ya tiene altura → lo usamos como contenedor flex */
+.chart-card-v2.card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* El panel de la tabla debe estirarse */
+.tabla-panel-in-chart {
+  flex: 1; /* 👈 ocupa todo el espacio disponible */
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+
+/* El contenedor interno también se estira */
+.tabla-panel-in-chart .tabla-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* La tabla ocupa todo el alto */
+.tabla-panel-in-chart table {
+  height: 100%;
+  border-collapse: collapse;
+}
+
+/* Cabecera fija */
+.tabla-panel-in-chart thead {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* 👇 EL TRUCO CLAVE */
+/* El cuerpo ocupa TODO el espacio restante */
+.tabla-panel-in-chart tbody {
+  flex: 1;
+  display: block;
+  overflow-y: auto;
+}
+
+/* Mantener columnas alineadas */
+.tabla-panel-in-chart tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+/* ===============================
+   Ajuste de columnas - Tabla Usuarios
+   (Nombre | Correo | Comunidad | Online | Ver)
+================================ */
+
+.usuarios-tabla {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.usuarios-tabla th:nth-child(1),
+.usuarios-tabla td:nth-child(1) {
+  width: 18%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left !important;
+}
+
+.usuarios-tabla th:nth-child(2),
+.usuarios-tabla td:nth-child(2) {
+  width: 34%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuarios-tabla th:nth-child(3),
+.usuarios-tabla td:nth-child(3) {
+  width: 26%;
+  padding-left: 26px; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuarios-tabla th:nth-child(4),
+.usuarios-tabla td:nth-child(4) {
+  width: 12%;
+  text-align: center;
+}
+
+.usuarios-tabla th:nth-child(5),
+.usuarios-tabla td:nth-child(5) {
+  width: 10%;
+  text-align: center;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: normal !important;
+}
+
+  

@@ -5,8 +5,6 @@ import "../styles/comunidad.css";
 import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
-import iconEdit from "../assets/icon_editar2.svg";
-import iconEliminar from "../assets/icon_eliminar2.svg";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -47,6 +45,10 @@ import {
   XCircle,
   FileSpreadsheet,
   FileText,
+  MapPin,
+  Users,
+  ShieldAlert,
+  Hash,
 } from "lucide-react";
 
 type SessionData = {
@@ -156,6 +158,7 @@ function buildDailySeries(comunidades: Comunidad[], days = 14): DailyPoint[] {
     if (c.estado === "SUSPENDIDA") p.suspendidas += 1;
   });
 
+  // fallback visual si no hay fechas reales
   if (!hasRealDates && comunidades.length > 0) {
     comunidades.forEach((c, idx) => {
       const i = idx % days;
@@ -209,7 +212,7 @@ const toDataURL = async (url: string): Promise<string> => {
 ========================= */
 async function svgElementToPngDataUrl(
   svgEl: SVGSVGElement,
-  outWidthPx = 1200
+  outWidthPx = 1200,
 ): Promise<string> {
   const xml = new XMLSerializer().serializeToString(svgEl);
   const svgBlob = new Blob([xml], { type: "image/svg+xml;charset=utf-8" });
@@ -286,11 +289,27 @@ export default function Comunidades() {
   const [editError, setEditError] = useState<string | null>(null);
   const [editOriginal, setEditOriginal] = useState<Comunidad | null>(null);
 
-  // MODAL SUSPENDER / REACTIVAR
+  // MODAL SUSPENDER / REACTIVAR (confirmación)
   const [stateOpen, setStateOpen] = useState(false);
   const [stateLoading, setStateLoading] = useState(false);
   const [stateError, setStateError] = useState<string | null>(null);
   const [stateTarget, setStateTarget] = useState<Comunidad | null>(null);
+
+  // ✅ MODAL VER DETALLE
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewTarget, setViewTarget] = useState<Comunidad | null>(null);
+
+  const openView = async (c: Comunidad) => {
+    try {
+      // opcional: trae el full para que el modal tenga todo actualizado
+      const full = await comunidadesService.obtener(c.id);
+      setViewTarget(full);
+    } catch {
+      setViewTarget(c);
+    } finally {
+      setViewOpen(true);
+    }
+  };
 
   const [editForm, setEditForm] = useState<{
     id: number;
@@ -328,24 +347,35 @@ export default function Comunidades() {
       if (isSuspendida) {
         await comunidadesService.reactivar(stateTarget.id, usuarioId);
 
-        // ✅ update inmediato en tabla
         setComunidades((prev) =>
           prev.map((x) =>
             x.id === stateTarget.id
               ? { ...x, estado: "ACTIVA", activa: true }
-              : x
-          )
+              : x,
+          ),
+        );
+
+        // si el modal detalle está abierto sobre esa misma comunidad
+        setViewTarget((prev) =>
+          prev && prev.id === stateTarget.id
+            ? ({ ...prev, estado: "ACTIVA", activa: true } as any)
+            : prev,
         );
       } else {
         await comunidadesService.suspender(stateTarget.id, usuarioId);
 
-        // ✅ update inmediato en tabla
         setComunidades((prev) =>
           prev.map((x) =>
             x.id === stateTarget.id
               ? { ...x, estado: "SUSPENDIDA", activa: false }
-              : x
-          )
+              : x,
+          ),
+        );
+
+        setViewTarget((prev) =>
+          prev && prev.id === stateTarget.id
+            ? ({ ...prev, estado: "SUSPENDIDA", activa: false } as any)
+            : prev,
         );
       }
 
@@ -354,7 +384,7 @@ export default function Comunidades() {
     } catch (e: any) {
       console.error(e);
       setStateError(
-        e?.message || "No se pudo actualizar el estado de la comunidad."
+        e?.message || "No se pudo actualizar el estado de la comunidad.",
       );
     } finally {
       setStateLoading(false);
@@ -424,6 +454,15 @@ export default function Comunidades() {
     return () => window.removeEventListener("keydown", onKey);
   }, [stateOpen]);
 
+  // ✅ Cerrar modal ver con ESC
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setViewOpen(false);
+    };
+    if (viewOpen) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [viewOpen]);
+
   // =========================
   // KPIs + métricas
   // =========================
@@ -431,23 +470,22 @@ export default function Comunidades() {
 
   const activasCount = useMemo(
     () => comunidades.filter((c) => c.estado === "ACTIVA").length,
-    [comunidades]
+    [comunidades],
   );
 
   const solicitadasCount = useMemo(
     () => comunidades.filter((c) => c.estado === "SOLICITADA").length,
-    [comunidades]
+    [comunidades],
   );
 
   const rechazadasCount = useMemo(
     () => comunidades.filter((c) => c.estado === "RECHAZADA").length,
-    [comunidades]
+    [comunidades],
   );
 
-  // ✅ (se usa en chart/export/tabla aunque no esté como KPI visual)
   const suspendidasCount = useMemo(
     () => comunidades.filter((c) => c.estado === "SUSPENDIDA").length,
-    [comunidades]
+    [comunidades],
   );
 
   // Filtro
@@ -482,7 +520,7 @@ export default function Comunidades() {
   // =========================
   const lineData = useMemo(
     () => buildDailySeries(comunidades, 14),
-    [comunidades]
+    [comunidades],
   );
 
   // =========================
@@ -562,7 +600,7 @@ export default function Comunidades() {
       `Generado: ${new Date().toLocaleString("es-EC")}`,
       pageW / 2,
       titleY + 8,
-      { align: "center" }
+      { align: "center" },
     );
 
     autoTable(doc, {
@@ -623,9 +661,7 @@ export default function Comunidades() {
           "No se pudo capturar la gráfica (SVG no encontrado).",
           105,
           y + 10,
-          {
-            align: "center",
-          }
+          { align: "center" },
         );
       }
     } catch (e) {
@@ -714,23 +750,26 @@ export default function Comunidades() {
 
         codigoAcceso: editOriginal.codigoAcceso ?? null,
         fotoUrl: editOriginal.fotoUrl ?? null,
-        radioKm: (editOriginal.radioKm ?? 1.0) as any,
-        activa: (editOriginal.activa ?? true) as any,
-        estado: (editOriginal.estado ?? "ACTIVA") as any,
-        solicitadaPorUsuarioId: (editOriginal.solicitadaPorUsuarioId ??
-          null) as any,
-        fechaCreacion: (editOriginal.fechaCreacion ?? null) as any,
+        radioKm: (editOriginal as any).radioKm ?? 1.0,
+        activa: (editOriginal as any).activa ?? true,
+        estado: (editOriginal as any).estado ?? "ACTIVA",
+        solicitadaPorUsuarioId:
+          (editOriginal as any).solicitadaPorUsuarioId ?? null,
+        fechaCreacion: (editOriginal as any).fechaCreacion ?? null,
       };
 
       const updated = await comunidadesService.actualizar(
         editForm.id,
         usuarioId,
-        payload
+        payload as any,
       );
 
       setComunidades((prev) =>
-        prev.map((x) => (x.id === updated.id ? updated : x))
+        prev.map((x) => (x.id === updated.id ? updated : x)),
       );
+
+      // si justo estabas viendo el detalle
+      setViewTarget((prev) => (prev && prev.id === updated.id ? updated : prev));
 
       setEditOpen(false);
       setEditOriginal(null);
@@ -925,78 +964,122 @@ export default function Comunidades() {
               </div>
             </div>
 
-            {/*INSIGHTS: LINE CHART + DONUT */}
+            {/* INSIGHTS: TABLA + DONUT */}
             <div className="grid-2col">
+              {/* ✅ TABLA (solo columnas importantes) */}
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">
-                      Tendencia de comunidades
-                    </div>
+                    <div className="chart-title-v2">Listado de comunidades</div>
                     <div className="chart-sub-v2">
-                      Últimos 14 días (acumulado)
+                      Resultados: <b>{comunidadesFiltradas.length}</b>
                     </div>
                   </div>
                 </div>
 
-                <div className="line-chart-wrap1" ref={chartWrapRef}>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <LineChart
-                      data={lineData}
-                      margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
-                      <XAxis dataKey="label" tickMargin={8} />
-                      <YAxis tickMargin={8} allowDecimals={false} />
-                      <Tooltip
-                        formatter={(v: any, name: any) => [v, name]}
-                        labelFormatter={(l) => `Día: ${l}`}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="total"
-                        name="Total"
-                        stroke="#f95150"
-                        strokeWidth={3}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="activas"
-                        name="Activas"
-                        stroke="#16a34a"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="solicitadas"
-                        name="Solicitadas"
-                        stroke="#f59e0b"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="rechazadas"
-                        name="Rechazadas"
-                        stroke="#ef4444"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="suspendidas"
-                        name="Suspendidas"
-                        stroke="#64748b"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
+                <section className="tabla-panel tabla-panel-in-chart">
+                  <div className="tabla-inner">
+                    <table className="tabla-comunidades">
+                      <thead>
+                        <tr>
+                          <th>Foto</th>
+                          <th>Código</th>
+                          <th>Nombre</th>
+                          <th>Dirección</th>
+                          <th style={{ textAlign: "center" }}>Ver</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {loading ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              style={{ textAlign: "center", fontWeight: 900 }}
+                            >
+                              Cargando comunidades...
+                            </td>
+                          </tr>
+                        ) : comunidadesFiltradas.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={5}
+                              style={{ textAlign: "center", fontWeight: 900 }}
+                            >
+                              No se encontraron comunidades.
+                            </td>
+                          </tr>
+                        ) : (
+                          comunidadesFiltradas.map((c) => (
+                            <tr
+                              key={c.id}
+                              className={
+                                c.estado === "SUSPENDIDA" ? "row-suspended" : ""
+                              }
+                            >
+                              <td>
+                                {c.fotoUrl ? (
+                                  <img
+                                    src={c.fotoUrl}
+                                    alt="foto comunidad"
+                                    style={{
+                                      width: 34,
+                                      height: 34,
+                                      borderRadius: 12,
+                                      objectFit: "cover",
+                                      border: "1px solid rgba(15,23,42,0.10)",
+                                      background: "rgba(255,255,255,0.7)",
+                                    }}
+                                  />
+                                ) : (
+                                  <div
+                                    style={{
+                                      width: 34,
+                                      height: 34,
+                                      borderRadius: 12,
+                                      background: "rgba(15,23,42,0.06)",
+                                      border: "1px solid rgba(15,23,42,0.10)",
+                                    }}
+                                  />
+                                )}
+                              </td>
+
+                              <td>{c.codigoAcceso ?? "—"}</td>
+
+                              <td
+                                title={c.nombre ?? ""}
+                                className="cell-ellipsis"
+                              >
+                                {c.nombre ?? "—"}
+                              </td>
+
+                              <td
+                                title={c.direccion ?? ""}
+                                className="cell-ellipsis"
+                              >
+                                {c.direccion ?? "—"}
+                              </td>
+
+                              <td style={{ textAlign: "center" }}>
+                                <button
+                                  className="sz-mini-btn"
+                                  type="button"
+                                  onClick={() => openView(c)}
+                                  title="Ver detalles"
+                                >
+                                  Ver
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
               </section>
 
+              {/* ✅ DONUT */}
               <section className="donut-card-v2 card">
                 <div className="chart-head">
                   <div>
@@ -1058,136 +1141,72 @@ export default function Comunidades() {
               </section>
             </div>
 
-            {/* TABLA */}
-            <section className="tabla-panel">
-              <div className="tabla-inner">
-                <table className="tabla-comunidades">
-                  <thead>
-                    <tr>
-                      <th>Foto</th>
-                      <th>Código</th>
-                      <th>Nombre</th>
-                      <th>Miembros</th>
-                      <th>Dirección</th>
-                      <th>Estado</th>
-                      <th>Acciones</th>
-                    </tr>
-                  </thead>
+            {/* ✅ GRÁFICA (full ancho) */}
+            <section className="chart-card-v2 card chart-card-full">
+              <div className="chart-head">
+                <div>
+                  <div className="chart-title-v2">Tendencia de comunidades</div>
+                  <div className="chart-sub-v2">
+                    Últimos 14 días (acumulado)
+                  </div>
+                </div>
+              </div>
 
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          style={{ textAlign: "center", fontWeight: 900 }}
-                        >
-                          Cargando comunidades...
-                        </td>
-                      </tr>
-                    ) : comunidadesFiltradas.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={7}
-                          style={{ textAlign: "center", fontWeight: 900 }}
-                        >
-                          No se encontraron comunidades.
-                        </td>
-                      </tr>
-                    ) : (
-                      comunidadesFiltradas.map((c) => (
-                        <tr
-                          key={c.id}
-                          className={
-                            c.estado === "SUSPENDIDA" ? "row-suspended" : ""
-                          }
-                        >
-                          <td>
-                            {c.fotoUrl ? (
-                              <img
-                                src={c.fotoUrl}
-                                alt="foto comunidad"
-                                style={{
-                                  width: 34,
-                                  height: 34,
-                                  borderRadius: 12,
-                                  objectFit: "cover",
-                                  border: "1px solid rgba(15,23,42,0.10)",
-                                  background: "rgba(255,255,255,0.7)",
-                                }}
-                              />
-                            ) : (
-                              <div
-                                style={{
-                                  width: 34,
-                                  height: 34,
-                                  borderRadius: 12,
-                                  background: "rgba(15,23,42,0.06)",
-                                  border: "1px solid rgba(15,23,42,0.10)",
-                                }}
-                              />
-                            )}
-                          </td>
-
-                          <td>{c.codigoAcceso ?? "—"}</td>
-                          <td>{c.nombre}</td>
-                          <td style={{ textAlign: "center" }}>
-                            {c.miembrosCount ?? 0}
-                          </td>
-                          <td title={c.direccion ?? ""}>
-                            {c.direccion ?? "—"}
-                          </td>
-
-                          <td>
-                            <span className={badgeClass(c.estado)}>
-                              {labelEstado(c.estado)}
-                            </span>
-                          </td>
-
-                          <td className="acciones">
-                            <button
-                              className="icon-button"
-                              onClick={() => openEdit(c)}
-                              title="Editar"
-                              type="button"
-                              disabled={c.estado === "SUSPENDIDA"}
-                              style={
-                                c.estado === "SUSPENDIDA"
-                                  ? { opacity: 0.55, cursor: "not-allowed" }
-                                  : undefined
-                              }
-                            >
-                              <img src={iconEdit} alt="Editar" />
-                            </button>
-
-                            <button
-                              className={`icon-button ${
-                                c.estado === "SUSPENDIDA"
-                                  ? "icon-success"
-                                  : "icon-danger"
-                              }`}
-                              onClick={() => openToggleEstado(c)}
-                              title={
-                                c.estado === "SUSPENDIDA"
-                                  ? "Reactivar"
-                                  : "Suspender"
-                              }
-                              type="button"
-                            >
-                              <img
-                                src={iconEliminar}
-                                alt={
-                                  c.estado === "SUSPENDIDA"
-                                    ? "Reactivar"
-                                    : "Suspender"
-                                }
-                              />
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+              <div className="line-chart-wrap1" ref={chartWrapRef}>
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart
+                    data={lineData}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                    <XAxis dataKey="label" tickMargin={8} />
+                    <YAxis tickMargin={8} allowDecimals={false} />
+                    <Tooltip
+                      formatter={(v: any, name: any) => [v, name]}
+                      labelFormatter={(l) => `Día: ${l}`}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="total"
+                      name="Total"
+                      stroke="#f95150"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="activas"
+                      name="Activas"
+                      stroke="#16a34a"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="solicitadas"
+                      name="Solicitadas"
+                      stroke="#f59e0b"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="rechazadas"
+                      name="Rechazadas"
+                      stroke="#ef4444"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="suspendidas"
+                      name="Suspendidas"
+                      stroke="#64748b"
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </section>
 
@@ -1198,7 +1217,7 @@ export default function Comunidades() {
         </main>
       </div>
 
-      {/* ✅ MODAL EDITAR */}
+      {/* ✅ MODAL EDITAR (NO usa viewTarget) */}
       <AnimatePresence>
         {editOpen && (
           <motion.div
@@ -1425,9 +1444,154 @@ export default function Comunidades() {
                   {stateLoading
                     ? "Procesando..."
                     : stateTarget?.estado === "SUSPENDIDA"
-                    ? "Sí, reactivar"
-                    : "Sí, suspender"}
+                      ? "Sí, reactivar"
+                      : "Sí, suspender"}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ✅ MODAL VER DETALLE COMUNIDAD (PRO + Suspender/Reactivar aquí) */}
+      <AnimatePresence>
+        {viewOpen && viewTarget && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setViewOpen(false)}
+          >
+            <motion.div
+              className="sz-modal-card sz-view-card"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">Detalle de comunidad</div>
+                  <div className="sz-modal-sub">
+                    Código: <b>{viewTarget.codigoAcceso ?? "—"}</b>
+                  </div>
+                </div>
+
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => setViewOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="sz-view-top">
+                <div className="sz-view-photoWrap">
+                  {viewTarget.fotoUrl ? (
+                    <img
+                      src={viewTarget.fotoUrl}
+                      alt="Foto comunidad"
+                      className="sz-view-photo"
+                    />
+                  ) : (
+                    <div className="sz-view-photo sz-view-photoEmpty" />
+                  )}
+                </div>
+
+                <div className="sz-view-name">{viewTarget.nombre ?? "—"}</div>
+
+                <div className="sz-view-pillRow">
+                  {/*<span className="sz-view-pill">
+                    <Hash size={16} />
+                    ID: {String(viewTarget.id)}
+                  </span>*/}
+
+                  <span className="sz-view-pill">
+                    <Users size={16} />
+                    Miembros: <b>{viewTarget.miembrosCount ?? 0}</b>
+                  </span>
+
+                  <span className="sz-view-pill">
+                    <ShieldAlert size={16} />
+                    <span className={badgeClass(viewTarget.estado)}>
+                      {labelEstado(viewTarget.estado)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="sz-view-grid">
+                <div className="sz-view-item">
+                  <span>
+                    <MapPin size={16} /> Dirección
+                  </span>
+                  <div>{viewTarget.direccion ?? "—"}</div>
+                </div>
+
+                <div className="sz-view-item">
+                  <span>
+                    <Hash size={16} /> Código
+                  </span>
+                  <div>
+                    <b>{viewTarget.codigoAcceso ?? "—"}</b>
+                  </div>
+                </div>
+              </div>
+
+              <div className="sz-modal-actions sz-view-actions">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => setViewOpen(false)}
+                >
+                  Cerrar
+                </button>
+
+                <div className="sz-view-actions-right">
+                  <button
+                    className="sz-btn-primary"
+                    type="button"
+                    onClick={() => {
+                      setViewOpen(false);
+                      openEdit(viewTarget);
+                    }}
+                    disabled={viewTarget.estado === "SUSPENDIDA"}
+                    title={
+                      viewTarget.estado === "SUSPENDIDA"
+                        ? "No se puede editar una comunidad suspendida"
+                        : "Editar"
+                    }
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    className={
+                      viewTarget.estado === "SUSPENDIDA"
+                        ? "sz-btn-primary"
+                        : "sz-btn-danger"
+                    }
+                    type="button"
+                    onClick={() => {
+                      setViewOpen(false);
+                      openToggleEstado(viewTarget);
+                    }}
+                    title={
+                      viewTarget.estado === "SUSPENDIDA"
+                        ? "Reactivar"
+                        : "Suspender"
+                    }
+                  >
+                    {viewTarget.estado === "SUSPENDIDA"
+                      ? "Reactivar"
+                      : "Suspender"}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
