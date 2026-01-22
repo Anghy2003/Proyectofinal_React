@@ -1476,3 +1476,426 @@ body {
   width: 100%;
   table-layout: fixed;
 }
+
+
+/* =========================
+   ✅ MODAL EXPORT PRO
+========================= */
+.sz-export-card{
+  width: min(860px, 96vw);
+}
+
+.sz-export-grid{
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.sz-export-box{
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.75);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.sz-export-boxTitle{
+  font-weight: 950;
+  color: rgba(15,23,42,0.90);
+  margin-bottom: 10px;
+  font-size: 0.95rem;
+}
+
+.sz-export-box-wide{
+  grid-column: 1 / -1;
+}
+
+.sz-radio{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.70);
+  cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+  user-select: none;
+  margin-bottom: 8px;
+}
+
+.sz-radio:last-child{ margin-bottom: 0; }
+
+.sz-radio:hover{
+  transform: translateY(-1px);
+  border-color: rgba(249,81,80,0.40);
+  box-shadow: 0 14px 40px rgba(249,81,80,0.10);
+}
+
+.sz-radio.on{
+  border-color: rgba(249,81,80,0.55);
+  box-shadow: 0 16px 45px rgba(249,81,80,0.12);
+}
+
+.sz-radio input{
+  accent-color: #f95150;
+}
+
+.sz-radioLabel{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: rgba(15,23,42,0.84);
+}
+
+.sz-check{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 850;
+  color: rgba(15,23,42,0.78);
+  padding: 8px 6px;
+}
+
+.sz-check input{
+  accent-color: #f95150;
+}
+
+.sz-export-hint{
+  margin-top: 8px;
+  font-size: 0.86rem;
+  color: rgba(71,85,105,0.90);
+  font-weight: 850;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(248,250,252,0.80);
+}
+
+.sz-export-actions{
+  justify-content: space-between;
+}
+
+@media (max-width: 760px){
+  .sz-export-grid{
+    grid-template-columns: 1fr;
+  }
+  .sz-export-actions{
+    flex-direction: column;
+    gap: 10px;
+  }
+  .sz-export-actions .sz-btn-light,
+  .sz-export-actions .sz-btn-primary{
+    width: 100%;
+  }
+}
+
+/* =========================================
+   ✅ EXPORT MODAL — LOOK PREMIUM (OVERRIDE)
+   Pegar al final de comunidad.css
+========================================= */
+
+/* Card del modal */
+.sz-export-card{
+  width: min(920px, 96vw);
+  border-radius: 22px;
+  padding: 18px;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.94) 0%,
+    rgba(255,255,255,0.86) 100%);
+  border: 1px solid rgba(255,255,255,0.75);
+  box-shadow:
+    0 30px 90px rgba(15,23,42,0.32),
+    0 10px 40px rgba(249,81,80,0.10);
+  backdrop-filter: blur(14px);
+}
+
+/* Head más pro */
+.sz-export-card .sz-modal-head{
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(15,23,42,0.08);
+}
+
+.sz-export-card .sz-modal-title{
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.sz-export-card .sz-modal-sub{
+  font-size: 0.86rem;
+  color: rgba(71,85,105,0.88);
+}
+
+/* Grid */
+.sz-export-grid{
+  grid-template-columns: 1fr 1.25fr;
+  gap: 14px;
+}
+
+/* Boxes (Formato / Contenido / Opciones) */
+.sz-export-box{
+  border-radius: 18px;
+  padding: 14px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(249,81,80,0.12), transparent 55%),
+    radial-gradient(circle at 85% 85%, rgba(99,102,241,0.10), transparent 55%),
+    rgba(255,255,255,0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.85),
+    0 18px 55px rgba(15,23,42,0.10);
+}
+
+.sz-export-boxTitle{
+  font-size: 0.95rem;
+  font-weight: 950;
+  color: rgba(15,23,42,0.92);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.sz-export-boxTitle::before{
+  content:"";
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--sz-accent);
+  box-shadow: 0 10px 24px rgba(249,81,80,0.35);
+}
+
+/* =========================================
+   Radios premium (tarjetas)
+========================================= */
+.sz-radio{
+  position: relative;
+  border-radius: 16px;
+  padding: 12px 12px;
+  background: rgba(255,255,255,0.70);
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: 0 12px 32px rgba(15,23,42,0.08);
+  margin-bottom: 10px;
+}
+
+.sz-radio:hover{
+  border-color: rgba(249,81,80,0.35);
+  box-shadow:
+    0 18px 55px rgba(249,81,80,0.10),
+    0 12px 32px rgba(15,23,42,0.10);
+}
+
+/* Quita el círculo negro grande del input */
+.sz-radio input{
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid rgba(148,163,184,0.9);
+  background: rgba(255,255,255,0.9);
+  position: relative;
+  margin: 0 10px 0 2px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+/* Punto interno */
+.sz-radio input::after{
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: transparent;
+  transform: scale(0.6);
+  transition: transform .14s ease, background .14s ease;
+}
+
+.sz-radio.on input{
+  border-color: rgba(249,81,80,0.80);
+  box-shadow: 0 0 0 4px rgba(249,81,80,0.16);
+}
+
+.sz-radio.on input::after{
+  background: var(--sz-accent);
+  transform: scale(1);
+}
+
+/* Estado seleccionado */
+.sz-radio.on{
+  border-color: rgba(249,81,80,0.55);
+  background:
+    linear-gradient(180deg, rgba(249,81,80,0.12), rgba(255,255,255,0.78));
+}
+
+/* Etiqueta */
+.sz-radioLabel{
+  font-size: 0.93rem;
+  font-weight: 950;
+  color: rgba(15,23,42,0.86);
+  gap: 12px;
+}
+
+/* Icono con “chip” */
+.sz-radioLabel svg{
+  color: rgba(15,23,42,0.78);
+}
+
+.sz-radio.on .sz-radioLabel svg{
+  color: var(--sz-accent);
+}
+
+/* =========================================
+   Checks tipo toggle pro
+========================================= */
+.sz-check{
+  gap: 12px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.70);
+}
+
+.sz-check input{
+  appearance: none;
+  -webkit-appearance: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(148,163,184,0.35);
+  border: 1px solid rgba(148,163,184,0.50);
+  position: relative;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease;
+}
+
+.sz-check input::after{
+  content:"";
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.95);
+  transform: translateY(-50%);
+  box-shadow: 0 10px 22px rgba(15,23,42,0.18);
+  transition: left .16s ease;
+}
+
+.sz-check input:checked{
+  background: rgba(249,81,80,0.75);
+  border-color: rgba(249,81,80,0.55);
+}
+
+.sz-check input:checked::after{
+  left: 20px;
+}
+
+/* Texto check */
+.sz-check span{
+  color: rgba(15,23,42,0.78);
+  font-weight: 900;
+}
+
+/* Hint */
+.sz-export-hint{
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(249,81,80,0.12), transparent 55%),
+    rgba(248,250,252,0.88);
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
+  font-size: 0.88rem;
+}
+
+/* Footer botones */
+.sz-export-actions{
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(15,23,42,0.08);
+}
+
+/* Botón principal más llamativo */
+.sz-export-actions .sz-btn-primary{
+  background: linear-gradient(90deg, rgba(249,81,80,0.18), rgba(255,116,115,0.18));
+  border-color: rgba(249,81,80,0.65);
+  color: rgba(130, 10, 10, 0.96);
+  box-shadow: 0 18px 55px rgba(249,81,80,0.18);
+}
+
+.sz-export-actions .sz-btn-primary:hover{
+  box-shadow: 0 22px 70px rgba(249,81,80,0.22);
+}
+
+/* Cancelar más suave */
+.sz-export-actions .sz-btn-light{
+  background: rgba(255,255,255,0.88);
+  box-shadow: 0 14px 45px rgba(15,23,42,0.10);
+}
+
+/* Responsive */
+@media (max-width: 760px){
+  .sz-export-card{
+    padding: 14px;
+    border-radius: 18px;
+  }
+  .sz-export-grid{
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================
+   ✅ SEARCH CLEAR — ICONO PREMIUM
+========================================= */
+
+/* Oculta la X original (svg) */
+.search-clear-v2 svg{
+  opacity: 0;
+}
+
+/* Dibuja un icono premium con CSS */
+.search-clear-v2::after{
+  content: "";
+  width: 14px;
+  height: 14px;
+  position: absolute;
+
+  /* Cruz fina y elegante */
+  background:
+    linear-gradient(
+      45deg,
+      transparent 46%,
+      currentColor 46%,
+      currentColor 54%,
+      transparent 54%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 46%,
+      currentColor 46%,
+      currentColor 54%,
+      transparent 54%
+    );
+
+  border-radius: 2px;
+  opacity: 0.9;
+}
+
+/* Color normal */
+.search-clear-v2{
+  color: rgba(71,85,105,0.85);
+}
+
+/* Hover elegante */
+.search-clear-v2:hover{
+  color: rgba(249,81,80,0.95);
+}
+
+/* Active feedback */
+.search-clear-v2:active::after{
+  transform: scale(0.9);
+}

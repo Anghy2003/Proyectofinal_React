@@ -49,6 +49,11 @@ import {
   Users,
   ShieldAlert,
   Hash,
+  Table2,
+  LayoutDashboard,
+  ToggleLeft,
+  ToggleRight,
+  LineChart as LineChartIcon,
 } from "lucide-react";
 
 type SessionData = {
@@ -276,8 +281,19 @@ export default function Comunidades() {
   // Sidebar (móvil)
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Dropdown export
+  // =========================
+  // ✅ EXPORT PRO (Modal)
+  // =========================
+  type ExportFormat = "PDF" | "XLSX";
+  type ExportScope = "TABLE" | "FULL" | "TREND";
+
   const [openExport, setOpenExport] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("PDF");
+  const [exportScope, setExportScope] = useState<ExportScope>("FULL");
+  const [exportUseFilter, setExportUseFilter] = useState(true);
+  //const [exportWithKpis, setExportWithKpis] = useState(true);
+  const [exportBusy, setExportBusy] = useState(false);
+
   const exportRef = useRef<HTMLDivElement | null>(null);
 
   // ref del chart para export PDF
@@ -418,22 +434,13 @@ export default function Comunidades() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ✅ Cerrar dropdown export al click fuera / ESC
+  // ✅ Cerrar modal export con ESC
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!openExport) return;
-      if (!exportRef.current) return;
-      if (!exportRef.current.contains(e.target as Node)) setOpenExport(false);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpenExport(false);
     };
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
+    if (openExport) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [openExport]);
 
   // ✅ Cerrar modal editar con ESC
@@ -526,59 +533,75 @@ export default function Comunidades() {
   // =========================
   // EXPORT
   // =========================
-  const buildExportRows = () =>
-    comunidadesFiltradas.map((c) => ({
-      Codigo: c.codigoAcceso ?? "—",
-      Nombre: c.nombre ?? "—",
-      Miembros: c.miembrosCount ?? 0,
-      Direccion: c.direccion ?? "—",
-      Estado: labelEstado(c.estado),
-    }));
 
-  const exportExcel = () => {
-    const rows = buildExportRows();
-    const ws = XLSX.utils.json_to_sheet(rows);
-
-    ws["!cols"] = [
-      { wch: 14 },
-      { wch: 28 },
-      { wch: 12 },
-      { wch: 60 },
-      { wch: 14 },
-    ];
+  const exportExcel = (scope: ExportScope) => {
+    const data = getExportData();
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Comunidades");
 
-    const chartRows = lineData.map((p) => ({
-      Fecha: p.key,
-      Etiqueta: p.label,
-      Total: p.total,
-      Activas: p.activas,
-      Solicitadas: p.solicitadas,
-      Rechazadas: p.rechazadas,
-      Suspendidas: p.suspendidas,
-    }));
-    const ws2 = XLSX.utils.json_to_sheet(chartRows);
-    ws2["!cols"] = [
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 12 },
-    ];
-    XLSX.utils.book_append_sheet(wb, ws2, "Grafica_14d");
+    // ✅ Hoja Resumen (siempre)
+    const resumen = buildResumenRows(data);
+    const wsResumen = XLSX.utils.json_to_sheet(resumen);
+    wsResumen["!cols"] = [{ wch: 24 }, { wch: 34 }];
+    XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
 
-    const stamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `reporte_comunidades_${stamp}.xlsx`);
+    // ✅ Tabla (si aplica)
+    if (scope === "TABLE" || scope === "FULL") {
+      const rows = data.map((c) => ({
+        Codigo: c.codigoAcceso ?? "—",
+        Nombre: c.nombre ?? "—",
+        Miembros: c.miembrosCount ?? 0,
+        Direccion: c.direccion ?? "—",
+        Estado: labelEstado(c.estado),
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 14 },
+        { wch: 28 },
+        { wch: 12 },
+        { wch: 60 },
+        { wch: 14 },
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "Comunidades");
+    }
+
+    // ✅ Serie 14d (si aplica)
+    if (scope === "FULL" || scope === "TREND") {
+      const chartRows = lineData.map((p) => ({
+        Fecha: p.key,
+        Etiqueta: p.label,
+        Total: p.total,
+        Activas: p.activas,
+        Solicitadas: p.solicitadas,
+        Rechazadas: p.rechazadas,
+        Suspendidas: p.suspendidas,
+      }));
+      const ws2 = XLSX.utils.json_to_sheet(chartRows);
+      ws2["!cols"] = [
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 10 },
+        { wch: 12 },
+        { wch: 12 },
+        { wch: 12 },
+      ];
+      XLSX.utils.book_append_sheet(wb, ws2, "Tendencia_14d");
+    }
+
+    const stamp = nowStamp();
+    const name = `comunidades_${scopeLabel(scope)}_${stamp}.xlsx`;
+    XLSX.writeFile(wb, name);
   };
 
-  const exportPDF = async () => {
+  const exportPDF = async (scope: ExportScope) => {
+    const data = getExportData();
+
     const doc = new jsPDF("p", "mm", "a4");
     const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
 
+    // Header logo centrado
     const logoSize = 40;
     const logoX = (pageW - logoSize) / 2;
     const logoY = 10;
@@ -590,9 +613,9 @@ export default function Comunidades() {
 
     const titleY = logoY + logoSize + 10;
 
-    doc.setFontSize(18);
+    doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("Reporte de Comunidades", pageW / 2, titleY, { align: "center" });
+    doc.text(scopeTitle(scope), pageW / 2, titleY, { align: "center" });
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
@@ -600,83 +623,248 @@ export default function Comunidades() {
       `Generado: ${new Date().toLocaleString("es-EC")}`,
       pageW / 2,
       titleY + 8,
-      { align: "center" },
+      {
+        align: "center",
+      },
     );
 
-    autoTable(doc, {
-      startY: titleY + 18,
-      head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
-      body: comunidadesFiltradas.map((c) => [
-        c.codigoAcceso ?? "—",
-        c.nombre ?? "—",
-        String(c.miembrosCount ?? 0),
-        c.direccion ?? "—",
-        labelEstado(c.estado),
-      ]),
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [30, 30, 30] },
-      columnStyles: {
-        0: { cellWidth: 22 },
-        1: { cellWidth: 36 },
-        2: { cellWidth: 18, halign: "center" },
-        3: { cellWidth: 86 },
-        4: { cellWidth: 22 },
-      },
-      margin: { left: 14, right: 14 },
-    });
+    // ✅ Meta (filtro / registros)
+    let cursorY = titleY + 18;
 
-    const lastY =
-      ((doc as any)?.lastAutoTable?.finalY as number | undefined) ?? 64;
-    let y = lastY + 10;
+    if (scope === "FULL") {
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Resumen", "Valor"]],
+        body: buildResumenRows(data).map((x) => [x.Indicador, String(x.Valor)]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: pageW - 28 - 60 },
+        },
+        margin: { left: 14, right: 14 },
+      });
 
-    const pageH = doc.internal.pageSize.getHeight();
-    if (y + 90 > pageH) {
-      doc.addPage();
-      y = 20;
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 8;
     }
 
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Gráfica de comunidades (últimos 14 días)", 105, y, {
-      align: "center",
-    });
-    doc.setFont("helvetica", "normal");
-    y += 6;
+    // ✅ TABLA (si aplica)
+    if (scope === "TABLE" || scope === "FULL") {
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
+        body: data.map((c) => [
+          c.codigoAcceso ?? "—",
+          c.nombre ?? "—",
+          String(c.miembrosCount ?? 0),
+          c.direccion ?? "—",
+          labelEstado(c.estado),
+        ]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 36 },
+          2: { cellWidth: 18, halign: "center" },
+          3: { cellWidth: 86 },
+          4: { cellWidth: 22 },
+        },
+        margin: { left: 14, right: 14 },
+      });
 
-    try {
-      const wrap = chartWrapRef.current;
-      const svg = wrap?.querySelector("svg") as SVGSVGElement | null;
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 10;
+    }
 
-      if (svg) {
-        const pngDataUrl = await svgElementToPngDataUrl(svg, 1400);
-        const pageW2 = doc.internal.pageSize.getWidth();
-        const maxW = pageW2 - 28;
-        const imgW = maxW;
-        const imgH = 72;
-        const x = (pageW2 - imgW) / 2;
-        doc.addImage(pngDataUrl, "PNG", x, y, imgW, imgH);
-      } else {
-        doc.setFontSize(10);
-        doc.text(
-          "No se pudo capturar la gráfica (SVG no encontrado).",
-          105,
-          y + 10,
-          { align: "center" },
-        );
+    // ✅ RESUMEN ESTADO (equivalente al donut) (si aplica)
+    if (scope === "FULL") {
+      // Salto de página si no entra
+      if (cursorY + 40 > pageH) {
+        doc.addPage();
+        cursorY = 18;
       }
-    } catch (e) {
-      console.error(e);
-      doc.setFontSize(10);
-      doc.text("No se pudo exportar la gráfica.", 105, y + 10, {
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Estado global (resumen)", pageW / 2, cursorY, {
         align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
+
+      autoTable(doc, {
+        startY: cursorY + 4,
+        head: [["Estado", "Cantidad", "Porcentaje"]],
+        body: buildEstadoTableBody(data),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: 30, halign: "center" },
+          2: { cellWidth: 30, halign: "center" },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 10;
+    }
+
+    // ✅ TENDENCIA (si aplica)
+    if (scope === "FULL" || scope === "TREND") {
+      // Si no entra, nueva página
+      if (cursorY + 90 > pageH) {
+        doc.addPage();
+        cursorY = 18;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(
+        "Tendencia de comunidades (últimos 14 días)",
+        pageW / 2,
+        cursorY,
+        {
+          align: "center",
+        },
+      );
+      doc.setFont("helvetica", "normal");
+      cursorY += 6;
+
+      try {
+        const wrap = chartWrapRef.current;
+        const svg = wrap?.querySelector("svg") as SVGSVGElement | null;
+
+        if (svg) {
+          const pngDataUrl = await svgElementToPngDataUrl(svg, 1400);
+          const maxW = pageW - 28;
+          const imgW = maxW;
+          const imgH = 72;
+          const x = (pageW - imgW) / 2;
+          doc.addImage(pngDataUrl, "PNG", x, cursorY, imgW, imgH);
+          cursorY += imgH + 6;
+        } else {
+          doc.setFontSize(10);
+          doc.text(
+            "No se pudo capturar la gráfica (SVG no encontrado).",
+            pageW / 2,
+            cursorY + 10,
+            {
+              align: "center",
+            },
+          );
+          cursorY += 20;
+        }
+      } catch (e) {
+        console.error(e);
+        doc.setFontSize(10);
+        doc.text("No se pudo exportar la gráfica.", pageW / 2, cursorY + 10, {
+          align: "center",
+        });
+        cursorY += 20;
+      }
+
+      // ✅ (Opcional pro) tabla corta con los últimos puntos
+      const last = lineData.slice(-7);
+      autoTable(doc, {
+        startY: cursorY,
+        head: [
+          [
+            "Día",
+            "Total",
+            "Activas",
+            "Solicitadas",
+            "Rechazadas",
+            "Suspendidas",
+          ],
+        ],
+        body: last.map((p) => [
+          p.label,
+          String(p.total),
+          String(p.activas),
+          String(p.solicitadas),
+          String(p.rechazadas),
+          String(p.suspendidas),
+        ]),
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 14, right: 14 },
       });
     }
 
-    const stamp = new Date().toISOString().slice(0, 10);
-    doc.save(`reporte_comunidades_${stamp}.pdf`);
+    const stamp = nowStamp();
+    const name = `comunidades_${scopeLabel(scope)}_${stamp}.pdf`;
+    doc.save(name);
   };
 
   const canExport = comunidadesFiltradas.length > 0;
+
+  // =========================
+  // ✅ Export helpers PRO
+  // =========================
+  const nowStamp = () => new Date().toISOString().slice(0, 10);
+
+  const getExportData = () => {
+    const base = exportUseFilter ? comunidadesFiltradas : comunidades;
+    return base;
+  };
+
+  const scopeLabel = (s: ExportScope) => {
+    if (s === "TABLE") return "solo_tabla";
+    if (s === "FULL") return "reporte_completo";
+    return "solo_tendencia";
+  };
+
+  const scopeTitle = (s: ExportScope) => {
+    if (s === "TABLE") return "Reporte de Comunidades (Solo tabla)";
+    if (s === "FULL") return "Reporte de Comunidades (Completo)";
+    return "Reporte de Comunidades (Solo tendencia)";
+  };
+
+  const buildResumenRows = (data: Comunidad[]) => {
+    const total = data.length;
+    const a = data.filter((c) => c.estado === "ACTIVA").length;
+    const s = data.filter((c) => c.estado === "SOLICITADA").length;
+    const r = data.filter((c) => c.estado === "RECHAZADA").length;
+    const su = data.filter((c) => c.estado === "SUSPENDIDA").length;
+
+    return [
+      { Indicador: "Total", Valor: total },
+      { Indicador: "Activas", Valor: a },
+      { Indicador: "Solicitadas", Valor: s },
+      { Indicador: "Rechazadas", Valor: r },
+      { Indicador: "Suspendidas", Valor: su },
+      {
+        Indicador: "Filtro aplicado",
+        Valor: exportUseFilter ? search || "—" : "No",
+      },
+      {
+        Indicador: "Registros exportados",
+        Valor: `${data.length} de ${comunidades.length}`,
+      },
+    ];
+  };
+
+  const buildEstadoTableBody = (data: Comunidad[]) => {
+    const total = data.length || 1;
+    const a = data.filter((c) => c.estado === "ACTIVA").length;
+    const s = data.filter((c) => c.estado === "SOLICITADA").length;
+    const r = data.filter((c) => c.estado === "RECHAZADA").length;
+    const su = data.filter((c) => c.estado === "SUSPENDIDA").length;
+
+    const pct = (n: number) => `${Math.round((n / total) * 100)}%`;
+
+    return [
+      ["Activas", String(a), pct(a)],
+      ["Solicitadas", String(s), pct(s)],
+      ["Rechazadas", String(r), pct(r)],
+      ["Suspendidas", String(su), pct(su)],
+    ];
+  };
 
   // =========================
   // Donut (CSS conic-gradient)
@@ -769,7 +957,9 @@ export default function Comunidades() {
       );
 
       // si justo estabas viendo el detalle
-      setViewTarget((prev) => (prev && prev.id === updated.id ? updated : prev));
+      setViewTarget((prev) =>
+        prev && prev.id === updated.id ? updated : prev,
+      );
 
       setEditOpen(false);
       setEditOriginal(null);
@@ -860,7 +1050,7 @@ export default function Comunidades() {
                 <div ref={exportRef} className="topbar-actions">
                   <button
                     className="action-pill"
-                    onClick={() => setOpenExport((v) => !v)}
+                    onClick={() => setOpenExport(true)}
                     disabled={!canExport}
                     title="Exportar reporte"
                     type="button"
@@ -868,34 +1058,6 @@ export default function Comunidades() {
                     <Download size={18} />
                     Exportar
                   </button>
-
-                  {openExport && (
-                    <div className="export-dropdown">
-                      <button
-                        className="export-option"
-                        onClick={() => {
-                          exportExcel();
-                          setOpenExport(false);
-                        }}
-                        type="button"
-                      >
-                        <FileSpreadsheet size={16} />
-                        Excel (.xlsx)
-                      </button>
-
-                      <button
-                        className="export-option"
-                        onClick={() => {
-                          exportPDF();
-                          setOpenExport(false);
-                        }}
-                        type="button"
-                      >
-                        <FileText size={16} />
-                        PDF
-                      </button>
-                    </div>
-                  )}
 
                   <button
                     className="action-pill action-pill-accent"
@@ -1592,6 +1754,257 @@ export default function Comunidades() {
                       : "Suspender"}
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ✅ MODAL EXPORTACIÓN */}
+      <AnimatePresence>
+        {openExport && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => !exportBusy && setOpenExport(false)}
+          >
+            <motion.div
+              className="sz-modal-card sz-export-card"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">Exportación de reporte</div>
+                  <div className="sz-modal-sub">
+                    Elige qué quieres exportar. Se respeta logo/encabezado y el
+                    formato actual.
+                  </div>
+                </div>
+
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => !exportBusy && setOpenExport(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="sz-export-grid">
+                {/* FORMATO */}
+                <div className="sz-export-col">
+                  <div className="sz-export-title">
+                    <span className="sz-dot" />
+                    Formato
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportFormat === "PDF" ? "active" : ""}`}
+                    onClick={() => setExportFormat("PDF")}
+                  >
+                    <span
+                      className={`sz-switch ${exportFormat === "PDF" ? "on" : ""}`}
+                    >
+                      {exportFormat === "PDF" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <FileText size={18} />
+                    </span>
+
+                    <span className="sz-export-name">PDF (presentación)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportFormat === "XLSX" ? "active" : ""}`}
+                    onClick={() => setExportFormat("XLSX")}
+                  >
+                    <span
+                      className={`sz-switch ${exportFormat === "XLSX" ? "on" : ""}`}
+                    >
+                      {exportFormat === "XLSX" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <FileSpreadsheet size={18} />
+                    </span>
+
+                    <span className="sz-export-name">Excel (datos)</span>
+                  </button>
+                </div>
+
+                {/* CONTENIDO (solo 3 opciones) */}
+                <div className="sz-export-col">
+                  <div className="sz-export-title">
+                    <span className="sz-dot" />
+                    Contenido
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportScope === "TABLE" ? "active" : ""}`}
+                    onClick={() => setExportScope("TABLE")}
+                  >
+                    <span
+                      className={`sz-switch ${exportScope === "TABLE" ? "on" : ""}`}
+                    >
+                      {exportScope === "TABLE" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <Table2 size={18} />
+                    </span>
+
+                    <span className="sz-export-name">
+                      Solo tabla (comunidades)
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportScope === "FULL" ? "active" : ""}`}
+                    onClick={() => setExportScope("FULL")}
+                  >
+                    <span
+                      className={`sz-switch ${exportScope === "FULL" ? "on" : ""}`}
+                    >
+                      {exportScope === "FULL" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <LayoutDashboard size={18} />
+                    </span>
+
+                    <span className="sz-export-name">
+                      Reporte completo (tabla + resumen + tendencia)
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportScope === "TREND" ? "active" : ""}`}
+                    onClick={() => setExportScope("TREND")}
+                  >
+                    <span
+                      className={`sz-switch ${exportScope === "TREND" ? "on" : ""}`}
+                    >
+                      {exportScope === "TREND" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <LineChartIcon size={18} />
+                    </span>
+
+                    <span className="sz-export-name">
+                      Solo registros (gráfica de abajo)
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* OPCIONES (solo 1) */}
+              <div className="sz-export-options">
+                <div className="sz-export-title" style={{ marginBottom: 10 }}>
+                  <span className="sz-dot" />
+                  Opciones
+                </div>
+
+                <button
+                  type="button"
+                  className={`sz-opt ${exportUseFilter ? "on" : ""}`}
+                  onClick={() => setExportUseFilter((v) => !v)}
+                >
+                  <span className={`sz-switch ${exportUseFilter ? "on" : ""}`}>
+                    {exportUseFilter ? (
+                      <ToggleRight size={18} />
+                    ) : (
+                      <ToggleLeft size={18} />
+                    )}
+                  </span>
+
+                  <span className="sz-opt-text">
+                    Usar filtros actuales (búsqueda / resultados visibles)
+                  </span>
+                </button>
+
+                <div className="sz-export-count">
+                  Registros a exportar:{" "}
+                  <b>
+                    {exportUseFilter
+                      ? comunidadesFiltradas.length
+                      : comunidades.length}
+                  </b>{" "}
+                  de{" "}
+                  <b>
+                    {exportUseFilter
+                      ? comunidadesFiltradas.length
+                      : comunidades.length}
+                  </b>
+                </div>
+              </div>
+
+              {/* FOOTER */}
+              <div className="sz-export-footer">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => !exportBusy && setOpenExport(false)}
+                  disabled={exportBusy}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  className="sz-btn-accent"
+                  type="button"
+                  disabled={exportBusy || !canExport}
+                  onClick={async () => {
+                    try {
+                      setExportBusy(true);
+                      if (exportFormat === "PDF") {
+                        await exportPDF(exportScope);
+                      } else {
+                        exportExcel(exportScope);
+                      }
+                      setOpenExport(false);
+                    } finally {
+                      setExportBusy(false);
+                    }
+                  }}
+                  title="Exportar"
+                >
+                  {exportBusy ? "Exportando..." : "Exportar ahora"}
+                </button>
               </div>
             </motion.div>
           </motion.div>

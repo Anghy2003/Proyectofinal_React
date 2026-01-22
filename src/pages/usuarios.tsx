@@ -3,6 +3,7 @@
 // ===============================
 import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
+import html2canvas from "html2canvas";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
 
@@ -28,6 +29,13 @@ import {
   Activity,
   FileSpreadsheet,
   FileText,
+
+  // ✅ NUEVOS para modal pro de exportación (igual Comunidades)
+  Table2,
+  LayoutDashboard,
+  LineChart as LineChartIcon,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 
 // ✅ Charts (mismo stack que Dashboard/Comunidades) — BARRAS
@@ -278,14 +286,10 @@ export default function Usuarios() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Export dropdown
-  const [openExport, setOpenExport] = useState(false);
-  const exportRef = useRef<HTMLDivElement | null>(null);
-
-  // ✅ Ref del chart (para export PDF)
+  // Ref del chart (para export PDF)
   const chartRegistrosRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ MODAL VER DETALLE (con suspender dentro)
+  //MODAL VER DETALLE (con suspender dentro)
   const [viewOpen, setViewOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState<UsuarioUI | null>(null);
   const [viewError, setViewError] = useState<string | null>(null);
@@ -304,6 +308,11 @@ export default function Usuarios() {
     setViewLoading(false);
   };
 
+  //CONFIRM MODAL (seguro)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+
   const confirmSuspendUser = async () => {
     try {
       if (!viewTarget) return;
@@ -314,14 +323,14 @@ export default function Usuarios() {
 
       await usuariosService.desactivar(viewTarget.id);
 
-      // ✅ update UI tabla
+      // Update UI tabla
       setUsuarios((prev) =>
         prev.map((x) =>
           x.id === viewTarget.id ? { ...x, estadoCuenta: "Suspendido" } : x,
         ),
       );
 
-      // ✅ update modal target
+      // Update modal target
       setViewTarget((prev) =>
         prev ? { ...prev, estadoCuenta: "Suspendido" } : prev,
       );
@@ -364,10 +373,10 @@ export default function Usuarios() {
           comunidad,
           rol: rolUI,
 
-          // ✅ Estado CUENTA
+          // Estado CUENTA
           estadoCuenta: u.activo ? "Activo" : "Suspendido",
 
-          // ✅ Estado ONLINE
+          // Estado ONLINE
           estadoOnline: getEstadoOnline(ultimoAccesoIso),
 
           fechaRegistro: reg.fecha,
@@ -394,7 +403,7 @@ export default function Usuarios() {
     cargarUsuarios();
   }, []);
 
-  // ✅ recomputa estadoOnline cada 30s sin volver a pegar al backend
+  //recomputa estadoOnline cada 30s sin volver a pegar al backend
   useEffect(() => {
     const t = setInterval(() => {
       setUsuarios((prev) =>
@@ -417,7 +426,7 @@ export default function Usuarios() {
     return () => clearInterval(t);
   }, []);
 
-  // ✅ Cerrar sidebar al agrandar pantalla
+  // Cerrar sidebar al agrandar pantalla
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 901) setSidebarOpen(false);
@@ -426,25 +435,7 @@ export default function Usuarios() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ✅ Cerrar dropdown al click fuera / ESC
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!openExport) return;
-      if (!exportRef.current) return;
-      if (!exportRef.current.contains(e.target as Node)) setOpenExport(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenExport(false);
-    };
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [openExport]);
-
-  // ✅ Cerrar modal VER con ESC
+  // Cerrar modal VER con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") closeView();
@@ -532,177 +523,6 @@ export default function Usuarios() {
   // Bar chart data (registros)
   // =========================
   const lineData = useMemo(() => buildDailyRegistros(usuarios, 14), [usuarios]);
-
-  // ✅ CONFIRM MODAL (seguro)
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [confirmError, setConfirmError] = useState<string | null>(null);
-
-  // =========================
-  // EXPORT
-  // =========================
-  const buildExportRows = () =>
-    usuariosFiltrados.map((u) => ({
-      Nombre: u.nombre ?? "—",
-      Correo: u.email ?? "—",
-      Telefono: u.telefono ?? "—",
-      Comunidad: u.comunidad ?? "—",
-      Rol: u.rol ?? "—",
-      "Estado cuenta": u.estadoCuenta ?? "—",
-      Online: u.estadoOnline ?? "—",
-      Registro:
-        `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
-      "Ultimo acceso": u.ultimoAcceso ?? "—",
-    }));
-
-  const exportExcel = () => {
-    const rows = buildExportRows();
-    const ws = XLSX.utils.json_to_sheet(rows);
-
-    ws["!cols"] = [
-      { wch: 26 },
-      { wch: 32 },
-      { wch: 16 },
-      { wch: 22 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 10 },
-      { wch: 18 },
-      { wch: 18 },
-    ];
-
-    const chartRows = lineData.map((p) => ({
-      Dia: p.label,
-      Registros: p.registros,
-    }));
-    const wsChart = XLSX.utils.json_to_sheet(chartRows);
-    wsChart["!cols"] = [{ wch: 14 }, { wch: 12 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
-    XLSX.utils.book_append_sheet(wb, wsChart, "Grafica_14_dias");
-
-    const stamp = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(wb, `reporte_usuarios_${stamp}.xlsx`);
-  };
-
-  const toDataURL = async (url: string): Promise<string> => {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
-  const exportPDF = async () => {
-    const doc = new jsPDF("p", "mm", "a4");
-
-    try {
-      const logo = await toDataURL(logoSafeZone);
-      doc.addImage(logo, "PNG", 92, 10, 26, 26);
-    } catch {}
-
-    doc.setFontSize(16);
-    doc.text("Reporte de Usuarios", 105, 45, { align: "center" });
-
-    doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, 105, 52, {
-      align: "center",
-    });
-
-    autoTable(doc, {
-      startY: 60,
-      head: [
-        [
-          "Nombre",
-          "Correo",
-          "Teléfono",
-          "Comunidad",
-          "Rol",
-          "Estado cuenta",
-          "Online",
-          "Registro",
-          "Último acceso",
-        ],
-      ],
-      body: usuariosFiltrados.map((u) => [
-        u.nombre ?? "—",
-        u.email ?? "—",
-        u.telefono ?? "—",
-        u.comunidad ?? "—",
-        u.rol ?? "—",
-        u.estadoCuenta ?? "—",
-        u.estadoOnline ?? "—",
-        `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
-        u.ultimoAcceso ?? "—",
-      ]),
-      styles: { fontSize: 8.5, cellPadding: 2, overflow: "linebreak" },
-      headStyles: { fillColor: [30, 30, 30] },
-      margin: { left: 10, right: 10 },
-      columnStyles: {
-        0: { cellWidth: 26 },
-        1: { cellWidth: 42 },
-        2: { cellWidth: 18 },
-        3: { cellWidth: 18 },
-        4: { cellWidth: 16 },
-        5: { cellWidth: 18 },
-        6: { cellWidth: 14 },
-        7: { cellWidth: 18 },
-        8: { cellWidth: 20 },
-      },
-    });
-
-    const afterTableY = (doc as any).lastAutoTable?.finalY ?? 60;
-    let y = afterTableY + 10;
-
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Gráfica de registros (últimos 14 días)", 105, y, {
-      align: "center",
-    });
-    doc.setFont("helvetica", "normal");
-    y += 6;
-
-    try {
-      const svg = chartRegistrosRef.current?.querySelector(
-        "svg",
-      ) as SVGSVGElement | null;
-      if (svg) {
-        const { dataUrl, width, height } = await svgToPngDataUrl(svg, 2);
-
-        const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
-
-        const maxW = pageW - 20;
-        const maxH = 90;
-
-        const ratio = width / height;
-        let drawW = maxW;
-        let drawH = drawW / ratio;
-
-        if (drawH > maxH) {
-          drawH = maxH;
-          drawW = drawH * ratio;
-        }
-
-        if (y + drawH + 10 > pageH) {
-          doc.addPage();
-          y = 20;
-        }
-
-        const x = (pageW - drawW) / 2;
-        doc.addImage(dataUrl, "PNG", x, y, drawW, drawH);
-      }
-    } catch {}
-
-    const stamp = new Date().toISOString().slice(0, 10);
-    doc.save(`reporte_usuarios_${stamp}.pdf`);
-  };
-
-  const canExport = usuariosFiltrados.length > 0;
 
   const badgeCuentaClass = (s: EstadoUsuarioCuenta) =>
     s === "Activo" ? "badge badge-success" : "badge badge-danger";
@@ -801,6 +621,483 @@ export default function Usuarios() {
     );
   };
 
+  // =========================
+  // EXPORT MODAL PRO (Usuarios)
+  // =========================
+  type ExportFormato = "pdf" | "excel";
+  type ExportContenido = "solo_tabla" | "completo" | "solo_registros";
+
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormato, setExportFormato] = useState<ExportFormato>("pdf");
+  const [exportContenido, setExportContenido] =
+    useState<ExportContenido>("completo");
+
+  // Solo queda esta opción (como pediste)
+  const [exportUsarFiltros, setExportUsarFiltros] = useState(true);
+
+  const getExportSource = () =>
+    exportUsarFiltros ? usuariosFiltrados : usuarios;
+
+  const buildExportRows = (source: UsuarioUI[]) =>
+    source.map((u) => ({
+      Nombre: u.nombre ?? "—",
+      Correo: u.email ?? "—",
+      Telefono: u.telefono ?? "—",
+      Comunidad: u.comunidad ?? "—",
+      Rol: u.rol ?? "—",
+      "Estado cuenta": u.estadoCuenta ?? "—",
+      Online: u.estadoOnline ?? "—",
+      Registro:
+        `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
+      "Ultimo acceso": u.ultimoAcceso ?? "—",
+    }));
+
+  const toDataURL = async (url: string): Promise<string> => {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Captura DOM (donut/top comunidades) a PNG para PDF
+  async function elementToPngDataUrl(
+    el: HTMLElement,
+    scale = 2,
+  ): Promise<{ dataUrl: string; width: number; height: number }> {
+    const canvas = await html2canvas(el, {
+      backgroundColor: "#ffffff",
+      scale,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+    });
+
+    return {
+      dataUrl: canvas.toDataURL("image/png", 1.0),
+      width: canvas.width,
+      height: canvas.height,
+    };
+  }
+
+  function addImageCentered(
+    doc: jsPDF,
+    dataUrl: string,
+    y: number,
+    maxW: number,
+    maxH: number,
+    imgWpx: number,
+    imgHpx: number,
+  ) {
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    const ratio = imgWpx / imgHpx;
+    let drawW = maxW;
+    let drawH = drawW / ratio;
+
+    if (drawH > maxH) {
+      drawH = maxH;
+      drawW = drawH * ratio;
+    }
+
+    if (y + drawH + 10 > pageH) {
+      doc.addPage();
+      y = 20;
+    }
+
+    const x = (pageW - drawW) / 2;
+    doc.addImage(dataUrl, "PNG", x, y, drawW, drawH);
+
+    return y + drawH + 10;
+  }
+
+  const exportExcelPro = () => {
+    const source = getExportSource();
+
+    const incluirTabla =
+      exportContenido === "solo_tabla" || exportContenido === "completo";
+    const incluirRegistros =
+      exportContenido === "solo_registros" || exportContenido === "completo";
+
+    const wb = XLSX.utils.book_new();
+
+    // Tabla
+    if (incluirTabla) {
+      const rows = buildExportRows(source);
+      const ws = XLSX.utils.json_to_sheet(rows);
+
+      ws["!cols"] = [
+        { wch: 26 },
+        { wch: 32 },
+        { wch: 16 },
+        { wch: 22 },
+        { wch: 16 },
+        { wch: 14 },
+        { wch: 10 },
+        { wch: 18 },
+        { wch: 18 },
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Usuarios");
+    }
+
+    // Reporte completo: resumen + estado de cuenta + top comunidades
+    if (exportContenido === "completo") {
+      const wsResumen = XLSX.utils.json_to_sheet([
+        { KPI: "Total usuarios", Valor: totalUsuarios },
+        { KPI: "Cuenta activa", Valor: cuentaActivos },
+        { KPI: "Suspendidos", Valor: cuentaSuspendidos },
+        { KPI: `Online (≤ ${ONLINE_THRESHOLD_MIN} min)`, Valor: onlineActivos },
+        {
+          KPI: "Filtro aplicado",
+          Valor: exportUsarFiltros ? "Sí (búsqueda/visibles)" : "No (todos)",
+        },
+        { KPI: "Registros exportados", Valor: source.length },
+      ]);
+      wsResumen["!cols"] = [{ wch: 28 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+      const wsEstadoCuenta = XLSX.utils.json_to_sheet([
+        {
+          Estado: "Activo",
+          Total: cuentaActivos,
+          Porcentaje: `${pAct.toFixed(1)}%`,
+        },
+        {
+          Estado: "Suspendido",
+          Total: cuentaSuspendidos,
+          Porcentaje: `${(100 - pAct).toFixed(1)}%`,
+        },
+      ]);
+      wsEstadoCuenta["!cols"] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsEstadoCuenta, "Estado_cuenta");
+
+      const wsTop = XLSX.utils.json_to_sheet(
+        topComunidades.map((t) => ({
+          Comunidad: t.comunidad,
+          Usuarios: t.total,
+        })),
+      );
+      wsTop["!cols"] = [{ wch: 28 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsTop, "Top_comunidades");
+    }
+
+    // Registros 14d
+    if (incluirRegistros) {
+      const chartRows = lineData.map((p) => ({
+        Dia: p.label,
+        Registros: p.registros,
+      }));
+      const wsChart = XLSX.utils.json_to_sheet(chartRows);
+      wsChart["!cols"] = [{ wch: 14 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsChart, "Registros_14_dias");
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `reporte_usuarios_${stamp}.xlsx`);
+  };
+
+  const exportPDFPro = async () => {
+    const source = getExportSource();
+
+    const incluirTabla =
+      exportContenido === "solo_tabla" || exportContenido === "completo";
+    const incluirRegistros =
+      exportContenido === "solo_registros" || exportContenido === "completo";
+
+    const doc = new jsPDF("p", "mm", "a4");
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    // Header logo centrado (igual Comunidades)
+    const logoSize = 40;
+    const logoX = (pageW - logoSize) / 2;
+    const logoY = 10;
+
+    try {
+      const logo = await toDataURL(logoSafeZone);
+      doc.addImage(logo, "PNG", logoX, logoY, logoSize, logoSize);
+    } catch {}
+
+    const titleY = logoY + logoSize + 10;
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(
+      exportContenido === "solo_tabla"
+        ? "Reporte de Usuarios (Solo tabla)"
+        : exportContenido === "solo_registros"
+          ? "Reporte de Usuarios (Solo registros)"
+          : "Reporte de Usuarios (Completo)",
+      pageW / 2,
+      titleY,
+      { align: "center" },
+    );
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Generado: ${new Date().toLocaleString("es-EC")}`,
+      pageW / 2,
+      titleY + 8,
+      {
+        align: "center",
+      },
+    );
+
+    let cursorY = titleY + 18;
+
+    // ✅ 1) RESUMEN (solo en "completo") — igual Comunidades
+    if (exportContenido === "completo") {
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Resumen", "Valor"]],
+        body: [
+          ["Total usuarios", String(totalUsuarios)],
+          ["Cuenta activa", String(cuentaActivos)],
+          ["Suspendidos", String(cuentaSuspendidos)],
+          [`Online (≤ ${ONLINE_THRESHOLD_MIN} min)`, String(onlineActivos)],
+          [
+            "Filtro aplicado",
+            exportUsarFiltros
+              ? busqueda?.trim() || "Sí (búsqueda/visibles)"
+              : "No (todos)",
+          ],
+          ["Registros exportados", `${source.length} de ${usuarios.length}`],
+        ],
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: pageW - 28 - 60 },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 8;
+    }
+
+    // ✅ 2) TABLA USUARIOS (si aplica)
+    if (incluirTabla) {
+      autoTable(doc, {
+        startY: cursorY,
+        head: [
+          [
+            "Nombre",
+            "Correo",
+            "Teléfono",
+            "Comunidad",
+            "Rol",
+            "Estado cuenta",
+            "Online",
+            "Registro",
+            "Último acceso",
+          ],
+        ],
+        body: source.map((u) => [
+          u.nombre ?? "—",
+          u.email ?? "—",
+          u.telefono ?? "—",
+          u.comunidad ?? "—",
+          u.rol ?? "—",
+          u.estadoCuenta ?? "—",
+          u.estadoOnline ?? "—",
+          `${u.fechaRegistro ?? ""} ${u.horaRegistro ?? ""}`.trim() || "—",
+          u.ultimoAcceso ?? "—",
+        ]),
+        styles: { fontSize: 8.5, cellPadding: 2, overflow: "linebreak" },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 10, right: 10 },
+        columnStyles: {
+          0: { cellWidth: 26 },
+          1: { cellWidth: 42 },
+          2: { cellWidth: 18 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 16 },
+          5: { cellWidth: 18 },
+          6: { cellWidth: 14 },
+          7: { cellWidth: 18 },
+          8: { cellWidth: 20 },
+        },
+      });
+
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 10;
+    }
+
+    // ✅ 3) ESTADO DE CUENTA (tabla) + TOP COMUNIDADES (tabla) — SOLO en completo
+    if (exportContenido === "completo") {
+      // salto de página si no entra
+      if (cursorY + 40 > pageH) {
+        doc.addPage();
+        cursorY = 18;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Estado de cuenta (resumen)", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
+
+      const total = totalUsuarios || 1;
+      const pctLocal = (n: number) => `${Math.round((n / total) * 100)}%`;
+
+      autoTable(doc, {
+        startY: cursorY + 4,
+        head: [["Estado", "Cantidad", "Porcentaje"]],
+        body: [
+          ["Activos", String(cuentaActivos), pctLocal(cuentaActivos)],
+          [
+            "Suspendidos",
+            String(cuentaSuspendidos),
+            pctLocal(cuentaSuspendidos),
+          ],
+        ],
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: 30, halign: "center" },
+          2: { cellWidth: 30, halign: "center" },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 10;
+
+      if (cursorY + 40 > pageH) {
+        doc.addPage();
+        cursorY = 18;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Top comunidades (usuarios)", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
+
+      autoTable(doc, {
+        startY: cursorY + 4,
+        head: [["Comunidad", "Usuarios"]],
+        body: (topComunidades?.length ? topComunidades : []).map((t) => [
+          t.comunidad ?? "—",
+          String(t.total ?? 0),
+        ]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 120 },
+          1: { cellWidth: 30, halign: "center" },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      cursorY =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ??
+          cursorY) + 10;
+    }
+
+    // ✅ 4) REGISTROS (GRÁFICA) — imagen SOLO para esta sección (igual Comunidades)
+    if (incluirRegistros) {
+      if (cursorY + 90 > pageH) {
+        doc.addPage();
+        cursorY = 18;
+      }
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Registros de usuarios (últimos 14 días)", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 6;
+
+      try {
+        const svg = chartRegistrosRef.current?.querySelector(
+          "svg",
+        ) as SVGSVGElement | null;
+
+        if (svg) {
+          const { dataUrl } = await svgToPngDataUrl(svg, 2);
+          const maxW = pageW - 28;
+          const imgW = maxW;
+          const imgH = 72; // altura pro fija (como en Comunidades)
+          const x = (pageW - imgW) / 2;
+          doc.addImage(dataUrl, "PNG", x, cursorY, imgW, imgH);
+          cursorY += imgH + 6;
+        } else {
+          doc.setFontSize(10);
+          doc.text(
+            "No se pudo capturar la gráfica (SVG no encontrado).",
+            pageW / 2,
+            cursorY + 10,
+            {
+              align: "center",
+            },
+          );
+          cursorY += 20;
+        }
+      } catch (e) {
+        console.error(e);
+        doc.setFontSize(10);
+        doc.text("No se pudo exportar la gráfica.", pageW / 2, cursorY + 10, {
+          align: "center",
+        });
+        cursorY += 20;
+      }
+
+      // tabla completa 14d (igual que la gráfica)
+      let y = cursorY;
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Día", "Registros"]],
+        body: lineData.map((p) => [p.label, String(p.registros)]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 40, halign: "center" },
+        },
+        margin: { left: 14, right: 14 },
+      });
+
+      y =
+        (((doc as any)?.lastAutoTable?.finalY as number | undefined) ?? y) + 10;
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    doc.save(`reporte_usuarios_${stamp}.pdf`);
+  };
+
+  const canExport =
+    (exportUsarFiltros ? usuariosFiltrados.length : usuarios.length) > 0;
+
+  const exportNow = async () => {
+    if (!canExport) return;
+
+    if (exportFormato === "excel") {
+      exportExcelPro();
+    } else {
+      await exportPDFPro();
+    }
+
+    setExportOpen(false);
+  };
+
   return (
     <>
       <div className="background" />
@@ -877,10 +1174,10 @@ export default function Usuarios() {
                 </div>
 
                 {/* Acciones */}
-                <div ref={exportRef} className="topbar-actions">
+                <div className="topbar-actions">
                   <button
                     className="action-pill"
-                    onClick={() => setOpenExport((v) => !v)}
+                    onClick={() => setExportOpen(true)}
                     disabled={!canExport}
                     title="Exportar reporte"
                     type="button"
@@ -888,34 +1185,6 @@ export default function Usuarios() {
                     <Download size={18} />
                     Exportar
                   </button>
-
-                  {openExport && (
-                    <div className="export-dropdown">
-                      <button
-                        className="export-option"
-                        onClick={() => {
-                          exportExcel();
-                          setOpenExport(false);
-                        }}
-                        type="button"
-                      >
-                        <FileSpreadsheet size={16} />
-                        Excel (.xlsx)
-                      </button>
-
-                      <button
-                        className="export-option"
-                        onClick={() => {
-                          exportPDF();
-                          setOpenExport(false);
-                        }}
-                        type="button"
-                      >
-                        <FileText size={16} />
-                        PDF
-                      </button>
-                    </div>
-                  )}
 
                   <button
                     className="action-pill action-pill-accent"
@@ -1235,6 +1504,252 @@ export default function Usuarios() {
         </main>
       </div>
 
+      {/* ✅ MODAL EXPORTACIÓN PRO (igual a Comunidades) */}
+      <AnimatePresence>
+        {exportOpen && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExportOpen(false)}
+          >
+            <motion.div
+              className="sz-modal-card sz-export-card"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">Exportación de reporte</div>
+                  <div className="sz-modal-sub">
+                    Elige qué quieres exportar. Se respeta logo/encabezado y el
+                    formato actual.
+                  </div>
+                </div>
+
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => setExportOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="sz-export-grid">
+                {/* FORMATO */}
+                <div className="sz-export-col">
+                  <div className="sz-export-title">
+                    <span className="sz-dot" />
+                    Formato
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportFormato === "pdf" ? "active" : ""}`}
+                    onClick={() => setExportFormato("pdf")}
+                  >
+                    <span
+                      className={`sz-switch ${exportFormato === "pdf" ? "on" : ""}`}
+                    >
+                      {exportFormato === "pdf" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <FileText size={18} />
+                    </span>
+
+                    <span className="sz-export-name">PDF (presentación)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${exportFormato === "excel" ? "active" : ""}`}
+                    onClick={() => setExportFormato("excel")}
+                  >
+                    <span
+                      className={`sz-switch ${exportFormato === "excel" ? "on" : ""}`}
+                    >
+                      {exportFormato === "excel" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <FileSpreadsheet size={18} />
+                    </span>
+
+                    <span className="sz-export-name">Excel (datos)</span>
+                  </button>
+                </div>
+
+                {/* CONTENIDO */}
+                <div className="sz-export-col">
+                  <div className="sz-export-title">
+                    <span className="sz-dot" />
+                    Contenido
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${
+                      exportContenido === "solo_tabla" ? "active" : ""
+                    }`}
+                    onClick={() => setExportContenido("solo_tabla")}
+                  >
+                    <span
+                      className={`sz-switch ${exportContenido === "solo_tabla" ? "on" : ""}`}
+                    >
+                      {exportContenido === "solo_tabla" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <Table2 size={18} />
+                    </span>
+
+                    <span className="sz-export-name">
+                      Solo tabla (usuarios)
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${
+                      exportContenido === "completo" ? "active" : ""
+                    }`}
+                    onClick={() => setExportContenido("completo")}
+                  >
+                    <span
+                      className={`sz-switch ${exportContenido === "completo" ? "on" : ""}`}
+                    >
+                      {exportContenido === "completo" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <LayoutDashboard size={18} />
+                    </span>
+
+                    <span className="sz-export-name">
+                      Reporte completo (tabla + estado de cuenta + top
+                      comunidades + registros)
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`sz-export-item ${
+                      exportContenido === "solo_registros" ? "active" : ""
+                    }`}
+                    onClick={() => setExportContenido("solo_registros")}
+                  >
+                    <span
+                      className={`sz-switch ${exportContenido === "solo_registros" ? "on" : ""}`}
+                    >
+                      {exportContenido === "solo_registros" ? (
+                        <ToggleRight size={18} />
+                      ) : (
+                        <ToggleLeft size={18} />
+                      )}
+                    </span>
+
+                    <span className="sz-export-ico">
+                      <LineChartIcon size={18} />
+                    </span>
+
+                    <span className="sz-export-name">
+                      Solo registros (gráfica de abajo)
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* OPCIONES */}
+              <div className="sz-export-options">
+                <div className="sz-export-title" style={{ marginBottom: 10 }}>
+                  <span className="sz-dot" />
+                  Opciones
+                </div>
+
+                <button
+                  type="button"
+                  className={`sz-opt ${exportUsarFiltros ? "on" : ""}`}
+                  onClick={() => setExportUsarFiltros((v) => !v)}
+                >
+                  <span
+                    className={`sz-switch ${exportUsarFiltros ? "on" : ""}`}
+                  >
+                    {exportUsarFiltros ? (
+                      <ToggleRight size={18} />
+                    ) : (
+                      <ToggleLeft size={18} />
+                    )}
+                  </span>
+                  <span className="sz-opt-text">
+                    Usar filtros actuales (búsqueda / resultados visibles)
+                  </span>
+                </button>
+
+                <div className="sz-export-count">
+                  Registros a exportar:{" "}
+                  <b>
+                    {exportUsarFiltros
+                      ? usuariosFiltrados.length
+                      : usuarios.length}
+                  </b>{" "}
+                  de{" "}
+                  <b>
+                    {exportUsarFiltros
+                      ? usuariosFiltrados.length
+                      : usuarios.length}
+                  </b>
+                </div>
+              </div>
+
+              {/* FOOTER */}
+              <div className="sz-export-footer">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => setExportOpen(false)}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  className="sz-btn-accent"
+                  type="button"
+                  onClick={exportNow}
+                  disabled={!canExport}
+                  title="Exportar ahora"
+                >
+                  Exportar ahora
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ✅ MODAL VER DETALLE USUARIO (con suspender dentro) */}
       <AnimatePresence>
         {viewOpen && viewTarget && (
@@ -1380,86 +1895,88 @@ export default function Usuarios() {
       </AnimatePresence>
 
       {/* ✅ MODAL CONFIRMACIÓN SUSPENDER (PRO) */}
-<AnimatePresence>
-  {confirmOpen && viewTarget && (
-    <motion.div
-      className="sz-modal-backdrop"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={() => !confirmLoading && setConfirmOpen(false)}
-    >
-      <motion.div
-        className="sz-modal-card sz-modal-danger"
-        initial={{ opacity: 0, y: 18, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.98 }}
-        transition={{ duration: 0.18 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sz-modal-head">
-          <div>
-            <div className="sz-modal-title">¿Suspender usuario?</div>
-            <div className="sz-modal-sub">
-              Estás por suspender a: <b>{viewTarget.nombre ?? "—"}</b>
-            </div>
-          </div>
-
-          <button
-            className="sz-modal-x"
-            type="button"
+      <AnimatePresence>
+        {confirmOpen && viewTarget && (
+          <motion.div
+            className="sz-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             onClick={() => !confirmLoading && setConfirmOpen(false)}
-            aria-label="Cerrar"
-            title="Cerrar"
           >
-            <X size={18} />
-          </button>
-        </div>
+            <motion.div
+              className="sz-modal-card sz-modal-danger"
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              transition={{ duration: 0.18 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sz-modal-head">
+                <div>
+                  <div className="sz-modal-title">¿Suspender usuario?</div>
+                  <div className="sz-modal-sub">
+                    Estás por suspender a: <b>{viewTarget.nombre ?? "—"}</b>
+                  </div>
+                </div>
 
-        <div className="sz-danger-box">
-          <div className="sz-danger-name">{viewTarget.nombre ?? "—"}</div>
+                <button
+                  className="sz-modal-x"
+                  type="button"
+                  onClick={() => !confirmLoading && setConfirmOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
-          <div className="sz-danger-meta">
-            Correo: <b>{viewTarget.email ?? "—"}</b>
-          </div>
+              <div className="sz-danger-box">
+                <div className="sz-danger-name">{viewTarget.nombre ?? "—"}</div>
 
-          <div className="sz-danger-meta">
-            Comunidad: {viewTarget.comunidad ?? "—"}
-          </div>
+                <div className="sz-danger-meta">
+                  Correo: <b>{viewTarget.email ?? "—"}</b>
+                </div>
 
-          <div className="sz-danger-warning">
-            ⚠️ Al suspender, el usuario quedará <b>inactivo</b> y no podrá iniciar sesión,
-            pero <b>no se elimina</b> su información ni su historial.
-          </div>
-        </div>
+                <div className="sz-danger-meta">
+                  Comunidad: {viewTarget.comunidad ?? "—"}
+                </div>
 
-        {confirmError && <div className="sz-modal-error">{confirmError}</div>}
+                <div className="sz-danger-warning">
+                  ⚠️ Al suspender, el usuario quedará <b>inactivo</b> y no podrá
+                  iniciar sesión, pero <b>no se elimina</b> su información ni su
+                  historial.
+                </div>
+              </div>
 
-        <div className="sz-modal-actions">
-          <button
-            className="sz-btn-light"
-            type="button"
-            onClick={() => setConfirmOpen(false)}
-            disabled={confirmLoading}
-          >
-            Cancelar
-          </button>
+              {confirmError && (
+                <div className="sz-modal-error">{confirmError}</div>
+              )}
 
-          <button
-            className="sz-btn-danger"
-            type="button"
-            onClick={confirmSuspendUser}
-            disabled={confirmLoading}
-            title="Confirmar suspensión"
-          >
-            {confirmLoading ? "Suspendiendo..." : "Sí, suspender"}
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
-  )}
-</AnimatePresence>
+              <div className="sz-modal-actions">
+                <button
+                  className="sz-btn-light"
+                  type="button"
+                  onClick={() => setConfirmOpen(false)}
+                  disabled={confirmLoading}
+                >
+                  Cancelar
+                </button>
 
+                <button
+                  className="sz-btn-danger"
+                  type="button"
+                  onClick={confirmSuspendUser}
+                  disabled={confirmLoading}
+                  title="Confirmar suspensión"
+                >
+                  {confirmLoading ? "Suspendiendo..." : "Sí, suspender"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
