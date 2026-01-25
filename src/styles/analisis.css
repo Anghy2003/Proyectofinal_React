@@ -712,3 +712,858 @@ body {
   z-index: 2;
   border-bottom: 1px solid rgba(15, 23, 42, 0.10);
 }
+
+/* =========================
+   EXPORT MODAL
+========================= */
+
+.anx-modal-backdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(2, 6, 23, 0.28);
+  backdrop-filter: blur(8px);
+}
+
+.anx-modal-card.anx-export-card{
+  width: min(980px, 96vw);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.80);
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow:
+    0 30px 70px rgba(2,6,23,0.22),
+    0 10px 25px rgba(2,6,23,0.10);
+  overflow: hidden;
+}
+
+/* Header */
+.anx-modal-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 22px 12px;
+  border-bottom: 1px solid rgba(15,23,42,0.06);
+}
+
+.anx-modal-title{
+  font-size: 34px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+  line-height: 1.05;
+}
+
+.anx-modal-sub{
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(51, 65, 85, 0.80);
+}
+
+/* Botón X (centrado y visible) */
+.anx-modal-x{
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.12);
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 10px 18px rgba(2,6,23,0.10);
+  display: grid;
+  place-items: center; /* <-- centra el icono */
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+
+.anx-modal-x svg{
+  display:block;
+  color: rgba(15,23,42,0.88);
+}
+
+.anx-modal-x:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.95);
+  box-shadow: 0 14px 24px rgba(2,6,23,0.14);
+}
+.anx-modal-x:active{ transform: translateY(0px) scale(0.99); }
+
+/* Grid columnas */
+.anx-export-grid{
+  display: grid;
+  grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 16px;
+  padding: 16px 22px 8px;
+}
+
+@media (max-width: 860px){
+  .anx-export-grid{ grid-template-columns: 1fr; }
+}
+
+.anx-export-col{
+  background: rgba(255,255,255,0.60);
+  border: 1px solid rgba(15,23,42,0.08);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 12px 24px rgba(2,6,23,0.06);
+}
+
+/* Títulos sección */
+.anx-export-title{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 2px 2px 12px;
+  font-size: 16px;
+}
+
+.anx-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #f95150;
+  box-shadow: 0 6px 14px rgba(249,81,80,0.22);
+}
+
+/* =========================
+   ITEMS (Formato / Contenido)
+   - Switch primero, luego icono, luego texto
+========================= */
+.anx-export-item{
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.72);
+  cursor: pointer;
+  text-align: left;
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+  user-select: none;
+}
+
+.anx-export-item + .anx-export-item{ margin-top: 10px; }
+
+.anx-export-item:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(2,6,23,0.08);
+  background: rgba(255,255,255,0.82);
+}
+
+/* Estado seleccionado del item */
+.anx-export-item.active{
+  border-color: rgba(249,81,80,0.60);
+  background: rgba(249,81,80,0.08);
+  box-shadow:
+    inset 0 0 0 1px rgba(249,81,80,0.18),
+    0 16px 30px rgba(249,81,80,0.10);
+}
+
+/* Nombre */
+.anx-export-name{
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+/* Icono del item (NO cambia de color al seleccionar) */
+.anx-export-ico{
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 10px 16px rgba(2,6,23,0.08);
+}
+
+.anx-export-ico svg{
+  color: rgba(15,23,42,0.78); /* constante */
+}
+
+/* Mantener constante incluso en .active */
+.anx-export-item.active .anx-export-ico{
+  border-color: rgba(15,23,42,0.10);
+  background: rgba(255,255,255,0.86);
+}
+.anx-export-item.active .anx-export-ico svg{
+  color: rgba(15,23,42,0.78);
+}
+
+/* =========================
+   SWITCH estilo "Opciones"
+   (Sirve para Formato/Contenido y también Opciones)
+   Si en Formato/Contenido estás usando un span con clase:
+   .anx-switch  -> quedará igual al de Opciones.
+========================= */
+
+/* Contenedor switch (alineado a la izquierda) */
+.anx-switch{
+  width: 46px;
+  height: 28px;
+  min-width: 46px;
+  border-radius: 999px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 3px;
+  background: rgba(255,255,255,0.70);
+  border: 1px solid rgba(15,23,42,0.18);
+  box-shadow:
+    inset 0 10px 20px rgba(2,6,23,0.06),
+    0 10px 16px rgba(2,6,23,0.08);
+}
+
+/* “Perilla” */
+.anx-switch::after{
+  content:"";
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 8px 14px rgba(2,6,23,0.18);
+  transform: translateX(0px);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+/* ON */
+.anx-switch.on{
+  border-color: rgba(249,81,80,0.55);
+  background: rgba(249,81,80,0.18);
+  box-shadow:
+    inset 0 10px 20px rgba(249,81,80,0.10),
+    0 10px 16px rgba(2,6,23,0.08);
+}
+.anx-switch.on::after{
+  transform: translateX(18px);
+  box-shadow: 0 10px 18px rgba(249,81,80,0.18);
+}
+
+/* Si en Formato/Contenido no tienes .anx-switch.on en el markup,
+   puedes “engancharlo” a .active automáticamente: */
+.anx-export-item.active .anx-switch{
+  border-color: rgba(249,81,80,0.55);
+  background: rgba(249,81,80,0.18);
+}
+.anx-export-item.active .anx-switch::after{
+  transform: translateX(18px);
+}
+
+/* Quita color de iconos ToggleLeft/ToggleRight si aún los usas en Opciones */
+.anx-switch svg{
+  display:none; /* para que quede el switch “limpio” como la imagen */
+}
+
+/* =========================
+   OPCIONES
+========================= */
+.anx-export-options{
+  margin: 10px 22px 0;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(249,81,80,0.08);
+  border: 1px solid rgba(249,81,80,0.22);
+  box-shadow: 0 16px 30px rgba(249,81,80,0.08);
+}
+
+.anx-opt{
+  width: 100%;
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+
+  gap: 14px;
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(249,81,80,0.30);
+  background: rgba(255,255,255,0.70);
+  cursor: pointer;
+  text-align:left;
+  user-select:none;
+
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+
+.anx-opt + .anx-opt{ margin-top: 10px; }
+
+.anx-opt:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 26px rgba(2,6,23,0.08);
+  background: rgba(255,255,255,0.82);
+}
+
+.anx-opt-text{
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.anx-export-count{
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(15,23,42,0.08);
+  color: rgba(15,23,42,0.78);
+  font-weight: 900;
+}
+
+/* =========================
+   FOOTER BOTONES
+========================= */
+.anx-export-footer{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 22px 20px;
+  border-top: 1px solid rgba(15,23,42,0.06);
+}
+
+.anx-btn-light,
+.anx-btn-accent{
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+
+.anx-btn-light{
+  background: rgba(255,255,255,0.90);
+  border: 1px solid rgba(15,23,42,0.12);
+  color: rgba(15,23,42,0.90);
+  box-shadow: 0 12px 22px rgba(2,6,23,0.08);
+}
+
+.anx-btn-light:hover{ transform: translateY(-1px); }
+.anx-btn-light:active{ transform: translateY(0px) scale(0.99); }
+
+.anx-btn-accent{
+  background: linear-gradient(135deg, #f95150, #ff7473);
+  color: #fff;
+  box-shadow: 0 18px 30px rgba(249,81,80,0.22);
+}
+
+.anx-btn-accent:hover{ transform: translateY(-1px); filter: brightness(1.02); }
+.anx-btn-accent:active{ transform: translateY(0px) scale(0.99); }
+
+.anx-btn-accent:disabled,
+.anx-btn-light:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* =========================
+   FIX: quitar borde negro (focus/active)
+========================= */
+
+/* Quita outline/borde negro del navegador */
+.anx-modal-x,
+.anx-btn-light,
+.anx-btn-accent {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* En foco (click o tab) */
+.anx-modal-x:focus,
+.anx-btn-light:focus,
+.anx-btn-accent:focus,
+.anx-modal-x:focus-visible,
+.anx-btn-light:focus-visible,
+.anx-btn-accent:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* En algunos navegadores aparece borde interno */
+.anx-modal-x::-moz-focus-inner,
+.anx-btn-light::-moz-focus-inner,
+.anx-btn-accent::-moz-focus-inner {
+  border: 0;
+}
+
+.anx-modal-x{
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(15,23,42,0.12);
+  background: rgba(255,255,255,0.86);
+  box-shadow: 0 10px 18px rgba(2,6,23,0.10);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;        /* clave */
+  line-height: 0;    /* clave */
+  cursor: pointer;
+
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+
+.anx-modal-x svg{
+  display:block;
+}
+
+.anx-btn-accent{
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(249,81,80,0.70);
+  color: #f95150;
+
+  border-radius: 999px;
+  padding: 12px 22px;
+  font-weight: 900;
+
+  box-shadow: 0 16px 28px rgba(249,81,80,0.12);
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease, filter .12s ease;
+}
+
+.anx-btn-accent:hover{
+  transform: translateY(-1px);
+  background: rgba(255,255,255,0.78);
+  box-shadow: 0 18px 34px rgba(249,81,80,0.16);
+}
+
+.anx-btn-accent:active{
+  transform: translateY(0px) scale(0.99);
+}
+
+
+/* ======================================
+   FIX FINAL — anx-btn-accent (Exportar ahora)
+   Fuerza rosado real (NO blanco)
+====================================== */
+.anx-btn-accent{
+  background-color: #fde8e8 !important;   /* rosado sólido */
+  background-image: none !important;      /* elimina gradients */
+  border: 1.5px solid #f95150 !important;
+  color: #f95150 !important;
+
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-weight: 900;
+  font-size: 15px;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(249,81,80,0.12),
+    0 10px 22px rgba(249,81,80,0.20);
+
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+/* Hover */
+.anx-btn-accent:hover{
+  background-color: #fbdcdc !important;
+  box-shadow:
+    inset 0 0 0 1px rgba(249,81,80,0.16),
+    0 14px 28px rgba(249,81,80,0.25);
+  transform: translateY(-1px);
+}
+
+/* Active */
+.anx-btn-accent:active{
+  background-color: #f9caca !important;
+  transform: translateY(0) scale(0.99);
+}
+
+/* Disabled */
+.anx-btn-accent:disabled{
+  background-color: #fde8e8 !important;
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+/* =========================================================
+   FIX GLOBAL — eliminar borde negro (focus/active)
+   Modal Reportes / Análisis
+========================================================= */
+
+/* 1. Quitar outline del navegador en TODOS los elementos del modal */
+.anx-modal-card * {
+  outline: none;
+}
+
+/* 2. Quitar borde negro al hacer click (active/focus) */
+.anx-modal-card button,
+.anx-modal-card [role="button"],
+.anx-modal-card .anx-export-item,
+.anx-modal-card .anx-opt,
+.anx-modal-card .anx-switch {
+  outline: none;
+  box-shadow: none;
+}
+
+/* 3. Focus y focus-visible (Chrome / Edge / Firefox) */
+.anx-modal-card button:focus,
+.anx-modal-card button:focus-visible,
+.anx-modal-card [role="button"]:focus,
+.anx-modal-card [role="button"]:focus-visible,
+.anx-modal-card .anx-export-item:focus,
+.anx-modal-card .anx-export-item:focus-visible,
+.anx-modal-card .anx-opt:focus,
+.anx-modal-card .anx-opt:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 4. Firefox (borde interno feo) */
+.anx-modal-card *::-moz-focus-inner {
+  border: 0;
+}
+
+/* =========================================================
+   FOCUS PRO (opcional pero recomendado)
+   Reemplaza el negro por rojo suave
+========================================================= */
+.anx-modal-card button:focus-visible,
+.anx-modal-card .anx-export-item:focus-visible,
+.anx-modal-card .anx-opt:focus-visible {
+  border-color: rgba(249, 81, 80, 0.55);
+  box-shadow: 0 0 0 3px rgba(249, 81, 80, 0.14);
+}
+
+
+/* =========================
+   TABLA COMPACTA (ARRIBA)
+========================= */
+.table-card-v2 {
+  overflow: hidden;
+}
+
+.tabla-wrap-compact {
+  overflow: auto;
+  padding-bottom: 6px;
+}
+
+.tabla-compact th,
+.tabla-compact td {
+  white-space: nowrap;
+}
+
+.cell-ellipsis {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-id {
+  width: 70px;
+}
+
+.col-prio {
+  width: 120px;
+}
+
+.col-ver {
+  width: 110px;
+}
+
+.row-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 8px 10px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(15, 23, 42, 0.88);
+
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.row-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.10);
+  border-color: rgba(249, 81, 80, 0.35);
+}
+
+/* =========================
+   GRÁFICA ABAJO
+========================= */
+.chart-card-bottom {
+  margin-top: 14px;
+}
+
+/* =========================
+   MODAL DETALLE (VER)
+========================= */
+.anx-detail-card {
+  max-width: 980px;
+}
+
+.anx-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.anx-detail-block {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.62);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.anx-detail-title {
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.92);
+  margin-bottom: 8px;
+}
+
+.anx-kv {
+  display: grid;
+  gap: 8px;
+}
+
+.anx-kv-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.anx-k {
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.68);
+}
+
+.anx-v {
+  font-weight: 800;
+  color: rgba(15, 23, 42, 0.90);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.anx-list {
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(15, 23, 42, 0.86);
+  font-weight: 700;
+}
+
+.anx-empty {
+  color: rgba(15, 23, 42, 0.55);
+  font-weight: 800;
+  padding: 8px 0;
+}
+
+
+@media (max-width: 860px) {
+  .anx-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .anx-kv-row {
+    grid-template-columns: 1fr;
+  }
+  .cell-ellipsis {
+    max-width: 160px;
+  }
+}
+
+
+.tabla-wrap-compact{
+  overflow-x: hidden;  
+  overflow-y: auto;    
+}
+
+.tabla-analisis.tabla-compact{
+  width: 100%;
+  table-layout: fixed;  /* 👈 clave */
+}
+
+
+.tabla-analisis.tabla-compact th,
+.tabla-analisis.tabla-compact td{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.tabla-analisis.tabla-compact th.col-id,
+.tabla-analisis.tabla-compact td.col-id{
+  width: 90px;
+}
+
+.tabla-analisis.tabla-compact th.col-usu,
+.tabla-analisis.tabla-compact td.col-usu{
+  width: 150px;
+}
+
+.tabla-analisis.tabla-compact th.col-comu,
+.tabla-analisis.tabla-compact td.col-comu{
+  width: 80px;
+}
+
+.tabla-analisis.tabla-compact th.col-cate,
+.tabla-analisis.tabla-compact td.col-cate{
+  width: 190px;
+}
+
+.tabla-analisis.tabla-compact th.col-prio,
+.tabla-analisis.tabla-compact td.col-prio{
+  width: 140px;
+}
+
+.tabla-analisis.tabla-compact th.col-ver,
+.tabla-analisis.tabla-compact td.col-ver{
+  width: 80px;
+}
+
+.tabla-analisis.tabla-compact td.cell-ellipsis{
+  width: auto;
+  max-width: unset;
+}
+
+
+
+.grid-2col{
+  align-items: stretch;
+}
+
+
+.table-card-v2{
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 620px; 
+}
+
+.table-card-v2 .chart-head{
+  flex: 0 0 auto;
+}
+
+.table-card-v2 .tabla-wrap-compact{
+  flex: 1 1 auto;
+  min-height: 0; 
+}
+
+
+@media (max-width: 1100px){
+  .tabla-wrap-compact{
+    overflow-x: auto; 
+    overflow-y: auto; 
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabla-analisis.tabla-compact{
+    width: max-content;  
+    min-width: 900px; 
+    table-layout: auto;   
+  }
+}
+
+
+@media (max-width: 768px){
+  .tabla-wrap-compact{
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabla-analisis.tabla-compact{
+    width: max-content;
+    min-width: 880px;
+    table-layout: auto;
+  }
+}
+
+
+.tabla-wrap-compact{
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+
+@media (max-width: 1100px){
+  .tabla-wrap-compact{
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabla-analisis.tabla-compact{
+    width: max-content;
+    min-width: 900px;
+    table-layout: auto;
+  }
+}
+
+.tabla-wrap-compact{
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: visible; 
+}
+
+.tabla-analisis.tabla-compact{
+  width: 100%;
+  min-width: 0;
+  table-layout: auto;
+}
+
+@media (max-width: 1100px){
+  .tabla-wrap-compact{
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tabla-analisis.tabla-compact{
+    width: max-content;
+    min-width: 980px; 
+    table-layout: auto;
+  }
+}
+
+/* =========================
+   CUADRO DETRÁS DEL CONTENIDO (como Usuarios)
+========================= */
+.anx-modal-body{
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 22px;
+
+  /* fondo tipo “panel” detrás */
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+
+  box-shadow:
+    0 18px 40px rgba(15, 23, 42, 0.10),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+
+  /* para que el contenido no se salga */
+  overflow: hidden;
+}
+
+/* opcional: si tu grid tiene márgenes raros */
+.anx-detail-grid{
+  margin: 0;
+}

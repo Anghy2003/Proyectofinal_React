@@ -17,6 +17,12 @@ import {
   Download,
   FileSpreadsheet,
   FileText,
+  LayoutDashboard,
+  Table2,
+  LineChart as LineChartIcon,
+  ToggleLeft,
+  ToggleRight,
+  Eye,
 } from "lucide-react";
 
 import {
@@ -39,7 +45,6 @@ import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
-
 
 /* ===================== HELPERS ===================== */
 function parseJsonArrayString(value?: string | null): string[] {
@@ -80,7 +85,6 @@ function isValidDate(d: Date) {
   return d instanceof Date && !Number.isNaN(d.getTime());
 }
 
-
 /* =========================
    Line Chart — incidentes 14d
 ========================= */
@@ -113,7 +117,7 @@ function fmtLabel(d: Date) {
 
 function buildDailyIncidentes(
   items: IncidenteResponseDTO[],
-  days = 14
+  days = 14,
 ): DailyPoint[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -150,21 +154,41 @@ function buildDailyIncidentes(
 }
 
 export default function Analisis() {
-
   // ✅ sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const tablaWrapRef = useRef<HTMLDivElement | null>(null);
 
   // 🔹 DATA REAL
   const [incidentes, setIncidentes] = useState<IncidenteResponseDTO[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // 🔹 FILTROS (sin "posible falso")
+  // 🔹 FILTROS
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("");
   const [filtroPrioridad, setFiltroPrioridad] = useState<string>("");
   const [filtroComunidad, setFiltroComunidad] = useState<string>("");
   const [filtroFecha, setFiltroFecha] = useState<string>(""); // yyyy-mm-dd
+
+  // ===== refs (export charts) =====
+  const lineChartRef = useRef<HTMLDivElement | null>(null);
+
+  // ===================== MODAL DETALLE (VER) =====================
+  const [detalleOpen, setDetalleOpen] = useState(false);
+  const [detalleItem, setDetalleItem] = useState<IncidenteResponseDTO | null>(
+    null,
+  );
+
+  const openDetalle = (item: IncidenteResponseDTO) => {
+    setDetalleItem(item);
+    setDetalleOpen(true);
+  };
+
+  const closeDetalle = () => {
+    setDetalleOpen(false);
+    setDetalleItem(null);
+  };
 
   const cargarIncidentes = async () => {
     try {
@@ -180,9 +204,50 @@ export default function Analisis() {
   };
 
   useEffect(() => {
+    const el = tablaWrapRef.current;
+    if (!el) return;
+
+    const BREAKPOINT = 1100; // 👈 el mismo que usas en CSS (max-width: 1100px)
+
+    const resetScrollIfDesktop = () => {
+      const isDesktop = window.innerWidth > BREAKPOINT;
+      if (isDesktop) {
+        // ✅ fuerza volver a la izquierda (y arriba si quieres)
+        el.scrollLeft = 0;
+        // el.scrollTop = 0; // opcional
+      }
+    };
+
+    // 1) reset inmediato si ya estás en desktop
+    resetScrollIfDesktop();
+
+    // 2) reset cada vez que cambie el tamaño de la ventana (debounced)
+    let t: number | null = null;
+    const onResize = () => {
+      if (t) window.clearTimeout(t);
+      t = window.setTimeout(resetScrollIfDesktop, 80);
+    };
+
+    window.addEventListener("resize", onResize, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      if (t) window.clearTimeout(t);
+    };
+  }, []);
+
+  useEffect(() => {
     cargarIncidentes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ✅ Solo con IA real
+  const tieneIA = (i: IncidenteResponseDTO) =>
+    i.aiCategoria != null ||
+    i.aiPrioridad != null ||
+    i.aiConfianza != null ||
+    (i.aiMotivos != null && i.aiMotivos !== "") ||
+    (i.aiRiesgos != null && i.aiRiesgos !== "");
 
   // 🔹 LISTAS ÚNICAS PARA SELECTS
   const categoriasUnicas = useMemo(
@@ -191,10 +256,10 @@ export default function Analisis() {
         new Set(
           incidentes
             .map((i) => i.aiCategoria)
-            .filter((x): x is string => !!x && x.trim() !== "")
-        )
+            .filter((x): x is string => !!x && x.trim() !== ""),
+        ),
       ),
-    [incidentes]
+    [incidentes],
   );
 
   const prioridadesUnicas = useMemo(
@@ -203,10 +268,10 @@ export default function Analisis() {
         new Set(
           incidentes
             .map((i) => i.aiPrioridad)
-            .filter((x): x is string => !!x && x.trim() !== "")
-        )
+            .filter((x): x is string => !!x && x.trim() !== ""),
+        ),
       ),
-    [incidentes]
+    [incidentes],
   );
 
   const comunidadesUnicas = useMemo(
@@ -215,26 +280,18 @@ export default function Analisis() {
         new Set(
           incidentes
             .map((i) => i.comunidadNombre)
-            .filter((x): x is string => !!x && x.trim() !== "")
-        )
+            .filter((x): x is string => !!x && x.trim() !== ""),
+        ),
       ),
-    [incidentes]
+    [incidentes],
   );
 
-  // 🔹 FILTRADO (sin aiPosibleFalso)
+  // 🔹 FILTRADO (solo con IA)
   const incidentesFiltrados = useMemo(() => {
     const term = busqueda.toLowerCase().trim();
 
     return incidentes.filter((i) => {
-      // Solo con IA real (sin "posible falso")
-      const tieneIA =
-        i.aiCategoria != null ||
-        i.aiPrioridad != null ||
-        i.aiConfianza != null ||
-        (i.aiMotivos != null && i.aiMotivos !== "") ||
-        (i.aiRiesgos != null && i.aiRiesgos !== "");
-
-      if (!tieneIA) return false;
+      if (!tieneIA(i)) return false;
 
       if (term) {
         const blob = `${i.usuarioNombre ?? ""} ${i.comunidadNombre ?? ""} ${
@@ -264,28 +321,29 @@ export default function Analisis() {
     filtroFecha,
   ]);
 
-  // KPI counts
+  // KPI counts (siempre basados en filtros en pantalla)
   const total = incidentesFiltrados.length;
+
   const alta = useMemo(
     () =>
       incidentesFiltrados.filter(
-        (x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA"
+        (x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA",
       ).length,
-    [incidentesFiltrados]
+    [incidentesFiltrados],
   );
   const media = useMemo(
     () =>
       incidentesFiltrados.filter(
-        (x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA"
+        (x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA",
       ).length,
-    [incidentesFiltrados]
+    [incidentesFiltrados],
   );
   const baja = useMemo(
     () =>
       incidentesFiltrados.filter(
-        (x) => (x.aiPrioridad ?? "").toUpperCase() === "BAJA"
+        (x) => (x.aiPrioridad ?? "").toUpperCase() === "BAJA",
       ).length,
-    [incidentesFiltrados]
+    [incidentesFiltrados],
   );
   const avgConf = useMemo(() => {
     const vals = incidentesFiltrados
@@ -298,7 +356,7 @@ export default function Analisis() {
   // Line chart
   const lineData = useMemo(
     () => buildDailyIncidentes(incidentesFiltrados, 14),
-    [incidentesFiltrados]
+    [incidentesFiltrados],
   );
 
   // Top categorías / comunidades
@@ -328,12 +386,12 @@ export default function Analisis() {
 
   const maxCategoria = useMemo(
     () => Math.max(1, ...topCategorias.map((x) => x.total)),
-    [topCategorias]
+    [topCategorias],
   );
 
   const maxComunidad = useMemo(
     () => Math.max(1, ...topComunidades.map((x) => x.total)),
-    [topComunidades]
+    [topComunidades],
   );
 
   // Donut prioridad (ALTA/MEDIA/BAJA/OTRO)
@@ -354,30 +412,35 @@ export default function Analisis() {
       : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
 
   /* =====================
-     EXPORT (PDF + EXCEL)
-  ===================== */
-  const [openExport, setOpenExport] = useState(false);
-  const exportRef = useRef<HTMLDivElement | null>(null);
-  const lineChartRef = useRef<HTMLDivElement | null>(null);
+        EXPORT PRO (MODAL)
+  ====================== */
+  type ExportFormato = "pdf" | "excel";
+  type ExportContenido = "solo_tabla" | "completo" | "solo_registros";
 
-  useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (!openExport) return;
-      if (!exportRef.current) return;
-      if (!exportRef.current.contains(e.target as Node)) setOpenExport(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenExport(false);
-    };
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [openExport]);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormato, setExportFormato] = useState<ExportFormato>("pdf");
+  const [exportContenido, setExportContenido] =
+    useState<ExportContenido>("completo");
 
-  const canExport = incidentesFiltrados.length > 0;
+  // usar filtros actuales (busqueda/selects/fecha)
+  const [exportUsarFiltros, setExportUsarFiltros] = useState(true);
+
+  // ✅ KPIs SOLO en “completo”
+  const [exportIncluirKPIs, setExportIncluirKPIs] = useState(true);
+
+  const kpiHabilitado = exportContenido === "completo";
+
+  const setContenidoSeguro = (next: ExportContenido) => {
+    setExportContenido(next);
+    if (next !== "completo") setExportIncluirKPIs(false);
+  };
+
+  const getExportSource = () => {
+    if (exportUsarFiltros) return incidentesFiltrados;
+    return incidentes.filter(tieneIA);
+  };
+
+  const canExport = getExportSource().length > 0;
 
   const toDataURL = async (url: string): Promise<string> => {
     const res = await fetch(url);
@@ -404,8 +467,8 @@ export default function Analisis() {
     return canvas.toDataURL("image/png", 1.0);
   };
 
-  const buildExportRows = () =>
-    incidentesFiltrados.map((i) => {
+  const buildExportRows = (source: IncidenteResponseDTO[]) =>
+    source.map((i) => {
       const motivos = parseJsonArrayString(i.aiMotivos).join(" | ");
       const riesgos = parseJsonArrayString(i.aiRiesgos).join(" | ");
       return {
@@ -422,133 +485,311 @@ export default function Analisis() {
       };
     });
 
-  const exportExcel = () => {
-    const rows = buildExportRows();
-    const ws = XLSX.utils.json_to_sheet(rows);
+  const exportExcelPro = () => {
+    const source = getExportSource();
 
-    ws["!cols"] = [
-      { wch: 8 }, // ID
-      { wch: 22 }, // Usuario
-      { wch: 22 }, // Comunidad
-      { wch: 22 }, // Categoria
-      { wch: 12 }, // Prioridad
-      { wch: 10 }, // Confianza
-      { wch: 40 }, // Motivos
-      { wch: 40 }, // Riesgos
-      { wch: 12 }, // Fecha
-    ];
+    const incluirTabla =
+      exportContenido === "solo_tabla" || exportContenido === "completo";
+    const incluirRegistros =
+      exportContenido === "solo_registros" || exportContenido === "completo";
+
+    const incluirKPIs = exportContenido === "completo" && exportIncluirKPIs;
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Analisis IA");
+
+    // 1) TABLA
+    if (incluirTabla) {
+      const rows = buildExportRows(source);
+      const ws = XLSX.utils.json_to_sheet(rows);
+
+      ws["!cols"] = [
+        { wch: 8 }, // ID
+        { wch: 22 }, // Usuario
+        { wch: 22 }, // Comunidad
+        { wch: 22 }, // Categoria
+        { wch: 12 }, // Prioridad
+        { wch: 10 }, // Confianza
+        { wch: 40 }, // Motivos
+        { wch: 40 }, // Riesgos
+        { wch: 12 }, // Fecha
+      ];
+
+      XLSX.utils.book_append_sheet(wb, ws, "Analisis_IA");
+    }
+
+    // 2) KPIs + ESTADO GLOBAL (solo completo)
+    if (incluirKPIs) {
+      const totalSafe = total || 1;
+      const pctRow = (n: number) => `${((n / totalSafe) * 100).toFixed(1)}%`;
+
+      const wsResumen = XLSX.utils.json_to_sheet([
+        { KPI: "Incidentes analizados", Valor: total },
+        { KPI: "Prioridad ALTA", Valor: alta },
+        { KPI: "Prioridad MEDIA", Valor: media },
+        { KPI: "Prioridad BAJA", Valor: baja },
+        { KPI: "OTRO", Valor: otro },
+        {
+          KPI: "Confianza promedio",
+          Valor: avgConf ? avgConf.toFixed(2) : "—",
+        },
+        {
+          KPI: "Filtro aplicado",
+          Valor: exportUsarFiltros
+            ? "Sí (filtros actuales)"
+            : "No (todos con IA)",
+        },
+        { KPI: "Registros exportados", Valor: source.length },
+      ]);
+      wsResumen["!cols"] = [{ wch: 28 }, { wch: 22 }];
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+
+      const wsEstado = XLSX.utils.json_to_sheet([
+        { Prioridad: "ALTA", Cantidad: alta, Porcentaje: pctRow(alta) },
+        { Prioridad: "MEDIA", Cantidad: media, Porcentaje: pctRow(media) },
+        { Prioridad: "BAJA", Cantidad: baja, Porcentaje: pctRow(baja) },
+        { Prioridad: "OTRO", Cantidad: otro, Porcentaje: pctRow(otro) },
+      ]);
+      wsEstado["!cols"] = [{ wch: 14 }, { wch: 12 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsEstado, "Estado_global");
+    }
+
+    // 3) REGISTROS 14D (no recorta fechas)
+    if (incluirRegistros) {
+      const wsChart = XLSX.utils.json_to_sheet(
+        lineData.map((p) => ({
+          Dia: p.label,
+          Incidentes: p.incidentes,
+        })),
+      );
+      wsChart["!cols"] = [{ wch: 14 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsChart, "Incidentes_14_dias");
+    }
 
     const stamp = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(wb, `reporte_analisis_ia_${stamp}.xlsx`);
   };
 
-  const exportPDF = async () => {
+  const exportPDFPro = async () => {
+    const source = getExportSource();
+
+    const incluirTabla =
+      exportContenido === "solo_tabla" || exportContenido === "completo";
+    const incluirRegistros =
+      exportContenido === "solo_registros" || exportContenido === "completo";
+    const incluirKPIs = exportContenido === "completo" && exportIncluirKPIs;
+
     const doc = new jsPDF("p", "mm", "a4");
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-    const marginX = 14;
 
-    // Logo
+    // logo centrado
+    const logoSize = 40;
+    const logoX = (pageW - logoSize) / 2;
+    const logoY = 10;
+
     try {
       const logo = await toDataURL(logoSafeZone);
-      const logoW = 40;
-      const logoH = 40;
-      doc.addImage(logo, "PNG", (pageW - logoW) / 2, 10, logoW, logoH);
+      doc.addImage(logo, "PNG", logoX, logoY, logoSize, logoSize);
     } catch {}
 
-    // Header
-    doc.setFont("helvetica", "bold");
+    const titleY = logoY + logoSize + 10;
+
     doc.setFontSize(16);
-    doc.text("Reporte de IA Análisis", pageW / 2, 58, { align: "center" });
+    doc.setFont("helvetica", "bold");
+    doc.text(
+      exportContenido === "solo_tabla"
+        ? "Reporte IA Análisis (Solo tabla)"
+        : exportContenido === "solo_registros"
+          ? "Reporte IA Análisis (Solo registros)"
+          : "Reporte IA Análisis (Completo)",
+      pageW / 2,
+      titleY,
+      { align: "center" },
+    );
 
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Generado: ${new Date().toLocaleString("es-EC")}`, pageW / 2, 65, {
-      align: "center",
-    });
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      `Generado: ${new Date().toLocaleString("es-EC")}`,
+      pageW / 2,
+      titleY + 8,
+      { align: "center" },
+    );
 
-    const startYTabla = 75;
+    let cursorY = titleY + 18;
 
-    // Tabla
-    autoTable(doc, {
-      startY: startYTabla,
-      head: [
-        [
-          "ID",
-          "Usuario",
-          "Comunidad",
-          "Categoría IA",
-          "Prioridad",
-          "Conf.",
-          "Motivos",
-          "Riesgos",
-          "Fecha",
+    // 1) RESUMEN + ESTADO GLOBAL (solo completo)
+    if (incluirKPIs) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumen", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 6;
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Resumen", "Valor"]],
+        body: [
+          ["Incidentes analizados", String(total)],
+          ["ALTA", String(alta)],
+          ["MEDIA", String(media)],
+          ["BAJA", String(baja)],
+          ["OTRO", String(otro)],
+          ["Confianza promedio", avgConf ? avgConf.toFixed(2) : "—"],
+          [
+            "Filtro aplicado",
+            exportUsarFiltros ? "Sí (filtros actuales)" : "No (todos con IA)",
+          ],
+          ["Registros exportados", String(source.length)],
         ],
-      ],
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 14, right: 14 },
+      });
 
-      body: incidentesFiltrados.map((i) => {
-        const motivos = parseJsonArrayString(i.aiMotivos).join(" | ");
-        const riesgos = parseJsonArrayString(i.aiRiesgos).join(" | ");
-        return [
-          String(i.id ?? "—"),
-          String(i.usuarioNombre ?? "—"),
-          String(i.comunidadNombre ?? "—"),
-          String(i.aiCategoria ?? "—"),
-          String(i.aiPrioridad ?? "—"),
-          i.aiConfianza == null ? "—" : Number(i.aiConfianza).toFixed(2),
-          motivos || "—",
-          riesgos || "—",
-          isoToYMD(i.fechaCreacion) || "—",
-        ];
-      }),
-      styles: { fontSize: 9, cellPadding: 2, overflow: "linebreak" },
-      headStyles: { fillColor: [30, 30, 30] },
-      margin: { left: marginX, right: marginX },
-      columnStyles: {
-        0: { cellWidth: 8 },
-        1: { cellWidth: 18 },
-        2: { cellWidth: 18 },
-        3: { cellWidth: 22 },
-        4: { cellWidth: 14 },
-        5: { cellWidth: 10 },
-        6: { cellWidth: 40 },
-        7: { cellWidth: 40 },
-        8: { cellWidth: 14 },
-      },
-    });
+      cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+        8) as number;
 
-    // Gráfica al final
-    try {
-      const img = await captureLineChartPNG();
-      if (img) {
-        let y = (doc as any).lastAutoTable?.finalY ?? startYTabla + 20;
-        y += 16;
+      const totalSafe = total || 1;
+      const pctRow = (n: number) => `${Math.round((n / totalSafe) * 100)}%`;
 
-        const w = pageW - marginX * 2;
-        const h = 85;
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Prioridad", "Cantidad", "Porcentaje"]],
+        body: [
+          ["ALTA", String(alta), pctRow(alta)],
+          ["MEDIA", String(media), pctRow(media)],
+          ["BAJA", String(baja), pctRow(baja)],
+          ["OTRO", String(otro), pctRow(otro)],
+        ],
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 60 },
+          1: { cellWidth: 30, halign: "center" },
+          2: { cellWidth: 30, halign: "center" },
+        },
+      });
 
-        if (y + h + 18 > pageH) {
-          doc.addPage();
-          y = 28;
-        }
+      cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+        10) as number;
+    }
 
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(12);
-        doc.text("Gráfica: Incidentes analizados (14 días)", pageW / 2, y - 6, {
-          align: "center",
-        });
-        doc.setFont("helvetica", "normal");
+    // 2) TABLA PRINCIPAL (si aplica)
+    if (incluirTabla) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Tabla de reportes IA", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 6;
+      autoTable(doc, {
+        startY: cursorY,
+        head: [
+          [
+            "ID",
+            "Usuario",
+            "Comunidad",
+            "Categoría IA",
+            "Prioridad",
+            "Conf.",
+            "Motivos",
+            "Riesgos",
+            "Fecha",
+          ],
+        ],
+        body: source.map((i) => {
+          const motivos = parseJsonArrayString(i.aiMotivos).join(" | ");
+          const riesgos = parseJsonArrayString(i.aiRiesgos).join(" | ");
+          return [
+            String(i.id ?? "—"),
+            String(i.usuarioNombre ?? "—"),
+            String(i.comunidadNombre ?? "—"),
+            String(i.aiCategoria ?? "—"),
+            String(i.aiPrioridad ?? "—"),
+            i.aiConfianza == null ? "—" : Number(i.aiConfianza).toFixed(2),
+            motivos || "—",
+            riesgos || "—",
+            isoToYMD(i.fechaCreacion) || "—",
+          ];
+        }),
+        styles: { fontSize: 8.5, cellPadding: 2, overflow: "linebreak" },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 10, right: 10 },
+        columnStyles: {
+          0: { cellWidth: 8 },
+          1: { cellWidth: 18 },
+          2: { cellWidth: 18 },
+          3: { cellWidth: 22 },
+          4: { cellWidth: 14 },
+          5: { cellWidth: 10 },
+          6: { cellWidth: 40 },
+          7: { cellWidth: 40 },
+          8: { cellWidth: 14 },
+        },
+      });
 
-        const xChart = (pageW - w) / 2;
-        doc.addImage(img, "PNG", xChart, y, w, h);
+      cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+        10) as number;
+    }
+
+    // 3) GRÁFICA + TABLA 14D (si aplica)
+    if (incluirRegistros) {
+      if (cursorY + 95 > pageH) {
+        doc.addPage();
+        cursorY = 18;
       }
-    } catch {}
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Incidentes analizados (últimos 14 días)", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 6;
+
+      try {
+        const img = await captureLineChartPNG();
+        if (img) {
+          const imgW = pageW - 28;
+          const imgH = 72;
+          const x = (pageW - imgW) / 2;
+          doc.addImage(img, "PNG", x, cursorY, imgW, imgH);
+          cursorY += imgH + 6;
+        }
+      } catch {}
+
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Día", "Incidentes"]],
+        body: lineData.map((p) => [p.label, String(p.incidentes)]),
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 40, halign: "center" },
+        },
+      });
+    }
 
     const stamp = new Date().toISOString().slice(0, 10);
     doc.save(`reporte_analisis_ia_${stamp}.pdf`);
+  };
+
+  const exportNow = async () => {
+    if (!canExport) return;
+
+    if (exportFormato === "excel") {
+      exportExcelPro();
+    } else {
+      await exportPDFPro();
+    }
+
+    setExportOpen(false);
   };
 
   return (
@@ -627,11 +868,11 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                <div className="topbar-actions" ref={exportRef}>
-                  {/* ✅ EXPORTAR (igual pro que Reportes) */}
+                <div className="topbar-actions">
+                  {/* ✅ EXPORTAR (MODAL PRO) */}
                   <button
                     className="action-pill action-pill-icon"
-                    onClick={() => setOpenExport((v) => !v)}
+                    onClick={() => setExportOpen(true)}
                     disabled={!canExport}
                     title="Exportar análisis"
                     type="button"
@@ -640,34 +881,6 @@ export default function Analisis() {
                     <Download size={18} />
                     Exportar
                   </button>
-
-                  {openExport && (
-                    <div className="export-dropdown">
-                      <button
-                        className="export-option"
-                        onClick={() => {
-                          exportExcel();
-                          setOpenExport(false);
-                        }}
-                        type="button"
-                      >
-                        <FileSpreadsheet size={16} />
-                        Excel (.xlsx)
-                      </button>
-
-                      <button
-                        className="export-option"
-                        onClick={() => {
-                          exportPDF();
-                          setOpenExport(false);
-                        }}
-                        type="button"
-                      >
-                        <FileText size={16} />
-                        PDF
-                      </button>
-                    </div>
-                  )}
 
                   <button
                     className="action-pill action-pill-accent"
@@ -734,7 +947,7 @@ export default function Analisis() {
               />
             </div>
 
-            {/* KPIs (sin “posibles falsos”) */}
+            {/* KPIs */}
             <div className="kpi-row">
               <div className="kpi-card">
                 <div className="kpi-head">
@@ -787,37 +1000,92 @@ export default function Analisis() {
 
             {/* Charts + Side card */}
             <div className="grid-2col">
-              <section className="chart-card-v2 card">
+              <section className="table-card-v2 card">
                 <div className="chart-head">
                   <div>
-                    <div className="chart-title-v2">Incidentes analizados</div>
-                    <div className="chart-sub-v2">Últimos 14 días</div>
+                    <div className="chart-title-v2">Reportes con IA</div>
+                    <div className="chart-sub-v2">Listado (compacto)</div>
                   </div>
                 </div>
 
-                {/*ref para exportar la gráfica */}
-                <div className="line-chart-wrap5" ref={lineChartRef}>
-                  <ResponsiveContainer width="100%" height={480}>
-                    <LineChart
-                      data={lineData}
-                      margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
-                      <XAxis dataKey="label" tickMargin={8} />
-                      <YAxis tickMargin={8} allowDecimals={false} />
-                      <Tooltip
-                        labelFormatter={(l) => `Día: ${l}`}
-                        formatter={(v: any) => [v, "Incidentes"]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="incidentes"
-                        stroke="#f95150"
-                        strokeWidth={3}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div
+                  ref={tablaWrapRef}
+                  className="tabla-wrap tabla-wrap-compact"
+                >
+                  <table className="tabla-analisis tabla-compact">
+                    <thead>
+                      <tr>
+                        <th className="col-id">ID</th>
+                        <th className="col-usu">Usuario</th>
+                        <th className="col-com">Comunidad</th>
+                        <th className="col-cate">Categoría IA</th>
+                        <th className="col-prio">Prioridad</th>
+                        <th className="col-ver">Ver</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td colSpan={6}>Cargando análisis IA...</td>
+                        </tr>
+                      ) : incidentesFiltrados.length === 0 ? (
+                        <tr>
+                          <td colSpan={6}>
+                            No se encontraron incidentes con IA.
+                          </td>
+                        </tr>
+                      ) : (
+                        incidentesFiltrados.map((i) => (
+                          <tr key={i.id}>
+                            <td className="td-center">{i.id ?? "-"}</td>
+
+                            <td
+                              className="cell-ellipsis"
+                              title={i.usuarioNombre ?? "-"}
+                            >
+                              {i.usuarioNombre ?? "-"}
+                            </td>
+
+                            <td
+                              className="cell-ellipsis"
+                              title={i.comunidadNombre ?? "-"}
+                            >
+                              {i.comunidadNombre ?? "-"}
+                            </td>
+
+                            <td
+                              className="cell-ellipsis"
+                              title={i.aiCategoria ?? "-"}
+                            >
+                              {i.aiCategoria ?? "-"}
+                            </td>
+
+                            <td className="td-center">
+                              <span
+                                className={getBadgePrioridad(i.aiPrioridad)}
+                              >
+                                {i.aiPrioridad ?? "-"}
+                              </span>
+                            </td>
+
+                            <td className="td-center">
+                              <button
+                                type="button"
+                                className="row-action"
+                                onClick={() => openDetalle(i)}
+                                aria-label={`Ver detalle del incidente ${i.id}`}
+                                title="Ver detalle"
+                              >
+                                <Eye size={16} />
+                                <span>Ver</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </section>
 
@@ -877,9 +1145,7 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                {/* ===============================
-                             Top categorías
-                  ================================ */}
+                {/* Top categorías */}
                 <div className="toplist">
                   <div className="toplist-title">Top categorías</div>
                   <div className="toplist-sub">Frecuencia por categoría IA</div>
@@ -893,9 +1159,7 @@ export default function Analisis() {
                           className="toplist-row"
                           key={c.categoria}
                           style={{
-                            ["--p" as any]: `${
-                              (c.total / maxCategoria) * 100
-                            }%`,
+                            ["--p" as any]: `${(c.total / maxCategoria) * 100}%`,
                           }}
                         >
                           <span className="toplist-name" title={c.categoria}>
@@ -908,9 +1172,7 @@ export default function Analisis() {
                   </div>
                 </div>
 
-                {/* ===============================
-                          Top comunidades
-                  ================================ */}
+                {/* Top comunidades */}
                 <div className="toplist">
                   <div className="toplist-title">Top comunidades</div>
                   <div className="toplist-sub">Frecuencia por comunidad</div>
@@ -924,9 +1186,7 @@ export default function Analisis() {
                           className="toplist-row"
                           key={c.comunidad}
                           style={{
-                            ["--p" as any]: `${
-                              (c.total / maxComunidad) * 100
-                            }%`,
+                            ["--p" as any]: `${(c.total / maxComunidad) * 100}%`,
                           }}
                         >
                           <span className="toplist-name" title={c.comunidad}>
@@ -941,104 +1201,38 @@ export default function Analisis() {
               </section>
             </div>
 
-            {/* TABLA (sin columna "Falso") */}
-            <section className="tabla-card">
-              <div className="tabla-wrap">
-                <table className="tabla-analisis">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Usuario</th>
-                      <th>Comunidad</th>
-                      <th>Categoría IA</th>
-                      <th>Prioridad</th>
-                      <th>Confianza</th>
-                      <th>Motivos</th>
-                      <th>Riesgos</th>
-                      <th>Fecha</th>
-                    </tr>
-                  </thead>
+            {/* GRÁFICA (ABAJO) */}
+            <section className="chart-card-v2 card chart-card-bottom">
+              <div className="chart-head">
+                <div>
+                  <div className="chart-title-v2">Incidentes analizados</div>
+                  <div className="chart-sub-v2">Últimos 14 días</div>
+                </div>
+              </div>
 
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={9}>Cargando análisis IA...</td>
-                      </tr>
-                    ) : incidentesFiltrados.length === 0 ? (
-                      <tr>
-                        <td colSpan={9}>
-                          No se encontraron incidentes con IA.
-                        </td>
-                      </tr>
-                    ) : (
-                      incidentesFiltrados.map((i) => {
-                        const motivos = parseJsonArrayString(i.aiMotivos);
-                        const riesgos = parseJsonArrayString(i.aiRiesgos);
-
-                        return (
-                          <tr key={i.id}>
-                            <td className="td-center">{i.id}</td>
-                            <td title={i.usuarioNombre ?? "-"}>
-                              {i.usuarioNombre ?? "-"}
-                            </td>
-                            <td title={i.comunidadNombre ?? "-"}>
-                              {i.comunidadNombre ?? "-"}
-                            </td>
-                            <td title={i.aiCategoria ?? "-"}>
-                              {i.aiCategoria ?? "-"}
-                            </td>
-                            <td className="td-center">
-                              <span
-                                className={getBadgePrioridad(i.aiPrioridad)}
-                              >
-                                {i.aiPrioridad ?? "-"}
-                              </span>
-                            </td>
-                            <td className="td-center">
-                              {i.aiConfianza == null
-                                ? "-"
-                                : i.aiConfianza.toFixed(2)}
-                            </td>
-
-                            <td className="cell-wrap">
-                              {motivos.length === 0 ? (
-                                "-"
-                              ) : (
-                                <ul className="mini-list">
-                                  {motivos.slice(0, 3).map((m, idx) => (
-                                    <li key={idx}>{m}</li>
-                                  ))}
-                                  {motivos.length > 3 && (
-                                    <li>+{motivos.length - 3} más...</li>
-                                  )}
-                                </ul>
-                              )}
-                            </td>
-
-                            <td className="cell-wrap">
-                              {riesgos.length === 0 ? (
-                                "-"
-                              ) : (
-                                <ul className="mini-list">
-                                  {riesgos.slice(0, 3).map((r, idx) => (
-                                    <li key={idx}>{r}</li>
-                                  ))}
-                                  {riesgos.length > 3 && (
-                                    <li>+{riesgos.length - 3} más...</li>
-                                  )}
-                                </ul>
-                              )}
-                            </td>
-
-                            <td className="td-center">
-                              {isoToYMD(i.fechaCreacion) || "-"}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+              {/* ref para exportar la gráfica */}
+              <div className="line-chart-wrap5" ref={lineChartRef}>
+                <ResponsiveContainer width="100%" height={420}>
+                  <LineChart
+                    data={lineData}
+                    margin={{ top: 10, right: 16, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.25} />
+                    <XAxis dataKey="label" tickMargin={8} />
+                    <YAxis tickMargin={8} allowDecimals={false} />
+                    <Tooltip
+                      labelFormatter={(l) => `Día: ${l}`}
+                      formatter={(v: any) => [v, "Incidentes"]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="incidentes"
+                      stroke="#f95150"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
             </section>
 
@@ -1048,6 +1242,404 @@ export default function Analisis() {
           </motion.div>
         </main>
       </div>
+
+      {/* =========================
+      MODAL EXPORTAR
+========================== */}
+      <AnimatePresence>
+        {exportOpen && (
+          <motion.div
+            className="anx-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={() => setExportOpen(false)}
+          >
+            <motion.div
+              className="anx-modal-card anx-export-card"
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onMouseDown={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Exportar reporte"
+            >
+              <div className="anx-modal-head">
+                <div>
+                  <div className="anx-modal-title">Exportar</div>
+                  <div className="anx-modal-sub">
+                    Selecciona el contenido que deseas exportar. El reporte
+                    conservará el logotipo, el encabezado y el formato actual.
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="anx-modal-x"
+                  onClick={() => setExportOpen(false)}
+                  aria-label="Cerrar"
+                  title="Cerrar"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="anx-export-grid">
+                {/* Formato */}
+                <div className="anx-export-col">
+                  <div className="anx-export-title">
+                    <span className="anx-dot" />
+                    Formato
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`anx-export-item ${exportFormato === "pdf" ? "active" : ""}`}
+                    onClick={() => setExportFormato("pdf")}
+                  >
+                    <span className="anx-export-ico">
+                      <FileText size={18} />
+                    </span>
+                    <div>
+                      <div className="anx-export-name">PDF</div>
+                      <div className="anx-modal-sub" style={{ marginTop: 2 }}>
+                        Ideal para impresión
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`anx-export-item ${exportFormato === "excel" ? "active" : ""}`}
+                    onClick={() => setExportFormato("excel")}
+                  >
+                    <span className="anx-export-ico">
+                      <FileSpreadsheet size={18} />
+                    </span>
+                    <div>
+                      <div className="anx-export-name">Excel</div>
+                      <div className="anx-modal-sub" style={{ marginTop: 2 }}>
+                        Análisis y filtros
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                {/* Contenido */}
+                <div className="anx-export-col">
+                  <div className="anx-export-title">
+                    <span className="anx-dot" />
+                    Contenido
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`anx-export-item ${exportContenido === "completo" ? "active" : ""}`}
+                    onClick={() => setContenidoSeguro("completo")}
+                  >
+                    <span className="anx-export-ico">
+                      <LayoutDashboard size={18} />
+                    </span>
+                    <div>
+                      <div className="anx-export-name">Reporte completo</div>
+                      <div className="anx-modal-sub" style={{ marginTop: 2 }}>
+                        Resumen + estado global + tabla + registros
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`anx-export-item ${exportContenido === "solo_tabla" ? "active" : ""}`}
+                    onClick={() => setContenidoSeguro("solo_tabla")}
+                  >
+                    <span className="anx-export-ico">
+                      <Table2 size={18} />
+                    </span>
+                    <div>
+                      <div className="anx-export-name">Solo tabla</div>
+                      <div className="anx-modal-sub" style={{ marginTop: 2 }}>
+                        Exporta únicamente la tabla principal
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className={`anx-export-item ${exportContenido === "solo_registros" ? "active" : ""}`}
+                    onClick={() => setContenidoSeguro("solo_registros")}
+                  >
+                    <span className="anx-export-ico">
+                      <LineChartIcon size={18} />
+                    </span>
+                    <div>
+                      <div className="anx-export-name">Solo registros</div>
+                      <div className="anx-modal-sub" style={{ marginTop: 2 }}>
+                        Gráfica + tabla completa de 14 días
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Opciones */}
+              <div className="anx-export-options">
+                <div className="anx-export-title">
+                  <span className="anx-dot" />
+                  Opciones
+                </div>
+
+                <button
+                  type="button"
+                  className={`anx-opt ${exportUsarFiltros ? "on" : ""}`}
+                  onClick={() => setExportUsarFiltros((v) => !v)}
+                >
+                  <div className="anx-opt-text">
+                    Usar filtros actuales <br />
+                    <span
+                      style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
+                    >
+                      Respeta búsqueda, selects y fecha actuales
+                    </span>
+                  </div>
+
+                  <span
+                    className={`anx-switch ${exportUsarFiltros ? "on" : ""}`}
+                  >
+                    {exportUsarFiltros ? (
+                      <ToggleRight size={22} />
+                    ) : (
+                      <ToggleLeft size={22} />
+                    )}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`anx-opt ${exportIncluirKPIs && kpiHabilitado ? "on" : ""}`}
+                  onClick={() =>
+                    kpiHabilitado && setExportIncluirKPIs((v) => !v)
+                  }
+                  disabled={!kpiHabilitado}
+                  title={
+                    kpiHabilitado
+                      ? "Incluir KPIs"
+                      : "Solo disponible en Reporte completo"
+                  }
+                  style={{ opacity: kpiHabilitado ? 1 : 0.7 }}
+                >
+                  <div className="anx-opt-text">
+                    Incluir KPIs / Resumen <br />
+                    <span
+                      style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
+                    >
+                      Solo disponible en “Reporte completo”
+                    </span>
+                  </div>
+
+                  <span
+                    className={`anx-switch ${exportIncluirKPIs && kpiHabilitado ? "on" : ""}`}
+                  >
+                    {exportIncluirKPIs && kpiHabilitado ? (
+                      <ToggleRight size={22} />
+                    ) : (
+                      <ToggleLeft size={22} />
+                    )}
+                  </span>
+                </button>
+
+                <div className="anx-export-count">
+                  Registros a exportar: {getExportSource().length} de{" "}
+                  {incidentes.filter(tieneIA).length}
+                </div>
+              </div>
+
+              <div className="anx-export-footer">
+                <button
+                  type="button"
+                  className="anx-btn-light"
+                  onClick={() => setExportOpen(false)}
+                >
+                  Cancelar
+                </button>
+
+                <button
+                  type="button"
+                  className="anx-btn-accent"
+                  onClick={exportNow}
+                  disabled={!canExport}
+                  title={!canExport ? "No hay datos para exportar" : "Exportar"}
+                >
+                  Exportar ahora
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================= MODAL DETALLE (VER) ========================== */}
+      <AnimatePresence>
+        {detalleOpen && detalleItem && (
+          <motion.div
+            className="anx-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={closeDetalle}
+          >
+            <motion.div
+              className="anx-modal-card anx-detail-card"
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.98 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onMouseDown={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Detalle del análisis IA"
+            >
+              <div className="anx-modal-body">
+                <div className="anx-modal-head">
+                  <div>
+                    <div className="anx-modal-title">Detalle del reporte</div>
+                    <div className="anx-modal-sub">
+                      Información completa del análisis IA y del incidente
+                      seleccionado.
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="anx-modal-x"
+                    onClick={closeDetalle}
+                    aria-label="Cerrar"
+                    title="Cerrar"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="anx-detail-grid">
+                  {/* Bloque: Principales */}
+                  <div className="anx-detail-block">
+                    <div className="anx-detail-title">Datos principales</div>
+
+                    <div className="anx-kv">
+                      <div className="anx-kv-row">
+                        <div className="anx-k">ID</div>
+                        <div className="anx-v">{detalleItem.id ?? "—"}</div>
+                      </div>
+
+                      <div className="anx-kv-row">
+                        <div className="anx-k">Usuario</div>
+                        <div className="anx-v">
+                          {detalleItem.usuarioNombre ?? "—"}
+                        </div>
+                      </div>
+
+                      <div className="anx-kv-row">
+                        <div className="anx-k">Comunidad</div>
+                        <div className="anx-v">
+                          {detalleItem.comunidadNombre ?? "—"}
+                        </div>
+                      </div>
+
+                      <div className="anx-kv-row">
+                        <div className="anx-k">Fecha</div>
+                        <div className="anx-v">
+                          {isoToYMD(detalleItem.fechaCreacion) || "—"}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bloque: IA */}
+                  <div className="anx-detail-block">
+                    <div className="anx-detail-title">Análisis IA</div>
+
+                    <div className="anx-kv">
+                      <div className="anx-kv-row">
+                        <div className="anx-k">Categoría IA</div>
+                        <div className="anx-v">
+                          {detalleItem.aiCategoria ?? "—"}
+                        </div>
+                      </div>
+
+                      <div className="anx-kv-row">
+                        <div className="anx-k">Prioridad</div>
+                        <div className="anx-v">
+                          <span
+                            className={getBadgePrioridad(
+                              detalleItem.aiPrioridad,
+                            )}
+                          >
+                            {detalleItem.aiPrioridad ?? "—"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="anx-kv-row">
+                        <div className="anx-k">Confianza</div>
+                        <div className="anx-v">
+                          {detalleItem.aiConfianza == null
+                            ? "—"
+                            : Number(detalleItem.aiConfianza).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bloque: Motivos */}
+                  <div className="anx-detail-block">
+                    <div className="anx-detail-title">Motivos</div>
+                    {parseJsonArrayString(detalleItem.aiMotivos).length ===
+                    0 ? (
+                      <div className="anx-empty">—</div>
+                    ) : (
+                      <ul className="anx-list">
+                        {parseJsonArrayString(detalleItem.aiMotivos).map(
+                          (m, idx) => (
+                            <li key={idx}>{m}</li>
+                          ),
+                        )}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Bloque: Riesgos */}
+                  <div className="anx-detail-block">
+                    <div className="anx-detail-title">Riesgos</div>
+                    {parseJsonArrayString(detalleItem.aiRiesgos).length ===
+                    0 ? (
+                      <div className="anx-empty">—</div>
+                    ) : (
+                      <ul className="anx-list">
+                        {parseJsonArrayString(detalleItem.aiRiesgos).map(
+                          (r, idx) => (
+                            <li key={idx}>{r}</li>
+                          ),
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+
+                <div className="anx-export-footer">
+                  <button
+                    type="button"
+                    className="anx-btn-light"
+                    onClick={closeDetalle}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

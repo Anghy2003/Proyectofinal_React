@@ -291,7 +291,7 @@ export default function Comunidades() {
   const [exportFormat, setExportFormat] = useState<ExportFormat>("PDF");
   const [exportScope, setExportScope] = useState<ExportScope>("FULL");
   const [exportUseFilter, setExportUseFilter] = useState(true);
-  //const [exportWithKpis, setExportWithKpis] = useState(true);
+  const [exportWithKpis, setExportWithKpis] = useState(true);
   const [exportBusy, setExportBusy] = useState(false);
 
   const exportRef = useRef<HTMLDivElement | null>(null);
@@ -348,6 +348,9 @@ export default function Comunidades() {
     setStateTarget(c);
     setStateOpen(true);
   };
+
+  //Para habilitar solo si es reporte completo
+  const kpisEnabled = exportScope === "FULL";
 
   // ✅ Suspender y reactivar (borrado lógico)
   const confirmToggleEstado = async () => {
@@ -495,6 +498,12 @@ export default function Comunidades() {
     [comunidades],
   );
 
+  useEffect(() => {
+    if (exportScope !== "FULL") {
+      setExportWithKpis(false);
+    }
+  }, [exportScope]);
+
   // Filtro
   const comunidadesFiltradas = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -540,10 +549,20 @@ export default function Comunidades() {
     const wb = XLSX.utils.book_new();
 
     // ✅ Hoja Resumen (siempre)
-    const resumen = buildResumenRows(data);
-    const wsResumen = XLSX.utils.json_to_sheet(resumen);
-    wsResumen["!cols"] = [{ wch: 24 }, { wch: 34 }];
-    XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+    if (scope === "FULL" && exportWithKpis) {
+      const resumen = buildResumenRows(data);
+      const wsResumen = XLSX.utils.json_to_sheet(resumen);
+      wsResumen["!cols"] = [{ wch: 24 }, { wch: 34 }];
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+    }
+
+    // ✅ Estado Global (si aplica)
+    if (scope === "FULL" && exportWithKpis) {
+      const estadoRows = buildEstadoGlobalRows(data);
+      const wsEstado = XLSX.utils.json_to_sheet(estadoRows);
+      wsEstado["!cols"] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, wsEstado, "Estado_Global");
+    }
 
     // ✅ Tabla (si aplica)
     if (scope === "TABLE" || scope === "FULL") {
@@ -631,7 +650,14 @@ export default function Comunidades() {
     // ✅ Meta (filtro / registros)
     let cursorY = titleY + 18;
 
-    if (scope === "FULL") {
+    if (scope === "FULL" && exportWithKpis) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumen", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
       autoTable(doc, {
         startY: cursorY,
         head: [["Resumen", "Valor"]],
@@ -652,8 +678,16 @@ export default function Comunidades() {
 
     // ✅ TABLA (si aplica)
     if (scope === "TABLE" || scope === "FULL") {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Tabla de comunidades", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
       autoTable(doc, {
         startY: cursorY,
+
         head: [["Código", "Nombre", "Miembros", "Dirección", "Estado"]],
         body: data.map((c) => [
           c.codigoAcceso ?? "—",
@@ -679,7 +713,7 @@ export default function Comunidades() {
           cursorY) + 10;
     }
 
-    // ✅ RESUMEN ESTADO (equivalente al donut) (si aplica)
+    //RESUMEN ESTADO (equivalente al donut) (si aplica)
     if (scope === "FULL") {
       // Salto de página si no entra
       if (cursorY + 40 > pageH) {
@@ -769,7 +803,7 @@ export default function Comunidades() {
       }
 
       // ✅ (Opcional pro) tabla corta con los últimos puntos
-      const last = lineData.slice(-7);
+      const last = lineData;
       autoTable(doc, {
         startY: cursorY,
         head: [
@@ -863,6 +897,24 @@ export default function Comunidades() {
       ["Solicitadas", String(s), pct(s)],
       ["Rechazadas", String(r), pct(r)],
       ["Suspendidas", String(su), pct(su)],
+    ];
+  };
+
+  const buildEstadoGlobalRows = (data: Comunidad[]) => {
+    const total = data.length || 1;
+
+    const a = data.filter((c) => c.estado === "ACTIVA").length;
+    const s = data.filter((c) => c.estado === "SOLICITADA").length;
+    const r = data.filter((c) => c.estado === "RECHAZADA").length;
+    const su = data.filter((c) => c.estado === "SUSPENDIDA").length;
+
+    const pct = (n: number) => `${Math.round((n / total) * 100)}%`;
+
+    return [
+      { Estado: "Activas", Cantidad: a, Porcentaje: pct(a) },
+      { Estado: "Solicitadas", Cantidad: s, Porcentaje: pct(s) },
+      { Estado: "Rechazadas", Cantidad: r, Porcentaje: pct(r) },
+      { Estado: "Suspendidas", Cantidad: su, Porcentaje: pct(su) },
     ];
   };
 
@@ -1780,10 +1832,10 @@ export default function Comunidades() {
             >
               <div className="sz-modal-head">
                 <div>
-                  <div className="sz-modal-title">Exportación de reporte</div>
+                  <div className="sz-modal-title1">Exportar</div>
                   <div className="sz-modal-sub">
-                    Elige qué quieres exportar. Se respeta logo/encabezado y el
-                    formato actual.
+                    Selecciona el contenido que deseas exportar. El reporte
+                    conservará el logotipo, el encabezado y el formato actual.
                   </div>
                 </div>
 
@@ -1954,6 +2006,42 @@ export default function Comunidades() {
 
                   <span className="sz-opt-text">
                     Usar filtros actuales (búsqueda / resultados visibles)
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`sz-opt ${exportWithKpis && kpisEnabled ? "on" : ""}`}
+                  onClick={() => {
+                    if (!kpisEnabled) return;
+                    setExportWithKpis((v) => !v);
+                  }}
+                  disabled={!kpisEnabled}
+                  style={
+                    !kpisEnabled
+                      ? { opacity: 0.5, cursor: "not-allowed" }
+                      : undefined
+                  }
+                  title={
+                    !kpisEnabled
+                      ? "Disponible solo en el reporte completo"
+                      : "Incluir KPIs / Resumen"
+                  }
+                >
+                  <span
+                    className={`sz-switch ${
+                      exportWithKpis && kpisEnabled ? "on" : ""
+                    }`}
+                  >
+                    {exportWithKpis && kpisEnabled ? (
+                      <ToggleRight size={18} />
+                    ) : (
+                      <ToggleLeft size={18} />
+                    )}
+                  </span>
+
+                  <span className="sz-opt-text">
+                    Incluir KPIs / Resumen en el reporte completo
                   </span>
                 </button>
 

@@ -3,7 +3,6 @@
 // ===============================
 import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
-import html2canvas from "html2canvas";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
 
@@ -634,6 +633,12 @@ export default function Usuarios() {
 
   // Solo queda esta opción (como pediste)
   const [exportUsarFiltros, setExportUsarFiltros] = useState(true);
+  const [exportWithKpis, setExportWithKpis] = useState(true);
+  const kpisEnabled = exportContenido === "completo";
+
+  useEffect(() => {
+    if (exportContenido !== "completo") setExportWithKpis(false);
+  }, [exportContenido]);
 
   const getExportSource = () =>
     exportUsarFiltros ? usuariosFiltrados : usuarios;
@@ -662,58 +667,6 @@ export default function Usuarios() {
       reader.readAsDataURL(blob);
     });
   };
-
-  // Captura DOM (donut/top comunidades) a PNG para PDF
-  async function elementToPngDataUrl(
-    el: HTMLElement,
-    scale = 2,
-  ): Promise<{ dataUrl: string; width: number; height: number }> {
-    const canvas = await html2canvas(el, {
-      backgroundColor: "#ffffff",
-      scale,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-    });
-
-    return {
-      dataUrl: canvas.toDataURL("image/png", 1.0),
-      width: canvas.width,
-      height: canvas.height,
-    };
-  }
-
-  function addImageCentered(
-    doc: jsPDF,
-    dataUrl: string,
-    y: number,
-    maxW: number,
-    maxH: number,
-    imgWpx: number,
-    imgHpx: number,
-  ) {
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-
-    const ratio = imgWpx / imgHpx;
-    let drawW = maxW;
-    let drawH = drawW / ratio;
-
-    if (drawH > maxH) {
-      drawH = maxH;
-      drawW = drawH * ratio;
-    }
-
-    if (y + drawH + 10 > pageH) {
-      doc.addPage();
-      y = 20;
-    }
-
-    const x = (pageW - drawW) / 2;
-    doc.addImage(dataUrl, "PNG", x, y, drawW, drawH);
-
-    return y + drawH + 10;
-  }
 
   const exportExcelPro = () => {
     const source = getExportSource();
@@ -851,8 +804,15 @@ export default function Usuarios() {
 
     let cursorY = titleY + 18;
 
-    // ✅ 1) RESUMEN (solo en "completo") — igual Comunidades
+    // 1) RESUMEN (solo en "completo") — igual Comunidades
     if (exportContenido === "completo") {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumen", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
       autoTable(doc, {
         startY: cursorY,
         head: [["Resumen", "Valor"]],
@@ -860,7 +820,7 @@ export default function Usuarios() {
           ["Total usuarios", String(totalUsuarios)],
           ["Cuenta activa", String(cuentaActivos)],
           ["Suspendidos", String(cuentaSuspendidos)],
-          [`Online (≤ ${ONLINE_THRESHOLD_MIN} min)`, String(onlineActivos)],
+          ["Online", String(onlineActivos)],
           [
             "Filtro aplicado",
             exportUsarFiltros
@@ -885,6 +845,13 @@ export default function Usuarios() {
 
     // ✅ 2) TABLA USUARIOS (si aplica)
     if (incluirTabla) {
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Tabla de usuarios", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 4;
       autoTable(doc, {
         startY: cursorY,
         head: [
@@ -1504,7 +1471,7 @@ export default function Usuarios() {
         </main>
       </div>
 
-      {/* ✅ MODAL EXPORTACIÓN PRO (igual a Comunidades) */}
+      {/* ✅ MODAL EXPORTACIÓN*/}
       <AnimatePresence>
         {exportOpen && (
           <motion.div
@@ -1524,10 +1491,10 @@ export default function Usuarios() {
             >
               <div className="sz-modal-head">
                 <div>
-                  <div className="sz-modal-title">Exportación de reporte</div>
+                  <div className="sz-modal-title2">Exportar</div>
                   <div className="sz-modal-sub">
-                    Elige qué quieres exportar. Se respeta logo/encabezado y el
-                    formato actual.
+                    Selecciona el contenido que deseas exportar. El reporte
+                    conservará el logotipo, el encabezado y el formato actual.
                   </div>
                 </div>
 
@@ -1706,6 +1673,30 @@ export default function Usuarios() {
                   </span>
                   <span className="sz-opt-text">
                     Usar filtros actuales (búsqueda / resultados visibles)
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`sz-opt ${exportWithKpis ? "on" : ""} ${!kpisEnabled ? "disabled" : ""}`}
+                  onClick={() => kpisEnabled && setExportWithKpis((v) => !v)}
+                  disabled={!kpisEnabled}
+                  title={
+                    !kpisEnabled
+                      ? "Disponible solo en Reporte completo"
+                      : "Incluir KPIs"
+                  }
+                >
+                  <span className={`sz-switch ${exportWithKpis ? "on" : ""}`}>
+                    {exportWithKpis ? (
+                      <ToggleRight size={18} />
+                    ) : (
+                      <ToggleLeft size={18} />
+                    )}
+                  </span>
+
+                  <span className="sz-opt-text">
+                    Incluir KPIs / Resumen (solo en reporte completo)
                   </span>
                 </button>
 
