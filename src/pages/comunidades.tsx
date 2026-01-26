@@ -54,6 +54,7 @@ import {
   ToggleLeft,
   ToggleRight,
   LineChart as LineChartIcon,
+  Eye,
 } from "lucide-react";
 
 type SessionData = {
@@ -548,7 +549,7 @@ export default function Comunidades() {
 
     const wb = XLSX.utils.book_new();
 
-    // ✅ Hoja Resumen (siempre)
+    //Hoja Resumen (siempre)
     if (scope === "FULL" && exportWithKpis) {
       const resumen = buildResumenRows(data);
       const wsResumen = XLSX.utils.json_to_sheet(resumen);
@@ -556,7 +557,7 @@ export default function Comunidades() {
       XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
     }
 
-    // ✅ Estado Global (si aplica)
+    //Estado Global (si aplica)
     if (scope === "FULL" && exportWithKpis) {
       const estadoRows = buildEstadoGlobalRows(data);
       const wsEstado = XLSX.utils.json_to_sheet(estadoRows);
@@ -564,7 +565,7 @@ export default function Comunidades() {
       XLSX.utils.book_append_sheet(wb, wsEstado, "Estado_Global");
     }
 
-    // ✅ Tabla (si aplica)
+    //Tabla (si aplica)
     if (scope === "TABLE" || scope === "FULL") {
       const rows = data.map((c) => ({
         Codigo: c.codigoAcceso ?? "—",
@@ -1276,12 +1277,13 @@ export default function Comunidades() {
 
                               <td style={{ textAlign: "center" }}>
                                 <button
-                                  className="sz-mini-btn"
+                                  className="btn-ver"
                                   type="button"
                                   onClick={() => openView(c)}
                                   title="Ver detalles"
                                 >
-                                  Ver
+                                  <Eye size={16} />
+                                  <span>Ver</span>
                                 </button>
                               </td>
                             </tr>
@@ -1293,7 +1295,7 @@ export default function Comunidades() {
                 </section>
               </section>
 
-              {/* ✅ DONUT */}
+              {/*DONUT */}
               <section className="donut-card-v2 card">
                 <div className="chart-head">
                   <div>
@@ -1877,7 +1879,17 @@ export default function Comunidades() {
                       <FileText size={18} />
                     </span>
 
-                    <span className="sz-export-name">PDF (presentación)</span>
+                    <div className="anx-opt-text">
+                      PDF <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Ideal para impresión
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -1899,7 +1911,17 @@ export default function Comunidades() {
                       <FileSpreadsheet size={18} />
                     </span>
 
-                    <span className="sz-export-name">Excel (datos)</span>
+                    <div className="anx-opt-text">
+                      Excel <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Análisis y filtros
+                      </span>
+                    </div>
                   </button>
                 </div>
 
@@ -1929,9 +1951,17 @@ export default function Comunidades() {
                       <Table2 size={18} />
                     </span>
 
-                    <span className="sz-export-name">
-                      Solo tabla (comunidades)
-                    </span>
+                    <div className="anx-opt-text">
+                      Solo Tabla <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Exportar unicamente la tabla principal
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -1953,9 +1983,17 @@ export default function Comunidades() {
                       <LayoutDashboard size={18} />
                     </span>
 
-                    <span className="sz-export-name">
-                      Reporte completo (tabla + resumen + tendencia)
-                    </span>
+                    <div className="anx-opt-text">
+                      Reporte completo <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Resumen + tabla + estado global + gráfica
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -1977,9 +2015,17 @@ export default function Comunidades() {
                       <LineChartIcon size={18} />
                     </span>
 
-                    <span className="sz-export-name">
-                      Solo registros (gráfica de abajo)
-                    </span>
+                    <div className="anx-opt-text">
+                      Solo Gráfica <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Gráfica tendencia de comunidades
+                      </span>
+                    </div>
                   </button>
                 </div>
               </div>
@@ -2003,10 +2049,14 @@ export default function Comunidades() {
                       <ToggleLeft size={18} />
                     )}
                   </span>
-
-                  <span className="sz-opt-text">
-                    Usar filtros actuales (búsqueda / resultados visibles)
-                  </span>
+                  <div className="anx-opt-text">
+                    Usar filtros actuales <br />
+                    <span
+                      style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
+                    >
+                      Busqueda/ resultados visibles
+                    </span>
+                  </div>
                 </button>
 
                 <button
@@ -2039,10 +2089,14 @@ export default function Comunidades() {
                       <ToggleLeft size={18} />
                     )}
                   </span>
-
-                  <span className="sz-opt-text">
-                    Incluir KPIs / Resumen en el reporte completo
-                  </span>
+                  <div className="anx-opt-text">
+                    Incluir KPIs / Resumen <br />
+                    <span
+                      style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
+                    >
+                      Solo disponible en “Reporte completo”
+                    </span>
+                  </div>
                 </button>
 
                 <div className="sz-export-count">

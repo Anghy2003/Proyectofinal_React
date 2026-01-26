@@ -374,7 +374,7 @@ body {
    Grafico
 =========================== */
 .line-chart-wrap5 {
-  margin-top: 200px;
+  margin-top: 50px;
   height: 480px;
 }
 
@@ -1151,8 +1151,8 @@ body {
    Fuerza rosado real (NO blanco)
 ====================================== */
 .anx-btn-accent{
-  background-color: #fde8e8 !important;   /* rosado sólido */
-  background-image: none !important;      /* elimina gradients */
+  background-color: #fde8e8 !important;  
+  background-image: none !important;      
   border: 1.5px solid #f95150 !important;
   color: #f95150 !important;
 
@@ -1199,12 +1199,10 @@ body {
    Modal Reportes / Análisis
 ========================================================= */
 
-/* 1. Quitar outline del navegador en TODOS los elementos del modal */
 .anx-modal-card * {
   outline: none;
 }
 
-/* 2. Quitar borde negro al hacer click (active/focus) */
 .anx-modal-card button,
 .anx-modal-card [role="button"],
 .anx-modal-card .anx-export-item,
@@ -1214,7 +1212,6 @@ body {
   box-shadow: none;
 }
 
-/* 3. Focus y focus-visible (Chrome / Edge / Firefox) */
 .anx-modal-card button:focus,
 .anx-modal-card button:focus-visible,
 .anx-modal-card [role="button"]:focus,
@@ -1397,7 +1394,7 @@ body {
 
 .tabla-analisis.tabla-compact{
   width: 100%;
-  table-layout: fixed;  /* 👈 clave */
+  table-layout: fixed;  
 }
 
 
@@ -1421,7 +1418,7 @@ body {
 
 .tabla-analisis.tabla-compact th.col-comu,
 .tabla-analisis.tabla-compact td.col-comu{
-  width: 80px;
+  width: 90px;
 }
 
 .tabla-analisis.tabla-compact th.col-cate,
@@ -1436,7 +1433,7 @@ body {
 
 .tabla-analisis.tabla-compact th.col-ver,
 .tabla-analisis.tabla-compact td.col-ver{
-  width: 80px;
+  width: 50px;
 }
 
 .tabla-analisis.tabla-compact td.cell-ellipsis{
@@ -1542,16 +1539,11 @@ body {
     table-layout: auto;
   }
 }
-
-/* =========================
-   CUADRO DETRÁS DEL CONTENIDO (como Usuarios)
-========================= */
 .anx-modal-body{
   margin-top: 12px;
   padding: 16px;
   border-radius: 22px;
 
-  /* fondo tipo “panel” detrás */
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.85);
 
@@ -1559,11 +1551,120 @@ body {
     0 18px 40px rgba(15, 23, 42, 0.10),
     inset 0 1px 0 rgba(255, 255, 255, 0.65);
 
-  /* para que el contenido no se salga */
   overflow: hidden;
 }
 
-/* opcional: si tu grid tiene márgenes raros */
 .anx-detail-grid{
   margin: 0;
+}
+
+
+@media (max-width: 680px){
+  .anx-modal-card.anx-detail-card{
+    max-height: calc(100dvh - 16px); 
+  }
+
+  .anx-modal-body{
+    overflow-y: auto !important;     
+    -webkit-overflow-scrolling: touch;
+  }
+  .anx-modal-card.anx-detail-card{ overflow: hidden; }
+
+}
+
+@media (max-width: 680px){
+  .anx-modal-card.anx-detail-card{
+    width: min(980px, 96vw);                
+    max-height: calc(100dvh - 16px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;                        
+  }
+  .anx-modal-body{
+    flex: 1 1 auto;
+    min-height: 0;                       
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+
+/* =========================================
+   SCROLL PRO (tabla + modal)
+   Pegar al FINAL del CSS
+========================================= */
+
+/* ---------- MODAL: scroll vertical (móvil) ---------- */
+@media (max-width: 680px){
+  .anx-modal-body{
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: rgba(15,23,42,0.28) rgba(15,23,42,0.08);
+  }
+
+  .anx-modal-body::-webkit-scrollbar{
+    width: 10px; /* vertical */
+  }
+  .anx-modal-body::-webkit-scrollbar-track{
+    background: rgba(15,23,42,0.08);
+    border-radius: 999px;
+  }
+  .anx-modal-body::-webkit-scrollbar-thumb{
+    background: rgba(15,23,42,0.28);
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,0.65); /* look “glass” */
+  }
+  .anx-modal-body::-webkit-scrollbar-thumb:hover{
+    background: rgba(15,23,42,0.38);
+  }
+}
+
+.tabla-anali,
+.tabla-wrap,
+.tabla-wrap-compact{
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(15,23,42,0.28) rgba(15,23,42,0.08);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Vertical */
+.tabla-anali::-webkit-scrollbar,
+.tabla-wrap::-webkit-scrollbar,
+.tabla-wrap-compact::-webkit-scrollbar{
+  width: 10px;
+}
+
+/* Horizontal (cuando exista) */
+.tabla-anali::-webkit-scrollbar:horizontal,
+.tabla-wrap::-webkit-scrollbar:horizontal,
+.tabla-wrap-compact::-webkit-scrollbar:horizontal{
+  height: 10px;
+}
+
+.tabla-anali::-webkit-scrollbar-track,
+.tabla-wrap::-webkit-scrollbar-track,
+.tabla-wrap-compact::-webkit-scrollbar-track{
+  background: rgba(15,23,42,0.08);
+  border-radius: 999px;
+}
+
+.tabla-anali::-webkit-scrollbar-thumb,
+.tabla-wrap::-webkit-scrollbar-thumb,
+.tabla-wrap-compact::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,0.28);
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.65);
+}
+
+.tabla-anali::-webkit-scrollbar-thumb:hover,
+.tabla-wrap::-webkit-scrollbar-thumb:hover,
+.tabla-wrap-compact::-webkit-scrollbar-thumb:hover{
+  background: rgba(15,23,42,0.38);
+}
+
+/* (Opcional) evita que el scrollbar tape contenido pegado a la derecha */
+.tabla-anali,
+.tabla-wrap,
+.tabla-wrap-compact{
+  scrollbar-gutter: stable both-edges;
 }

@@ -1505,8 +1505,8 @@ body {
   position: absolute;
   top: 12px;
   left: 12px;
-  z-index: 9999; /* ✅ por encima de Leaflet */
-  pointer-events: none; /* ✅ no bloquea zoom / arrastre del mapa */
+  z-index: 9999;
+  pointer-events: none; 
 
   padding: 8px 12px;
   border-radius: 12px;
@@ -1516,4 +1516,51 @@ body {
   background: rgba(251, 191, 36, 0.18);
   border: 1px solid rgba(251, 191, 36, 0.35);
   backdrop-filter: blur(6px);
+}
+
+.heat-wrap-v2 { position: relative; } /* importante para overlay */
+
+.focus-controls{
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  pointer-events:auto;
+}
+
+.focus-label{
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.78);
+  background:rgba(255,255,255,.72);
+  font-weight:900;
+  color:rgba(15,23,42,.86);
+  backdrop-filter:blur(10px);
+}
+
+
+
+/* Hover */
+.focus-controls .pill:hover {
+  background: rgba(254, 85, 84, 0.12);
+  border-color: rgba(254, 85, 84, 0.85);
+}
+
+/* Focus / Active (quita negro y usa naranja) */
+.focus-controls .pill:focus,
+.focus-controls .pill:focus-visible,
+.focus-controls .pill:active {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(254, 85, 84, 0.35);
+  border-color: #fe5554;
+}
+
+/* Disabled */
+.focus-controls .pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
 }

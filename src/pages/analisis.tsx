@@ -519,38 +519,51 @@ export default function Analisis() {
 
     // 2) KPIs + ESTADO GLOBAL (solo completo)
     if (incluirKPIs) {
-      const totalSafe = total || 1;
+      const stats = calcStats(source);
+      const totalSafe = stats.total || 1;
       const pctRow = (n: number) => `${((n / totalSafe) * 100).toFixed(1)}%`;
 
-      const wsResumen = XLSX.utils.json_to_sheet([
-        { KPI: "Incidentes analizados", Valor: total },
-        { KPI: "Prioridad ALTA", Valor: alta },
-        { KPI: "Prioridad MEDIA", Valor: media },
-        { KPI: "Prioridad BAJA", Valor: baja },
-        { KPI: "OTRO", Valor: otro },
-        {
-          KPI: "Confianza promedio",
-          Valor: avgConf ? avgConf.toFixed(2) : "—",
-        },
-        {
-          KPI: "Filtro aplicado",
-          Valor: exportUsarFiltros
-            ? "Sí (filtros actuales)"
-            : "No (todos con IA)",
-        },
-        { KPI: "Registros exportados", Valor: source.length },
-      ]);
-      wsResumen["!cols"] = [{ wch: 28 }, { wch: 22 }];
-      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
+      const topCat = buildTopCategorias(source, 5);
+      const topCom = buildTopComunidades(source, 5);
 
-      const wsEstado = XLSX.utils.json_to_sheet([
-        { Prioridad: "ALTA", Cantidad: alta, Porcentaje: pctRow(alta) },
-        { Prioridad: "MEDIA", Cantidad: media, Porcentaje: pctRow(media) },
-        { Prioridad: "BAJA", Cantidad: baja, Porcentaje: pctRow(baja) },
-        { Prioridad: "OTRO", Cantidad: otro, Porcentaje: pctRow(otro) },
-      ]);
-      wsEstado["!cols"] = [{ wch: 14 }, { wch: 12 }, { wch: 12 }];
-      XLSX.utils.book_append_sheet(wb, wsEstado, "Estado_global");
+      const aoa: any[][] = [
+        ["Resumen", ""],
+        ["Incidentes analizados", stats.total],
+        ["Prioridad ALTA", stats.alta],
+        ["Prioridad MEDIA", stats.media],
+        ["Prioridad BAJA", stats.baja],
+        ["OTRO", stats.otro],
+        ["Confianza promedio", stats.avgConf ? stats.avgConf.toFixed(2) : "—"],
+        [
+          "Filtro aplicado",
+          exportUsarFiltros ? "Sí (filtros actuales)" : "No (todos con IA)",
+        ],
+        ["Registros exportados", source.length],
+        [],
+        ["Prioridad IA (Estado global)", ""],
+        ["Prioridad", "Cantidad", "Porcentaje"],
+        ["ALTA", stats.alta, pctRow(stats.alta)],
+        ["MEDIA", stats.media, pctRow(stats.media)],
+        ["BAJA", stats.baja, pctRow(stats.baja)],
+        ["OTRO", stats.otro, pctRow(stats.otro)],
+        [],
+        ["Top categorías", ""],
+        ["Categoría IA", "Cantidad"],
+        ...(topCat.length
+          ? topCat.map((x) => [x.categoria, x.total])
+          : [["—", 0]]),
+        [],
+        ["Top comunidades", ""],
+        ["Comunidad", "Cantidad"],
+        ...(topCom.length
+          ? topCom.map((x) => [x.comunidad, x.total])
+          : [["—", 0]]),
+      ];
+
+      const wsResumen = XLSX.utils.aoa_to_sheet(aoa);
+      wsResumen["!cols"] = [{ wch: 34 }, { wch: 20 }, { wch: 14 }];
+
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
     }
 
     // 3) REGISTROS 14D (no recorta fechas)
@@ -568,6 +581,64 @@ export default function Analisis() {
     const stamp = new Date().toISOString().slice(0, 10);
     XLSX.writeFile(wb, `reporte_analisis_ia_${stamp}.xlsx`);
   };
+
+  type ExportStats = {
+    total: number;
+    alta: number;
+    media: number;
+    baja: number;
+    otro: number;
+    avgConf: number;
+  };
+
+  function calcStats(source: IncidenteResponseDTO[]): ExportStats {
+    const total = source.length;
+
+    const alta = source.filter(
+      (x) => (x.aiPrioridad ?? "").toUpperCase() === "ALTA",
+    ).length;
+    const media = source.filter(
+      (x) => (x.aiPrioridad ?? "").toUpperCase() === "MEDIA",
+    ).length;
+    const baja = source.filter(
+      (x) => (x.aiPrioridad ?? "").toUpperCase() === "BAJA",
+    ).length;
+    const otro = Math.max(0, total - (alta + media + baja));
+
+    const confs = source
+      .map((x) => x.aiConfianza)
+      .filter((v): v is number => typeof v === "number");
+
+    const avgConf = confs.length
+      ? confs.reduce((a, b) => a + b, 0) / confs.length
+      : 0;
+
+    return { total, alta, media, baja, otro, avgConf };
+  }
+
+  function buildTopCategorias(source: IncidenteResponseDTO[], limit = 5) {
+    const by = new Map<string, number>();
+    for (const i of source) {
+      const k = (i.aiCategoria ?? "—").trim() || "—";
+      by.set(k, (by.get(k) ?? 0) + 1);
+    }
+    return [...by.entries()]
+      .map(([categoria, total]) => ({ categoria, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, limit);
+  }
+
+  function buildTopComunidades(source: IncidenteResponseDTO[], limit = 5) {
+    const by = new Map<string, number>();
+    for (const i of source) {
+      const k = (i.comunidadNombre ?? "—").trim() || "—";
+      by.set(k, (by.get(k) ?? 0) + 1);
+    }
+    return [...by.entries()]
+      .map(([comunidad, total]) => ({ comunidad, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, limit);
+  }
 
   const exportPDFPro = async () => {
     const source = getExportSource();
@@ -654,6 +725,11 @@ export default function Analisis() {
       const totalSafe = total || 1;
       const pctRow = (n: number) => `${Math.round((n / totalSafe) * 100)}%`;
 
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Prioridad IA", pageW / 2, cursorY, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      cursorY += 5;
       autoTable(doc, {
         startY: cursorY,
         head: [["Prioridad", "Cantidad", "Porcentaje"]],
@@ -676,6 +752,69 @@ export default function Analisis() {
       cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
         10) as number;
     }
+
+    cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+      8) as number;
+
+    const topCat = buildTopCategorias(source, 5);
+    if (cursorY + 45 > pageH) {
+      doc.addPage();
+      cursorY = 18;
+    }
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Top categorías", pageW / 2, cursorY, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    cursorY += 5;
+
+    autoTable(doc, {
+      startY: cursorY,
+      head: [["Categoría IA", "Cantidad"]],
+      body: topCat.length
+        ? topCat.map((x) => [x.categoria, String(x.total)])
+        : [["—", "0"]],
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [30, 30, 30] },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 120 },
+        1: { cellWidth: 30, halign: "center" },
+      },
+    });
+
+    cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+      8) as number;
+
+    const topCom = buildTopComunidades(source, 5);
+    if (cursorY + 45 > pageH) {
+      doc.addPage();
+      cursorY = 18;
+    }
+
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Top comunidades", pageW / 2, cursorY, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    cursorY += 5;
+
+    autoTable(doc, {
+      startY: cursorY,
+      head: [["Comunidad", "Cantidad"]],
+      body: topCom.length
+        ? topCom.map((x) => [x.comunidad, String(x.total)])
+        : [["—", "0"]],
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [30, 30, 30] },
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 120 },
+        1: { cellWidth: 30, halign: "center" },
+      },
+    });
+
+    cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+      10) as number;
 
     // 2) TABLA PRINCIPAL (si aplica)
     if (incluirTabla) {
@@ -1072,7 +1211,7 @@ export default function Analisis() {
                             <td className="td-center">
                               <button
                                 type="button"
-                                className="row-action"
+                                className="btn-ver"
                                 onClick={() => openDetalle(i)}
                                 aria-label={`Ver detalle del incidente ${i.id}`}
                                 title="Ver detalle"
@@ -1345,7 +1484,7 @@ export default function Analisis() {
                     <div>
                       <div className="anx-export-name">Reporte completo</div>
                       <div className="anx-modal-sub" style={{ marginTop: 2 }}>
-                        Resumen + estado global + tabla + registros
+                        Resumen + prioridad IA + tops + tabla + gráfica
                       </div>
                     </div>
                   </button>
@@ -1401,7 +1540,7 @@ export default function Analisis() {
                     <span
                       style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
                     >
-                      Respeta búsqueda, selects y fecha actuales
+                      Busqueda/ resultados visibles
                     </span>
                   </div>
 

@@ -644,8 +644,8 @@ body {
 }
 
 .line-chart-wrap {
-  margin-top: 80px;
-  height: 460px;
+  margin-top: 10px;
+  height: 300px;
   border-radius: 16px;
   padding: 10px;
   background: rgba(255, 255, 255, 0.4);
@@ -1877,35 +1877,6 @@ body {
   line-height: 1.2;
 }
 
-/* FORMATO → PDF */
-.sz-export-col:first-child
-  .sz-export-item:nth-of-type(1)::after {
-  content: "Ideal para impresión";
-}
-
-/* FORMATO → Excel */
-.sz-export-col:first-child
-  .sz-export-item:nth-of-type(2)::after {
-  content: "Análisis y filtros";
-}
-
-/* CONTENIDO → Reporte completo */
-.sz-export-col:nth-child(2)
-  .sz-export-item:nth-of-type(1)::after {
-  content: "Exporta únicamente la tabla principal";
-}
-
-/* CONTENIDO → 2) Reporte completo */
-.sz-export-col:nth-child(2)
-  .sz-export-item:nth-of-type(2)::after {
-  content: "Resumen + estado global + tabla + registros";
-}
-
-.sz-export-col:nth-child(2)
-  .sz-export-item:nth-of-type(3)::after {
-  content: "Gráfica + tabla completa de 14 días";
-}
-
 .sz-export-item {
   padding-bottom: 38px;
 }
@@ -1949,11 +1920,7 @@ body {
 .sz-export-grid .sz-export-item .sz-export-ico {
   flex: 0 0 44px;
 }
-/* =========================================================
-   SWITCH PRO (igual al modal de Reportes/Analisis)
-   - OFF: rosado muy suave
-   - ON : rosado suave + borde rojo
-========================================================= */
+
 .sz-switch{
   width: 56px;
   height: 30px;
@@ -1976,7 +1943,6 @@ body {
   transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
 }
 
-/* bolita */
 .sz-switch::before{
   content:"";
   width: 24px;
@@ -1993,7 +1959,6 @@ body {
   transition: transform .18s ease, box-shadow .18s ease;
 }
 
-/* ON (igual pro: NO rojo sólido, sino rosado suave) */
 .sz-switch.on{
   background: rgba(249, 81, 80, 0.18);
   border-color: rgba(249, 81, 80, 0.55);
@@ -2008,8 +1973,241 @@ body {
   box-shadow: 0 10px 18px rgba(249, 81, 80, 0.14);
 }
 
-/* por si hay iconos dentro */
 .sz-switch svg{ display:none !important; }
 
 .sz-switch{ background: rgba(249, 81, 80, 0.10) !important; }
 .sz-switch.on{ background: rgba(249, 81, 80, 0.18) !important; }
+
+
+.chart-card-v2{
+  display: flex;
+  flex-direction: column;
+}
+
+.tabla-panel-in-chart{
+  flex: 1;        
+  min-height: 0;    
+}
+
+.tabla-panel-in-chart .tabla-inner{
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden; 
+  padding-right: 6px;  
+}
+
+.usuarios-tabla{
+  width: 100%;
+  table-layout: fixed; 
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Evita que el texto rompa la tabla */
+.usuarios-tabla th,
+.usuarios-tabla td{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.btn-ver{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;   
+  border-radius: 14px;
+  max-width: 92px;  
+  white-space: nowrap;
+}
+
+.btn-ver-text{
+  font-weight: 900;
+}
+
+.tabla-panel-in-chart .tabla-inner{
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15,23,42,0.25) rgba(15,23,42,0.06);
+}
+
+.tabla-panel-in-chart .tabla-inner::-webkit-scrollbar{
+  width: 10px;
+}
+
+.tabla-panel-in-chart .tabla-inner::-webkit-scrollbar-track{
+  background: rgba(15,23,42,0.06);
+  border-radius: 999px;
+}
+
+.tabla-panel-in-chart .tabla-inner::-webkit-scrollbar-thumb{
+  background: rgba(15,23,42,0.25);
+  border-radius: 999px;
+  border: 2px solid rgba(255,255,255,0.6);
+}
+
+.tabla-panel-in-chart .tabla-inner::-webkit-scrollbar-thumb:hover{
+  background: rgba(15,23,42,0.35);
+}
+
+@media (max-width: 680px){
+  .tabla-panel-in-chart .tabla-inner{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .usuarios-tabla{
+    min-width: 720px; 
+  }
+
+  .tabla-panel-in-chart .tabla-inner::-webkit-scrollbar{
+    height: 10px;
+  }
+}
+
+
+.usuarios-tabla{
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.usuarios-tabla th,
+.usuarios-tabla td{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;      
+}
+
+/* Nombre */
+.usuarios-tabla th:nth-child(1),
+.usuarios-tabla td:nth-child(1){ width: 22%; }
+
+/* Correo */
+.usuarios-tabla th:nth-child(2),
+.usuarios-tabla td:nth-child(2){ width: 36%; }
+
+/* Comunidad */
+.usuarios-tabla th:nth-child(3),
+.usuarios-tabla td:nth-child(3){ width: 24%; }
+
+/* Online */
+.usuarios-tabla th:nth-child(4),
+.usuarios-tabla td:nth-child(4){
+  width: 10%;
+  text-align: center;
+}
+
+.usuarios-tabla th:nth-child(5),
+.usuarios-tabla td:nth-child(5){
+  width: 8%;
+  text-align: center;
+}
+
+@media (max-width: 680px){
+  .btn-ver3-text{ display:inline; }
+}
+
+.usuarios-tabla{
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.usuarios-tabla th,
+.usuarios-tabla td{
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.usuarios-tabla td:nth-child(2){
+  white-space: normal;    
+  word-break: break-word;  
+  line-height: 1.2;
+}
+
+.usuarios-tabla td:not(:nth-child(2)),
+.usuarios-tabla th{
+  white-space: nowrap;
+}
+
+.usuarios-tabla th:nth-child(1),
+.usuarios-tabla td:nth-child(1){ width: 21%; } 
+
+.usuarios-tabla th:nth-child(2),
+.usuarios-tabla td:nth-child(2){ width: 30%; } 
+
+.usuarios-tabla th:nth-child(3),
+.usuarios-tabla td:nth-child(3){ width: 24%; } 
+
+.usuarios-tabla th:nth-child(4),
+.usuarios-tabla td:nth-child(4){ width: 12%; text-align:center; } 
+.usuarios-tabla th:nth-child(5),
+.usuarios-tabla td:nth-child(5){ width: 10%; text-align:center; } 
+
+
+.usuarios-tabla{
+  width: 100%;
+  table-layout: fixed;
+}
+
+.usuarios-tabla th:nth-child(5),
+.usuarios-tabla td:nth-child(5){
+  width: 64px;          
+  min-width: 64px;
+  max-width: 64px;
+  text-align: center;
+}
+
+.btn-ver3{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 12px;
+  width: 70px;         
+  height: 38px;
+  min-width: 44px;
+  white-space: nowrap;
+}
+
+@media (max-width: 680px){
+  .tabla-panel-in-chart .tabla-inner{
+    overflow-x: auto; 
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable both-edges;
+  }
+  .usuarios-tabla{
+    min-width: 720px;
+    width: max-content;
+    table-layout: auto;
+  }
+
+}
+
+.grid-2col,
+.chart-card-v2,
+.side-card-v2,
+.tabla-panel-in-chart,
+.tabla-panel-in-chart .tabla-inner{
+  min-width: 0;
+}
+@media (max-width: 680px){
+  .tabla-panel-in-chart .tabla-inner{
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .usuarios-tabla{
+    min-width: 720px;  
+    width: 720px;          
+    table-layout: fixed;   
+  }
+  .tabla-panel-in-chart .tabla-inner::-webkit-scrollbar{
+    height: 10px;
+  }
+}

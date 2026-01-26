@@ -35,6 +35,7 @@ import {
   LineChart as LineChartIcon,
   ToggleLeft,
   ToggleRight,
+  Eye,
 } from "lucide-react";
 
 // ✅ Charts (mismo stack que Dashboard/Comunidades) — BARRAS
@@ -1302,12 +1303,13 @@ export default function Usuarios() {
 
                                 <td style={{ textAlign: "center" }}>
                                   <button
-                                    className="sz-mini-btn"
+                                    className="btn-ver"
                                     type="button"
                                     onClick={() => openView(u)}
                                     title="Ver detalles"
                                   >
-                                    Ver
+                                    <Eye size={18} />
+                                    <span className="btn-ver-text">Ver</span>
                                   </button>
                                 </td>
                               </tr>
@@ -1536,7 +1538,17 @@ export default function Usuarios() {
                       <FileText size={18} />
                     </span>
 
-                    <span className="sz-export-name">PDF (presentación)</span>
+                    <div className="anx-opt-text">
+                      PDF <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Ideal para impresión
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -1558,7 +1570,17 @@ export default function Usuarios() {
                       <FileSpreadsheet size={18} />
                     </span>
 
-                    <span className="sz-export-name">Excel (datos)</span>
+                    <div className="anx-opt-text">
+                      Excel <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Análisis y filtros
+                      </span>
+                    </div>
                   </button>
                 </div>
 
@@ -1590,9 +1612,17 @@ export default function Usuarios() {
                       <Table2 size={18} />
                     </span>
 
-                    <span className="sz-export-name">
-                      Solo tabla (usuarios)
-                    </span>
+                    <div className="anx-opt-text">
+                      Solo Tabla <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Exportar unicamente la tabla principal
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -1616,10 +1646,17 @@ export default function Usuarios() {
                       <LayoutDashboard size={18} />
                     </span>
 
-                    <span className="sz-export-name">
-                      Reporte completo (tabla + estado de cuenta + top
-                      comunidades + registros)
-                    </span>
+                    <div className="anx-opt-text">
+                      Reporte Completo <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Resumen + tabla + Estado + gráfica
+                      </span>
+                    </div>
                   </button>
 
                   <button
@@ -1643,9 +1680,17 @@ export default function Usuarios() {
                       <LineChartIcon size={18} />
                     </span>
 
-                    <span className="sz-export-name">
-                      Solo registros (gráfica de abajo)
-                    </span>
+                    <div className="anx-opt-text">
+                      Gráfica <br />
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color: "rgba(15,23,42,0.62)",
+                        }}
+                      >
+                        Gráfica de registros de usuarios
+                      </span>
+                    </div>
                   </button>
                 </div>
               </div>
@@ -1671,9 +1716,14 @@ export default function Usuarios() {
                       <ToggleLeft size={18} />
                     )}
                   </span>
-                  <span className="sz-opt-text">
-                    Usar filtros actuales (búsqueda / resultados visibles)
-                  </span>
+                  <div className="anx-opt-text">
+                    Usar filtros actuales <br />
+                    <span
+                      style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
+                    >
+                      Resumen + estado global + tabla + registros
+                    </span>
+                  </div>
                 </button>
 
                 <button
@@ -1694,10 +1744,14 @@ export default function Usuarios() {
                       <ToggleLeft size={18} />
                     )}
                   </span>
-
-                  <span className="sz-opt-text">
-                    Incluir KPIs / Resumen (solo en reporte completo)
-                  </span>
+                  <div className="anx-opt-text">
+                    Incluir KPIs / Resumen <br />
+                    <span
+                      style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
+                    >
+                      Solo disponible en “Reporte completo”
+                    </span>
+                  </div>
                 </button>
 
                 <div className="sz-export-count">

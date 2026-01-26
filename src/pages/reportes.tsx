@@ -526,7 +526,7 @@ export default function Reportes() {
   // usar filtros actuales (busqueda/selects/fecha)
   const [exportUsarFiltros, setExportUsarFiltros] = useState(true);
 
-  // ✅ KPIs SOLO en “completo”
+  // KPIs SOLO en “completo”
   const [exportIncluirKPIs, setExportIncluirKPIs] = useState(true);
   const kpiHabilitado = exportContenido === "completo";
 
@@ -596,7 +596,7 @@ export default function Reportes() {
     }
   };
 
-  // ✅ BarData para export (si no usas filtros, recalcula con source)
+  // BarData para export (si no usas filtros, recalcula con source)
   const buildBarDataFrom = (source: Reporte[], g: Granularity) => {
     const map = new Map<
       string,
@@ -653,6 +653,26 @@ export default function Reportes() {
     return Array.from(map.values()).sort((a, b) => a.sortKey - b.sortKey);
   };
 
+  function buildTopComunidadesDonut(source: Reporte[], topN = 5) {
+    const counts = new Map<string, number>();
+
+    for (const r of source) {
+      const k = (r.comunidad || "Sin comunidad").trim() || "Sin comunidad";
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+
+    const sorted = Array.from(counts.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    const top = sorted.slice(0, topN);
+    const rest = sorted.slice(topN);
+    const restSum = rest.reduce((acc, x) => acc + x.value, 0);
+
+    if (restSum > 0) top.push({ name: "Otras", value: restSum });
+    return top;
+  }
+
   const exportExcelPro = () => {
     const source = getExportSource();
 
@@ -686,35 +706,39 @@ export default function Reportes() {
       const pendientes = source.filter((r) => r.estado === "Pendiente").length;
       const falsos = source.filter((r) => r.estado === "Falso positivo").length;
 
-      const wsResumen = XLSX.utils.json_to_sheet([
-        { KPI: "Reportes (total)", Valor: total },
-        { KPI: "Atendidos", Valor: atendidos },
-        { KPI: "Pendientes", Valor: pendientes },
-        { KPI: "Falsos positivos", Valor: falsos },
-        {
-          KPI: "Filtro aplicado",
-          Valor: exportUsarFiltros ? "Sí (filtros actuales)" : "No (todos)",
-        },
-        { KPI: "Granularidad gráfica", Valor: granularity },
-        { KPI: "Registros exportados", Valor: source.length },
-      ]);
-      wsResumen["!cols"] = [{ wch: 28 }, { wch: 22 }];
-      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
-
       const totalSafe = total || 1;
       const pct = (n: number) => `${((n / totalSafe) * 100).toFixed(1)}%`;
 
-      const wsEstado = XLSX.utils.json_to_sheet([
-        { Estado: "Atendido", Cantidad: atendidos, Porcentaje: pct(atendidos) },
-        {
-          Estado: "Pendiente",
-          Cantidad: pendientes,
-          Porcentaje: pct(pendientes),
-        },
-        { Estado: "Falso positivo", Cantidad: falsos, Porcentaje: pct(falsos) },
-      ]);
-      wsEstado["!cols"] = [{ wch: 16 }, { wch: 12 }, { wch: 12 }];
-      XLSX.utils.book_append_sheet(wb, wsEstado, "Estado_global");
+      const topCom = buildTopComunidadesDonut(source, 5);
+
+      const aoa: any[][] = [
+        ["Resumen", ""],
+        ["Reportes (total)", total],
+        ["Atendidos", atendidos],
+        ["Pendientes", pendientes],
+        ["Falsos positivos", falsos],
+        [
+          "Filtro aplicado",
+          exportUsarFiltros ? "Sí (filtros actuales)" : "No (todos)",
+        ],
+        ["Granularidad gráfica", granularity],
+        ["Registros exportados", source.length],
+        [],
+        ["Estado global", ""],
+        ["Estado", "Cantidad", "Porcentaje"],
+        ["Atendido", atendidos, pct(atendidos)],
+        ["Pendiente", pendientes, pct(pendientes)],
+        ["Falso positivo", falsos, pct(falsos)],
+        [],
+        ["Reportes por comunidad (Top 5 + Otras)", ""],
+        ["Comunidad", "Reportes"],
+        ...(topCom.length ? topCom.map((x) => [x.name, x.value]) : [["—", 0]]),
+      ];
+
+      const wsResumen = XLSX.utils.aoa_to_sheet(aoa);
+      wsResumen["!cols"] = [{ wch: 34 }, { wch: 20 }, { wch: 14 }];
+
+      XLSX.utils.book_append_sheet(wb, wsResumen, "Resumen");
     }
 
     // 3) REGISTROS (Gráfica)
@@ -822,6 +846,45 @@ export default function Reportes() {
         headStyles: { fillColor: [30, 30, 30] },
         margin: { left: 14, right: 14 },
       });
+
+      // 👇 después del autoTable de Estado global
+      cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+        8) as number;
+
+      // ===== Tabla: Reportes por comunidad (Top 5 + Otras) =====
+      const topCom = buildTopComunidadesDonut(source, 5);
+
+      // salto de página si no alcanza
+      if (cursorY + 55 > pageH) {
+        doc.addPage();
+        cursorY = 18;
+      }
+
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Reportes por comunidad (Top 5 + Otras)", pageW / 2, cursorY, {
+        align: "center",
+      });
+      doc.setFont("helvetica", "normal");
+      cursorY += 5;
+
+      autoTable(doc, {
+        startY: cursorY,
+        head: [["Comunidad", "Reportes"]],
+        body: topCom.length
+          ? topCom.map((x) => [x.name, String(x.value)])
+          : [["—", "0"]],
+        styles: { fontSize: 9, cellPadding: 2 },
+        headStyles: { fillColor: [30, 30, 30] },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 120 },
+          1: { cellWidth: 30, halign: "center" },
+        },
+      });
+
+      cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
+        10) as number;
 
       cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
         8) as number;
@@ -1339,18 +1402,20 @@ export default function Reportes() {
                   </div>
                 </div>
 
-                <select
-                  className="filter-pill mini-select"
-                  value={granularity}
-                  onChange={(e) =>
-                    setGranularity(e.target.value as Granularity)
-                  }
-                  title="Agrupar por"
-                >
-                  <option value="dia">Día</option>
-                  <option value="mes">Mes</option>
-                  <option value="anio">Año</option>
-                </select>
+                <div className="select-wrap9">
+                  <select
+                    className="filter-pill mini-select"
+                    value={granularity}
+                    onChange={(e) =>
+                      setGranularity(e.target.value as Granularity)
+                    }
+                    title="Agrupar por"
+                  >
+                    <option value="dia">Día</option>
+                    <option value="mes">Mes</option>
+                    <option value="anio">Año</option>
+                  </select>
+                </div>
               </div>
 
               <div
@@ -1542,7 +1607,7 @@ export default function Reportes() {
                     <div>
                       <div className="anx-export-name">Reporte completo</div>
                       <div className="anx-modal-sub" style={{ marginTop: 2 }}>
-                        Resumen + estado global + tabla + registros (gráfica)
+                        Resumen + reportes por comunidad + tabla + gráfica
                       </div>
                     </div>
                   </button>
@@ -1599,7 +1664,7 @@ export default function Reportes() {
                     <span
                       style={{ fontWeight: 700, color: "rgba(15,23,42,0.62)" }}
                     >
-                      Respeta búsqueda, selects y fecha actuales
+                      Busqueda/ resultados visibles
                     </span>
                   </div>
 

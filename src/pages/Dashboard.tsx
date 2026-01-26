@@ -142,7 +142,6 @@ function sum(arr: number[]) {
   return arr.reduce((a, b) => a + b, 0);
 }
 
-
 // ===============================
 // Helpers: Tipo incidente (robusto)
 // ===============================
@@ -231,6 +230,8 @@ export default function Dashboard() {
   // sidebar responsive
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const [focusIndex, setFocusIndex] = useState(0);
+
   /* ===============================
      Carga
   ================================ */
@@ -301,7 +302,7 @@ export default function Dashboard() {
         ],
       },
     ],
-    []
+    [],
   );
 
   const [searchText, setSearchText] = useState("");
@@ -313,7 +314,7 @@ export default function Dashboard() {
 
   const normalizedQuery = useMemo(
     () => searchText.trim().toLowerCase(),
-    [searchText]
+    [searchText],
   );
 
   const results = useMemo(() => {
@@ -322,7 +323,7 @@ export default function Dashboard() {
     const startsWith = (text: string) =>
       text.toLowerCase().trim().startsWith(q);
     return NAV_ITEMS.filter(
-      (item) => startsWith(item.label) || item.keywords.some(startsWith)
+      (item) => startsWith(item.label) || item.keywords.some(startsWith),
     ).slice(0, 6);
   }, [NAV_ITEMS, normalizedQuery]);
 
@@ -407,6 +408,7 @@ export default function Dashboard() {
     setTipoMenuOpen(false);
   }, [range]);
 
+  useEffect(() => setFocusIndex(0), [tipoFiltro]);
   /* ===============================
      Heatmap filter (tiempo real)
   ================================ */
@@ -427,7 +429,7 @@ export default function Dashboard() {
 
     if (range === "7d") {
       const start = startOfDayLocal(
-        new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000)
+        new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000),
       ).getTime();
       const end = endOfDayLocal(now).getTime();
       return incidentes.filter((i: any) => {
@@ -439,7 +441,7 @@ export default function Dashboard() {
     }
 
     const start = startOfDayLocal(
-      new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000)
+      new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000),
     ).getTime();
     const end = endOfDayLocal(now).getTime();
     return incidentes.filter((i: any) => {
@@ -452,7 +454,7 @@ export default function Dashboard() {
 
   const baseRango = useMemo(
     () => (incidentesFiltrados as any[]) || [],
-    [incidentesFiltrados]
+    [incidentesFiltrados],
   );
 
   const baseMapeable = useMemo(() => {
@@ -486,7 +488,7 @@ export default function Dashboard() {
       .filter((x) => !!x)
       .sort(
         (a, b) =>
-          (countTotalByTipo.get(b) ?? 0) - (countTotalByTipo.get(a) ?? 0)
+          (countTotalByTipo.get(b) ?? 0) - (countTotalByTipo.get(a) ?? 0),
       );
   }, [baseRango, countTotalByTipo]);
 
@@ -506,9 +508,65 @@ export default function Dashboard() {
 
     const wanted = canonTipo(tipoFiltro);
     return baseMapeable.filter(
-      (inc) => canonTipo(getIncidenteTipoRaw(inc)) === wanted
+      (inc) => canonTipo(getIncidenteTipoRaw(inc)) === wanted,
     );
   }, [baseMapeable, tipoFiltro]);
+
+  type FocusPoint = {
+    id: string; // key zona
+    lat: number;
+    lng: number;
+    total: number; // cuántos reportes del tipo en esta zona
+  };
+
+  function toNum(v: any) {
+    const n =
+      typeof v === "string" ? Number(v.trim().replace(",", ".")) : Number(v);
+    return Number.isFinite(n) ? n : NaN;
+  }
+  function extractLatLng(inc: any): [number, number] | null {
+    const lat = toNum(
+      inc?.lat ?? inc?.latitud ?? inc?.latitude ?? inc?.ubicacion?.lat,
+    );
+    const lng = toNum(
+      inc?.lng ?? inc?.longitud ?? inc?.longitude ?? inc?.ubicacion?.lng,
+    );
+    if (Number.isFinite(lat) && Number.isFinite(lng)) return [lat, lng];
+
+    const coords = inc?.ubicacion?.coordinates;
+    if (Array.isArray(coords) && coords.length >= 2) {
+      const lng2 = toNum(coords[0]);
+      const lat2 = toNum(coords[1]);
+      if (Number.isFinite(lat2) && Number.isFinite(lng2)) return [lat2, lng2];
+    }
+    return null;
+  }
+
+  const focusPoints: FocusPoint[] = useMemo(() => {
+    if (tipoFiltro === "ALL") return [];
+
+    const mapZones = new Map<string, FocusPoint>();
+
+    for (const inc of incidentesHeatmapFinal as any[]) {
+      const p = extractLatLng(inc); // usa el helper que ya tienes o el que pegaste
+      if (!p) continue;
+
+      // ✅ MISMO redondeo que HeatHoverLayer para que coincida 1:1
+      const lat = Number(p[0].toFixed(4));
+      const lng = Number(p[1].toFixed(4));
+      const key = `${lat}|${lng}`;
+
+      const prev = mapZones.get(key);
+      if (!prev) {
+        mapZones.set(key, { id: key, lat, lng, total: 1 });
+      } else {
+        prev.total += 1;
+      }
+    }
+
+    // Orden opcional: mayor cantidad primero (útil)
+    return Array.from(mapZones.values()).sort((a, b) => b.total - a.total);
+  }, [incidentesHeatmapFinal, tipoFiltro]);
 
   /* ===============================
      Analytics time series (Current vs Previous)
@@ -531,14 +589,14 @@ export default function Dashboard() {
     const now = new Date();
     const end = endOfDayLocal(now);
     const start = startOfDayLocal(
-      new Date(now.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000)
+      new Date(now.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000),
     );
 
     const prevEnd = endOfDayLocal(
-      new Date(start.getTime() - 1 * 24 * 60 * 60 * 1000)
+      new Date(start.getTime() - 1 * 24 * 60 * 60 * 1000),
     );
     const prevStart = startOfDayLocal(
-      new Date(prevEnd.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000)
+      new Date(prevEnd.getTime() - (analyticsDays - 1) * 24 * 60 * 60 * 1000),
     );
 
     const dayCounts = (from: Date, to: Date) => {
@@ -551,7 +609,7 @@ export default function Dashboard() {
 
       for (const inc of incidentes as any[]) {
         const d = parseDateSafe(
-          inc.fechaCreacion ?? inc.createdAt ?? inc.created_at
+          inc.fechaCreacion ?? inc.createdAt ?? inc.created_at,
         );
         if (!d) continue;
         const t = d.getTime();
@@ -561,7 +619,7 @@ export default function Dashboard() {
       }
 
       const entries = [...buckets.entries()].sort(
-        (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime()
+        (a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime(),
       );
       return entries.map(([iso, value]) => ({ iso, value }));
     };
@@ -596,12 +654,12 @@ export default function Dashboard() {
   ================================ */
   const totalReportes = useMemo(
     () => kpis?.alertasTotales ?? incidentes.length ?? 0,
-    [kpis, incidentes]
+    [kpis, incidentes],
   );
 
   const reportesDeltaPct = useMemo(
     () => pctDiff(currentTotal, previousTotal),
-    [currentTotal, previousTotal]
+    [currentTotal, previousTotal],
   );
 
   const usuariosWithTs = useMemo(() => {
@@ -636,7 +694,7 @@ export default function Dashboard() {
 
   const usersDeltaPct = useMemo(
     () => pctDiff(usersInWindow.cur, usersInWindow.prev),
-    [usersInWindow]
+    [usersInWindow],
   );
 
   /* ===============================
@@ -644,7 +702,7 @@ export default function Dashboard() {
   ================================ */
   const donutColors = useMemo(
     () => ["#fe5554", "#f59e0b", "#22c55e", "#3b82f6", "#06b6d4"],
-    []
+    [],
   );
 
   const comunidadesStats = useMemo(() => {
@@ -667,7 +725,7 @@ export default function Dashboard() {
 
   const topComunidades = useMemo(
     () => comunidadesStats.slice(0, 5),
-    [comunidadesStats]
+    [comunidadesStats],
   );
 
   const donutChartData = useMemo(
@@ -677,25 +735,25 @@ export default function Dashboard() {
         value: c.total,
         color: donutColors[idx % donutColors.length],
       })),
-    [topComunidades, donutColors]
+    [topComunidades, donutColors],
   );
 
   const totalPorTopComunidades = useMemo(
     () => topComunidades.reduce((s, c) => s + c.total, 0),
-    [topComunidades]
+    [topComunidades],
   );
 
   const donutSeries = useMemo(
     () => donutChartData.map((d) => d.value),
-    [donutChartData]
+    [donutChartData],
   );
   const donutLabels = useMemo(
     () => donutChartData.map((d) => d.name),
-    [donutChartData]
+    [donutChartData],
   );
   const donutApexColors = useMemo(
     () => donutChartData.map((d) => d.color),
-    [donutChartData]
+    [donutChartData],
   );
 
   const donutOptions: ApexOptions = useMemo(
@@ -731,7 +789,7 @@ export default function Dashboard() {
         active: { filter: { type: "darken", value: 0.06 } },
       },
     }),
-    [donutLabels, donutApexColors]
+    [donutLabels, donutApexColors],
   );
 
   /* ===============================
@@ -764,7 +822,7 @@ export default function Dashboard() {
 
     incidentesPorUsuario.forEach((count, uid) => {
       const u = (usuarios || []).find(
-        (x: any) => (x?.id ?? x?.usuarioId ?? x?.userId) === uid
+        (x: any) => (x?.id ?? x?.usuarioId ?? x?.userId) === uid,
       );
       const name =
         u?.nombre ??
@@ -894,7 +952,7 @@ export default function Dashboard() {
                       if (e.key === "ArrowDown") {
                         e.preventDefault();
                         setSelectedIdx((v) =>
-                          Math.min(v + 1, Math.max(0, results.length - 1))
+                          Math.min(v + 1, Math.max(0, results.length - 1)),
                         );
                         return;
                       }
@@ -925,9 +983,7 @@ export default function Dashboard() {
                       searchInputRef.current?.focus();
                     }}
                     style={{ opacity: searchText.trim() ? 1 : 0 }}
-                  >
-                    ✕
-                  </button>
+                  ></button>
 
                   <AnimatePresence>
                     {searchOpen && searchText.trim() && (
@@ -1169,8 +1225,8 @@ export default function Dashboard() {
                       {analyticsRange === "14d"
                         ? "Últimos 14 días"
                         : analyticsRange === "1m"
-                        ? "Últimos 30 días"
-                        : "Últimos 90 días"}
+                          ? "Últimos 30 días"
+                          : "Últimos 90 días"}
                       {" · "}
                       {formatDateLabel(windowStart)} –{" "}
                       {formatDateLabel(windowEnd)}
@@ -1423,11 +1479,11 @@ export default function Dashboard() {
                                   incidentesFiltrados?.length ?? 0
                                 ).toLocaleString()}
                               </span>
-                             </button>
+                            </button>
 
-                             <div className="type-sep-v2" />
+                            <div className="type-sep-v2" />
 
-                             {tiposDisponibles.map((t) => {
+                            {tiposDisponibles.map((t) => {
                               const total = countTotalByTipo.get(t) ?? 0;
                               const enMapa = countMapaByTipo.get(t) ?? 0;
                               const sinUb = Math.max(0, total - enMapa);
@@ -1491,8 +1547,50 @@ export default function Dashboard() {
                       ubicación registrada.
                     </div>
                   )}
+                  {tipoFiltro !== "ALL" && focusPoints.length > 0 && (
+                    <div className="focus-controls">
+                      <button
+                        type="button"
+                        className="pill pill-outline"
+                        disabled={focusPoints.length <= 1}
+                        onClick={() =>
+                          setFocusIndex(
+                            (i) =>
+                              (i - 1 + focusPoints.length) % focusPoints.length,
+                          )
+                        }
+                      >
+                        ← Anterior
+                      </button>
 
-                  <IncidentHeatmap incidentes={incidentesHeatmapFinal} />
+                      <div className="focus-label">
+                        Zona {Math.min(focusIndex + 1, focusPoints.length)} /{" "}
+                        {focusPoints.length}
+                        {" · "}
+                        Total{" "}
+                        {focusPoints[
+                          Math.min(focusIndex, focusPoints.length - 1)
+                        ]?.total ?? 0}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="pill pill-outline"
+                        disabled={focusPoints.length <= 1}
+                        onClick={() =>
+                          setFocusIndex((i) => (i + 1) % focusPoints.length)
+                        }
+                      >
+                        Siguiente →
+                      </button>
+                    </div>
+                  )}
+
+                  <IncidentHeatmap
+                    incidentes={incidentesHeatmapFinal}
+                    focusPoints={focusPoints}
+                    focusIndex={focusIndex}
+                  />
                 </div>
               </motion.article>
 

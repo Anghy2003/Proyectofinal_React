@@ -1450,7 +1450,7 @@ body {
 /* Anchos por columna (sin colgroup) */
 .reportes-tabla th:nth-child(1),
 .reportes-tabla td:nth-child(1) {
-  width: 6%;
+  width: 7%;
 } /* ID */
 
 .reportes-tabla th:nth-child(2),
@@ -2031,4 +2031,55 @@ body {
 
 .rep-modal-close:hover .rep-close-icon {
   color: rgba(15, 23, 42, 1);
+}
+
+.line-chart-wrap6{
+  margin-top: 12px !important;  
+  height: 530px;                
+}
+
+
+.line-chart-wrap6 .recharts-responsive-container{
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.select-wrap9 {
+  position: relative;
+  display: inline-block;
+}
+
+.select-wrap9 select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding-right: 40px;
+}
+
+.select-wrap9::after {
+  content: "";
+  position: absolute;
+  right: 18px; 
+  top: 50%;
+  transform: translateY(-50%);
+
+  width: 10px;
+  height: 6px;
+
+  background: rgba(15, 23, 42, 0.85);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  pointer-events: none;
+}
+
+.reportes-card-embedded,
+.side-card-v3{
+  margin-top: 0 !important;
+  align-self: start;
+}
+.reportes-card-embedded,
+.side-card-v3 {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
