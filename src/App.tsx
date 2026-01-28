@@ -2,8 +2,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Suspense, lazy } from "react";
 
-import Home from "./pages/HomeGenieNova"; // ✅ NO lazy
-import Login from "./pages/login"; // ✅ NO lazy
+import Home from "./pages/HomeGenieNova";
+import Login from "./pages/login"; 
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 import RouteFallback from "./components/RouteFallback"; // tu loader/blur

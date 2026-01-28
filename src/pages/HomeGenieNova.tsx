@@ -18,16 +18,16 @@ import {
 gsap.registerPlugin(ScrollTrigger);
 
 //IMPORTS DE ASSETS (Vite-friendly)
-import HERO_PHONE from "../assets/celular1.png";
-import FEATURE_1 from "../assets/celular4.png";
-import FEATURE_2 from "../assets/celular2.png";
-import FEATURE_3 from "../assets/celular3.png";
-import HOW_1 from "../assets/celular5.png";
-import HOW_2 from "../assets/celular6.png";
-import HOW_3 from "../assets/celular7.png";
-import HOW_4 from "../assets/celular8.png";
+import HERO_PHONE from "../assets/celular1.webp";
+import FEATURE_1 from "../assets/celular4.webp";
+import FEATURE_2 from "../assets/celular2.webp";
+import FEATURE_3 from "../assets/celular3.webp";
+import HOW_1 from "../assets/celular5.webp";
+import HOW_2 from "../assets/celular6.webp";
+import HOW_3 from "../assets/celular7.webp";
+import HOW_4 from "../assets/celular8.webp";
 
-import LOGO from "../assets/logo_SafeZone.png";
+import LOGO from "../assets/logo_SafeZone2.webp"
 
 // CONFIG APK (AÚN NO DISPONIBLE)
 // ===============================
@@ -69,7 +69,7 @@ export default function HomeGenieNova() {
       "Salud / Ambulancia",
       "Red de confianza",
     ],
-    []
+    [],
   );
 
   const prefersReducedMotion = useMemo(() => {
@@ -130,7 +130,7 @@ export default function HomeGenieNova() {
         image: FEATURE_3,
       },
     ],
-    []
+    [],
   );
 
   const how = useMemo(
@@ -156,7 +156,7 @@ export default function HomeGenieNova() {
         image: HOW_4,
       },
     ],
-    []
+    [],
   );
 
   const community = useMemo(
@@ -177,7 +177,7 @@ export default function HomeGenieNova() {
         icon: BrainCircuit,
       },
     ],
-    []
+    [],
   );
 
   const faqs = useMemo(
@@ -203,7 +203,7 @@ export default function HomeGenieNova() {
         a: "Sí. Puede usarse en barrios, urbanizaciones, campus o instituciones. La idea es crear redes de apoyo con usuarios verificados y respuesta coordinada.",
       },
     ],
-    []
+    [],
   );
 
   const activeTabObj = tabs.find((t) => t.key === activeTab) ?? tabs[0];
@@ -294,18 +294,18 @@ export default function HomeGenieNova() {
         tl.set(
           ".sz-heroType__inner",
           { scale: opts.head0, y: opts.headY0, transformOrigin: "50% 50%" },
-          0
+          0,
         );
 
         tl.set(
           ".sz-hero__inner",
           { autoAlpha: 1, y: 0, filter: "blur(0px)" },
-          0
+          0,
         );
         tl.set(
           ".sz-hero__phoneStageAnim",
           { y: 0, scale: 1, transformOrigin: "50% 50%" },
-          0
+          0,
         );
 
         tl.set(".sz-phone__glow", { opacity: 0.55 }, 0);
@@ -315,12 +315,12 @@ export default function HomeGenieNova() {
         tl.to(
           ".sz-phone__ghost--1",
           { autoAlpha: 0.85, y: 0, ease: "none" },
-          0.18
+          0.18,
         );
         tl.to(
           ".sz-phone__ghost--2",
           { autoAlpha: 0.65, y: -6, ease: "none" },
-          0.22
+          0.22,
         );
 
         tl.set(".sz-hero__floor", { scale: 1, opacity: 0.95 }, 0);
@@ -334,7 +334,7 @@ export default function HomeGenieNova() {
               "--spotSize": "920px",
               "--heroFade": 0,
             } as any,
-            0
+            0,
           );
         }
 
@@ -346,18 +346,18 @@ export default function HomeGenieNova() {
               "--spotSize": "980px",
               ease: "none",
             } as any,
-            0.15
+            0.15,
           );
         }
         tl.to(
           ".sz-heroType__inner",
           { scale: opts.head1, y: opts.headY1, ease: "none" },
-          0.18
+          0.18,
         );
         tl.to(
           ".sz-hero__phoneStageAnim",
           { y: opts.phoneY1, scale: opts.phoneS1, ease: "none" },
-          0.18
+          0.18,
         );
         tl.to(".sz-phone__glow", { opacity: 0.62, ease: "none" }, 0.18);
         tl.to(".sz-phone__shine", { opacity: 0.38, ease: "none" }, 0.18);
@@ -365,17 +365,17 @@ export default function HomeGenieNova() {
         tl.to(
           ".sz-heroType__inner",
           { scale: opts.head2, y: opts.headY2, ease: "none" },
-          0.45
+          0.45,
         );
         tl.to(
           ".sz-hero__phoneStageAnim",
           { y: opts.phoneY2, scale: opts.phoneS2, ease: "none" },
-          0.45
+          0.45,
         );
         tl.to(
           ".sz-hero__inner",
           { autoAlpha: 0, y: -18, filter: "blur(10px)", ease: "none" },
-          0.55
+          0.55,
         );
 
         if (heroEl) {
@@ -387,27 +387,27 @@ export default function HomeGenieNova() {
               "--heroFade": 1,
               ease: "none",
             } as any,
-            0.78
+            0.78,
           );
         }
         tl.to(".sz-hero__fade", { opacity: 1, ease: "none" }, 0.78);
         tl.to(
           ".sz-hero__floor",
           { opacity: 0.18, scale: opts.floorS2, ease: "none" },
-          0.78
+          0.78,
         );
 
         tl.to(".sz-heroType", { opacity: 0.7, ease: "none" }, 0.78);
         tl.to(
           ".sz-heroType__inner",
           { scale: opts.head3, y: opts.headY3, ease: "none" },
-          0.78
+          0.78,
         );
 
         tl.to(
           ".sz-hero__phoneStageAnim",
           { y: opts.phoneY3, scale: opts.phoneS3, ease: "none" },
-          0.78
+          0.78,
         );
         tl.to(".sz-phone__glow", { opacity: 0.18, ease: "none" }, 0.78);
         tl.to(".sz-phone__shine", { opacity: 0.1, ease: "none" }, 0.78);
@@ -415,7 +415,7 @@ export default function HomeGenieNova() {
         tl.to(
           ".sz-phone__ghost",
           { autoAlpha: 0, y: -140, ease: "none" },
-          0.78
+          0.78,
         );
 
         tl.to(".sz-hero__phoneStageAnim", { autoAlpha: 0, ease: "none" }, 0.92);
@@ -487,7 +487,7 @@ export default function HomeGenieNova() {
             duration: 0.9,
             ease: "power3.out",
             scrollTrigger: { trigger: el, start: "top 86%" },
-          }
+          },
         );
       });
 
@@ -555,7 +555,7 @@ export default function HomeGenieNova() {
               duration: 0.28,
               ease: "none",
             },
-            t
+            t,
           );
           tl.to(
             phones[i],
@@ -566,7 +566,7 @@ export default function HomeGenieNova() {
               duration: 0.28,
               ease: "none",
             },
-            t
+            t,
           );
 
           tl.fromTo(
@@ -579,14 +579,14 @@ export default function HomeGenieNova() {
               duration: 0.28,
               ease: "none",
             },
-            t
+            t,
           );
 
           tl.fromTo(
             phones[i + 1],
             { autoAlpha: 0, y: 80, scale: 1.02 },
             { autoAlpha: 1, y: 0, scale: 1, duration: 0.28, ease: "none" },
-            t
+            t,
           );
 
           pos += 1;
@@ -654,13 +654,13 @@ export default function HomeGenieNova() {
     if (prefersReducedMotion) return;
 
     const els = Array.from(
-      document.querySelectorAll<HTMLElement>("[data-magnetic='true']")
+      document.querySelectorAll<HTMLElement>("[data-magnetic='true']"),
     );
     const cleanups: Array<() => void> = [];
 
     els.forEach((btn) => {
       const strength = Number(
-        btn.getAttribute("data-magnetic-strength") || 0.35
+        btn.getAttribute("data-magnetic-strength") || 0.35,
       );
 
       const move = (e: PointerEvent) => {
@@ -704,7 +704,7 @@ export default function HomeGenieNova() {
         filter: "blur(0px)",
         duration: 0.55,
         ease: "power3.out",
-      }
+      },
     );
   }, [activeTab]);
 
@@ -712,7 +712,6 @@ export default function HomeGenieNova() {
     if (e.key === "Enter" || e.key === " ") scrollToId("top");
   };
 
- 
   return (
     <div className="sz-page" ref={rootRef}>
       {/* NAV */}
@@ -1207,10 +1206,20 @@ export default function HomeGenieNova() {
             </div>
 
             <div className="sz-social">
-              <a href="#" aria-label="Instagram">
+              <a
+                href="https://www.instagram.com/safe.zoneoficial/"
+                aria-label="Instagram"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Instagram />
               </a>
-              <a href="#" aria-label="Facebook">
+              <a
+                href="https://www.facebook.com/profile.php?id=61586934939710"
+                aria-label="Facebook"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Facebook />
               </a>
             </div>

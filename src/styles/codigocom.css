@@ -33,7 +33,7 @@ body {
 .background {
   position: fixed;
   inset: 0;
-  background-image: url("../assets/Fondo_Admin.png");
+  background-image: url("../assets/fondo3.webp");
   background-size: cover;
   background-position: center;
   filter: brightness(0.55);

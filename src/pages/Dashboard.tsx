@@ -359,27 +359,6 @@ export default function Dashboard() {
     return () => window.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
 
-  useEffect(() => {
-    if (!tipoMenuOpen) return;
-
-    const onDown = (e: MouseEvent) => {
-      const el = tipoMenuRef.current;
-      if (!el) return;
-      if (!el.contains(e.target as Node)) setTipoMenuOpen(false);
-    };
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setTipoMenuOpen(false);
-    };
-
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [tipoMenuOpen]);
-
   // cerrar dropdown tipo al click fuera + ESC
   useEffect(() => {
     if (!tipoMenuOpen) return;

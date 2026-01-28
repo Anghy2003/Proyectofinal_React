@@ -42,7 +42,7 @@ body {
 .background {
   position: fixed;
   inset: 0;
-  background-image: url("../assets/fondo1.png") !important;
+  background-image: url("../assets/fondocup.webp") !important;
   background-size: cover;
   background-position: center;
   filter: brightness(1) !important;

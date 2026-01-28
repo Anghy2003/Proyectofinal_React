@@ -1,7 +1,7 @@
 import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
 
-import logoSafeZone from "../assets/logo_SafeZone.png";
+import logoSafeZone from "../assets/logo_SafeZone2.webp";
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
