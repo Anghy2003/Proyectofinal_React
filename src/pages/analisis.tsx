@@ -207,21 +207,19 @@ export default function Analisis() {
     const el = tablaWrapRef.current;
     if (!el) return;
 
-    const BREAKPOINT = 1100; // 👈 el mismo que usas en CSS (max-width: 1100px)
+    const BREAKPOINT = 1100; 
 
     const resetScrollIfDesktop = () => {
       const isDesktop = window.innerWidth > BREAKPOINT;
       if (isDesktop) {
-        // ✅ fuerza volver a la izquierda (y arriba si quieres)
         el.scrollLeft = 0;
-        // el.scrollTop = 0; // opcional
       }
     };
 
     // 1) reset inmediato si ya estás en desktop
     resetScrollIfDesktop();
 
-    // 2) reset cada vez que cambie el tamaño de la ventana (debounced)
+    // 2) reset cada vez que cambie el tamaño de la ventana
     let t: number | null = null;
     const onResize = () => {
       if (t) window.clearTimeout(t);
@@ -241,7 +239,7 @@ export default function Analisis() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Solo con IA real
+  //Solo con IA real
   const tieneIA = (i: IncidenteResponseDTO) =>
     i.aiCategoria != null ||
     i.aiPrioridad != null ||
@@ -286,7 +284,7 @@ export default function Analisis() {
     [incidentes],
   );
 
-  // 🔹 FILTRADO (solo con IA)
+  //FILTRADO (solo con IA)
   const incidentesFiltrados = useMemo(() => {
     const term = busqueda.toLowerCase().trim();
 
@@ -425,7 +423,7 @@ export default function Analisis() {
   // usar filtros actuales (busqueda/selects/fecha)
   const [exportUsarFiltros, setExportUsarFiltros] = useState(true);
 
-  // ✅ KPIs SOLO en “completo”
+  //KPIs SOLO en “completo”
   const [exportIncluirKPIs, setExportIncluirKPIs] = useState(true);
 
   const kpiHabilitado = exportContenido === "completo";
@@ -652,8 +650,6 @@ export default function Analisis() {
     const doc = new jsPDF("p", "mm", "a4");
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
-
-    // logo centrado
     const logoSize = 40;
     const logoX = (pageW - logoSize) / 2;
     const logoY = 10;
@@ -689,7 +685,7 @@ export default function Analisis() {
 
     let cursorY = titleY + 18;
 
-    // 1) RESUMEN + ESTADO GLOBAL (solo completo)
+    // 1) RESUMEN + ESTADO GLOBAL
     if (incluirKPIs) {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");

@@ -1071,27 +1071,7 @@ body {
   border-collapse: collapse;
 }
 
-/* Cabecera fija */
-.tabla-panel-in-chart thead {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
 
-/* 👇 EL TRUCO CLAVE */
-/* El cuerpo ocupa TODO el espacio restante */
-.tabla-panel-in-chart tbody {
-  flex: 1;
-  display: block;
-  overflow-y: auto;
-}
-
-/* Mantener columnas alineadas */
-.tabla-panel-in-chart tbody tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
-}
 
 /* ===============================
    Ajuste de columnas - Tabla Usuarios
@@ -1985,16 +1965,18 @@ body {
 }
 
 .tabla-panel-in-chart{
-  flex: 1;        
-  min-height: 0;    
+  flex: 1;
+  min-height: 0;
 }
 
 .tabla-panel-in-chart .tabla-inner{
-  height: 100%;
-  max-height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden; 
-  padding-right: 6px;  
+  flex: 1;
+  min-height: 0;
+
+  overflow: auto;              /* ✅ scroll X e Y si se necesita */
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable both-edges;
 }
 
 .usuarios-tabla{
@@ -2114,6 +2096,7 @@ body {
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
+  min-width: 760px; 
 }
 
 .usuarios-tabla th,

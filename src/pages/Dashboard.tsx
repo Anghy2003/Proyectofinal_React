@@ -48,7 +48,7 @@ type NavItem = {
 };
 
 /* ===============================
-   Helpers fechas (LOCAL)
+   Helpers fechas
 ================================ */
 function startOfDayLocal(d: Date) {
   const x = new Date(d);
@@ -156,7 +156,7 @@ function canonTipo(raw: unknown): string {
 }
 
 function getIncidenteTipoRaw(inc: any): string {
-  // ✅ backend: tipo
+  // backend: tipo
   // fallback IA: aiCategoria
   return String(inc?.tipo ?? inc?.aiCategoria ?? "SIN_TIPO");
 }
@@ -483,7 +483,7 @@ export default function Dashboard() {
     const set = new Set<string>();
     for (const inc of baseRango) set.add(canonTipo(getIncidenteTipoRaw(inc)));
 
-    // ✅ ordena por "Total" desc (más útil para admin)
+    //ordena por "Total" desc (más útil para admin)
     return [...set]
       .filter((x) => !!x)
       .sort(
@@ -551,7 +551,7 @@ export default function Dashboard() {
       const p = extractLatLng(inc); // usa el helper que ya tienes o el que pegaste
       if (!p) continue;
 
-      // ✅ MISMO redondeo que HeatHoverLayer para que coincida 1:1
+      //MISMO redondeo que HeatHoverLayer para que coincida 1:1
       const lat = Number(p[0].toFixed(4));
       const lng = Number(p[1].toFixed(4));
       const key = `${lat}|${lng}`;
@@ -564,7 +564,6 @@ export default function Dashboard() {
       }
     }
 
-    // Orden opcional: mayor cantidad primero (útil)
     return Array.from(mapZones.values()).sort((a, b) => b.total - a.total);
   }, [incidentesHeatmapFinal, tipoFiltro]);
 
@@ -905,12 +904,6 @@ export default function Dashboard() {
               transition={{ duration: 0.28, ease: "easeOut" }}
             >
               <div className="topbar-left">
-                {/*<button type="button" className="topbar-back" aria-label="Volver" onClick={() => navigate(-1)}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <path d="M15 5L9 12L15 19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>*/}
-
                 <div
                   className={`search-pill-v2 ${searchOpen ? "open" : ""}`}
                   ref={searchWrapRef}
@@ -1023,7 +1016,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* ✅ TOP RIGHT: solo ES + Admin + avatar (sin otros iconos) */}
+              {/*TOP RIGHT: solo ES + Admin + avatar*/}
               <div className="topbar-actions">
                 <div className="me-pill-v2" title={me?.email ?? ""}>
                   <div className="me-role-pill-v2">
@@ -1336,7 +1329,7 @@ export default function Dashboard() {
                 </div>
               </motion.article>
 
-              {/* ✅ Donut sin “cuadro/fondo” interno y ocupando espacio */}
+              {/*Donut sin “cuadro/fondo” interno y ocupando espacio */}
               <motion.article
                 className="card donut-card-v2"
                 variants={cardIn}

@@ -100,7 +100,7 @@ export default function Login() {
       //Si el usuario existe pero NO es admin → mensaje correcto
       if (!isAdminUser(usuario)) {
         setFormError("Tu cuenta no tiene permisos de administrador.");
-        return; // 👈 no guarda sesión ni navega
+        return; //no guarda sesión ni navega
       }
 
       // Solo si es admin

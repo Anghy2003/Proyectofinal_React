@@ -1,6 +1,3 @@
-// ===============================
-// src/pages/Usuarios.tsx
-// ===============================
 import "../styles/usuario.css";
 import Sidebar from "../components/sidebar";
 
@@ -10,12 +7,12 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import { usuariosService, type UsuarioApi } from "../services/Usuario.Service";
 
-// ✅ Export libs
+//Export libs
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-// ✅ Animaciones + UI pro
+//Animaciones + UI pro
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Search,
@@ -29,7 +26,7 @@ import {
   FileSpreadsheet,
   FileText,
 
-  // ✅ NUEVOS para modal pro de exportación (igual Comunidades)
+  // NUEVOS para modal pro de exportación (igual Comunidades)
   Table2,
   LayoutDashboard,
   LineChart as LineChartIcon,
@@ -38,7 +35,7 @@ import {
   Eye,
 } from "lucide-react";
 
-// ✅ Charts (mismo stack que Dashboard/Comunidades) — BARRAS
+//Charts (mismo stack que Dashboard/Comunidades) — BARRAS
 import {
   ResponsiveContainer,
   BarChart,
@@ -233,7 +230,7 @@ function ComunidadesTooltip({
 }
 
 /* =========================================================
-   ✅ Helper: convertir SVG (Recharts) a PNG DataURL para jsPDF
+  Helper: convertir SVG (Recharts) a PNG DataURL para jsPDF
 ========================================================= */
 async function svgToPngDataUrl(
   svgEl: SVGSVGElement,
@@ -278,7 +275,7 @@ async function svgToPngDataUrl(
 }
 
 export default function Usuarios() {
-  // ✅ sidebar móvil
+  //sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
@@ -844,7 +841,7 @@ export default function Usuarios() {
           cursorY) + 8;
     }
 
-    // ✅ 2) TABLA USUARIOS (si aplica)
+    //2) TABLA USUARIOS (si aplica)
     if (incluirTabla) {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
@@ -900,7 +897,7 @@ export default function Usuarios() {
           cursorY) + 10;
     }
 
-    // ✅ 3) ESTADO DE CUENTA (tabla) + TOP COMUNIDADES (tabla) — SOLO en completo
+    // 3) ESTADO DE CUENTA (tabla) + TOP COMUNIDADES (tabla) — SOLO en completo
     if (exportContenido === "completo") {
       // salto de página si no entra
       if (cursorY + 40 > pageH) {
@@ -978,7 +975,7 @@ export default function Usuarios() {
           cursorY) + 10;
     }
 
-    // ✅ 4) REGISTROS (GRÁFICA) — imagen SOLO para esta sección (igual Comunidades)
+    //4) REGISTROS (GRÁFICA) — imagen SOLO para esta sección (igual Comunidades)
     if (incluirRegistros) {
       if (cursorY + 90 > pageH) {
         doc.addPage();
@@ -1219,9 +1216,9 @@ export default function Usuarios() {
               </div>
             </div>
 
-            {/* ✅ SWAP: TABLA (izquierda) + SIDE CARD (derecha) */}
+            {/*SWAP: TABLA (izquierda) + SIDE CARD (derecha) */}
             <div className="grid-2col">
-              {/* ✅ TABLA en el lugar de la gráfica */}
+              {/*TABLA en el lugar de la gráfica */}
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
@@ -1322,7 +1319,7 @@ export default function Usuarios() {
                 </section>
               </section>
 
-              {/* ✅ SIDE CARD igual (donut + top comunidades) */}
+              {/*SIDE CARD igual (donut + top comunidades) */}
               <section className="side-card-v2 card">
                 <div className="chart-head">
                   <div>
@@ -1416,7 +1413,7 @@ export default function Usuarios() {
               </section>
             </div>
 
-            {/* ✅ SWAP: GRÁFICA ahora en el lugar donde estaba la tabla (full ancho) */}
+            {/* SWAP: GRÁFICA ahora en el lugar donde estaba la tabla (full ancho) */}
             <section className="chart-card-v2 card chart-card-full">
               <div className="chart-head">
                 <div>
@@ -1473,7 +1470,7 @@ export default function Usuarios() {
         </main>
       </div>
 
-      {/* ✅ MODAL EXPORTACIÓN*/}
+      {/*MODAL EXPORTACIÓN*/}
       <AnimatePresence>
         {exportOpen && (
           <motion.div
@@ -1795,7 +1792,7 @@ export default function Usuarios() {
         )}
       </AnimatePresence>
 
-      {/* ✅ MODAL VER DETALLE USUARIO (con suspender dentro) */}
+      {/* MODAL VER DETALLE USUARIO (con suspender dentro) */}
       <AnimatePresence>
         {viewOpen && viewTarget && (
           <motion.div
@@ -1939,7 +1936,7 @@ export default function Usuarios() {
         )}
       </AnimatePresence>
 
-      {/* ✅ MODAL CONFIRMACIÓN SUSPENDER (PRO) */}
+      {/*MODAL CONFIRMACIÓN SUSPENDER (PRO) */}
       <AnimatePresence>
         {confirmOpen && viewTarget && (
           <motion.div

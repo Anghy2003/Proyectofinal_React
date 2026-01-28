@@ -26,7 +26,7 @@ type CodigoRow = {
 export default function CodigoAcceso() {
   const navigate = useNavigate();
 
-  // ✅ sidebar móvil
+  //sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -78,7 +78,7 @@ export default function CodigoAcceso() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Cerrar sidebar al agrandar pantalla
+  //Cerrar sidebar al agrandar pantalla
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 901) setSidebarOpen(false);
@@ -321,9 +321,6 @@ export default function CodigoAcceso() {
             </div>
 
             <p className="panel-update">Última actualización: {new Date().toLocaleString("es-EC")}</p>
-
-            {/* Si tu Sidebar necesita logout, normalmente está dentro del Sidebar.
-                Si no lo tienes ahí, dime y lo conecto en 2 líneas. */}
           </motion.section>
         </main>
       </div>

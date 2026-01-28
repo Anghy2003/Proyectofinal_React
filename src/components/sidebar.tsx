@@ -11,6 +11,16 @@ import iconRepo from "../assets/icon_reporte.svg";
 import iconIa from "../assets/icon_ia.svg";
 import iconAcceso from "../assets/icon_ajuste.svg";
 
+// ✅ Preload de páginas (code-splitting)
+const preload = {
+  dashboard: () => import("../pages/Dashboard"),
+  comunidades: () => import("../pages/comunidades"),
+  usuarios: () => import("../pages/usuarios"),
+  analisis: () => import("../pages/analisis"),
+  reportes: () => import("../pages/reportes"),
+  codigoAcceso: () => import("../pages/codigocmu"),
+};
+
 type SidebarProps = {
   sidebarOpen?: boolean;
   closeSidebar?: () => void;
@@ -76,34 +86,70 @@ export default function Sidebar({
         </div>
 
         <nav className="sidebar-menu">
-          <NavLink to="/dashboard" className={linkClass} onClick={onClose}>
+          <NavLink
+            to="/dashboard"
+            className={linkClass}
+            onClick={onClose}
+            onMouseEnter={() => preload.dashboard()}
+            onFocus={() => preload.dashboard()}
+          >
             <img src={iconDashboard} className="nav-icon" alt="Panel" />
             <span>Panel</span>
           </NavLink>
 
-          <NavLink to="/comunidades" className={linkClass} onClick={onClose}>
+          <NavLink
+            to="/comunidades"
+            className={linkClass}
+            onClick={onClose}
+            onMouseEnter={() => preload.comunidades()}
+            onFocus={() => preload.comunidades()}
+          >
             <img src={iconComu} className="nav-icon" alt="Comunidades" />
             <span>Comunidades</span>
           </NavLink>
 
-          <NavLink to="/usuarios" className={linkClass} onClick={onClose}>
+          <NavLink
+            to="/usuarios"
+            className={linkClass}
+            onClick={onClose}
+            onMouseEnter={() => preload.usuarios()}
+            onFocus={() => preload.usuarios()}
+          >
             <img src={iconUsuario} className="nav-icon" alt="Usuarios" />
             <span>Usuarios</span>
           </NavLink>
 
           <div className="sidebar-section-label">MANAGEMENT</div>
 
-          <NavLink to="/analisis" className={linkClass} onClick={onClose}>
+          <NavLink
+            to="/analisis"
+            className={linkClass}
+            onClick={onClose}
+            onMouseEnter={() => preload.analisis()}
+            onFocus={() => preload.analisis()}
+          >
             <img src={iconIa} className="nav-icon" alt="IA" />
             <span>IA Análisis</span>
           </NavLink>
 
-          <NavLink to="/reportes" className={linkClass} onClick={onClose}>
+          <NavLink
+            to="/reportes"
+            className={linkClass}
+            onClick={onClose}
+            onMouseEnter={() => preload.reportes()}
+            onFocus={() => preload.reportes()}
+          >
             <img src={iconRepo} className="nav-icon" alt="Reportes" />
             <span>Reportes</span>
           </NavLink>
 
-          <NavLink to="/codigo-acceso" className={linkClass} onClick={onClose}>
+          <NavLink
+            to="/codigo-acceso"
+            className={linkClass}
+            onClick={onClose}
+            onMouseEnter={() => preload.codigoAcceso()}
+            onFocus={() => preload.codigoAcceso()}
+          >
             <img src={iconAcceso} className="nav-icon" alt="Ajustes" />
             <span>Ajustes</span>
           </NavLink>
@@ -112,9 +158,7 @@ export default function Sidebar({
         <div className="sidebar-footer">
           <div className="sidebar-connected">
             <div className="sidebar-connected-title">Conectado como</div>
-            <div className="sidebar-connected-name">
-              {me?.rol ?? "Admin"}
-            </div>
+            <div className="sidebar-connected-name">{me?.rol ?? "Admin"}</div>
           </div>
 
           <button
@@ -143,28 +187,21 @@ export default function Sidebar({
 
             <motion.div
               className="modal-confirm"
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.92, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 10 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               <h3>¿Cerrar sesión?</h3>
-              <p>
-                Tu sesión se cerrará y deberás iniciar sesión nuevamente.
-              </p>
+              <p>Tu sesión se cerrará y deberás iniciar sesión nuevamente.</p>
 
               <div className="modal-actions">
-                <button
-                  className="btn-secondario"
-                  onClick={cancelLogout}
-                >
+                <button className="btn-secondario" onClick={cancelLogout}>
                   Cancelar
                 </button>
 
-                <button
-                  className="btn-primario"
-                  onClick={confirmLogout}
-                >
+                <button className="btn-primario" onClick={confirmLogout}>
                   Sí, cerrar sesión
                 </button>
               </div>

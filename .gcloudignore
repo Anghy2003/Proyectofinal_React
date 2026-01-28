@@ -1,0 +1,11 @@
+# ignora lo pesado/irrelevante
+node_modules
+dist
+.firebase
+.git
+.gitignore
+README.md
+*.log
+
+# permite incluir env de producción (solo este)
+!.env.production

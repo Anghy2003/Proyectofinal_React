@@ -3,7 +3,7 @@ import "../styles/reporte.css";
 import Sidebar from "../components/sidebar";
 
 import logoSafeZone from "../assets/logo_SafeZone.png";
-import iconEliminar from "../assets/icon_eliminar2.svg";
+/*import iconEliminar from "../assets/icon_eliminar2.svg";*/
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 
 import {
@@ -12,13 +12,13 @@ import {
   type EstadoReporte,
 } from "../services/reportes.service";
 
-// ✅ Export libs
+// Export libs
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2canvas from "html2canvas";
 
-// ✅ Animaciones + UI pro
+//Animaciones + UI pro
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Search,
@@ -31,7 +31,6 @@ import {
   CheckCircle2,
   Clock3,
   ShieldAlert,
-  Flame,
   LayoutDashboard,
   Table2,
   LineChart as LineChartIcon,
@@ -139,55 +138,8 @@ function ReportesTooltip({
   );
 }
 
-/* =========================
-   Avatar fallback (si falla foto)
-========================= */
-function initialsOf(name: string) {
-  const parts = String(name || "Usuario")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2);
-  const a = (parts[0]?.[0] ?? "U").toUpperCase();
-  const b = (parts[1]?.[0] ?? "").toUpperCase();
-  return (a + b).slice(0, 2);
-}
-
-function svgAvatar(initials: string) {
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72">
-    <defs>
-      <linearGradient id="g" x1="0" x2="1">
-        <stop stop-color="#e2e8f0"/>
-        <stop offset="1" stop-color="#cbd5e1"/>
-      </linearGradient>
-    </defs>
-    <rect width="72" height="72" rx="36" fill="url(#g)"/>
-    <circle cx="36" cy="30" r="14" fill="rgba(15,23,42,0.12)"/>
-    <rect x="18" y="44" width="36" height="16" rx="8" fill="rgba(15,23,42,0.12)"/>
-    <text x="36" y="41" text-anchor="middle" font-family="Inter, Arial" font-size="14" font-weight="800" fill="rgba(15,23,42,0.65)">${initials}</text>
-  </svg>`;
-  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
-}
-
-function normalizeMaybeUrl(raw?: string | null) {
-  if (!raw) return "";
-  const v = String(raw).trim();
-  if (!v) return "";
-  if (/^https?:\/\//i.test(v)) return v;
-
-  const apiBase = (import.meta as any)?.env?.VITE_API_URL as string | undefined;
-  if (apiBase) {
-    try {
-      return new URL(v, apiBase).toString();
-    } catch {
-      return v;
-    }
-  }
-  return v;
-}
-
 export default function Reportes() {
-  // ✅ sidebar móvil
+  // sidebar móvil
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // 🔹 DATA REAL
@@ -195,7 +147,7 @@ export default function Reportes() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  // ✅ buscador topbar
+  //buscador topbar
   const [busqueda, setBusqueda] = useState("");
 
   // 🔹 ESTADOS DE LOS FILTROS
@@ -204,7 +156,7 @@ export default function Reportes() {
   const [filtroComunidad, setFiltroComunidad] = useState<string>("");
   const [filtroFecha, setFiltroFecha] = useState<string>(""); // yyyy-mm-dd
 
-  // ✅ Gráfico (día/mes/año)
+  // Gráfico (día/mes/año)
   const [granularity, setGranularity] = useState<Granularity>("mes");
 
   // refs (export charts)
@@ -244,31 +196,12 @@ export default function Reportes() {
     setTimeout(() => setReporteSeleccionado(null), 150);
   };
 
-  const prettyValue = (v: any) => {
-    if (v === null || v === undefined || v === "") return "—";
-    if (typeof v === "object") return JSON.stringify(v, null, 2);
-    return String(v);
-  };
-
-  // Si quieres labels más bonitos:
-  const LABELS: Record<string, string> = {
-    id: "ID",
-    usuario: "Usuario",
-    tipo: "Tipo",
-    comunidad: "Comunidad",
-    estado: "Estado",
-    fecha: "Fecha",
-    ubicacion: "Ubicación",
-    descripcion: "Descripción",
-    detalle: "Detalle",
-  };
-
   useEffect(() => {
     cargarReportes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ Cerrar sidebar al agrandar pantalla
+  //Cerrar sidebar al agrandar pantalla
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 901) setSidebarOpen(false);
@@ -440,67 +373,12 @@ export default function Reportes() {
     return top;
   }, [reportesFiltrados]);
 
-  // =====================
-  // TOP USUARIOS (tipo "Top pages" + FOTO ORIGINAL)
-  // =====================
-  const topUsuarios = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const r of reportesFiltrados) {
-      const k = r.usuario || "Usuario";
-      counts.set(k, (counts.get(k) ?? 0) + 1);
-    }
-    return Array.from(counts.entries())
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 7);
-  }, [reportesFiltrados]);
 
-  type ReporteFoto = Reporte & {
-    usuarioFotoUrl?: string | null;
-    fotoUrl?: string | null;
-    avatarUrl?: string | null;
-    usuarioAvatarUrl?: string | null;
-  };
-
-  const userPhotoByName = useMemo(() => {
-    const m = new Map<string, string>();
-
-    for (const r0 of reportesFiltrados) {
-      const r = r0 as ReporteFoto;
-      const name = r.usuario || "Usuario";
-
-      const raw =
-        r.usuarioFotoUrl ??
-        r.fotoUrl ??
-        r.avatarUrl ??
-        r.usuarioAvatarUrl ??
-        (r as any)?.usuario_foto_url ??
-        (r as any)?.foto_usuario ??
-        (r as any)?.usuario_avatar ??
-        "";
-
-      const url = normalizeMaybeUrl(raw);
-      if (url && !m.has(name)) m.set(name, url);
-    }
-
-    return m;
-  }, [reportesFiltrados]);
-
-  const topMax = useMemo(() => {
-    const v = topUsuarios[0]?.value ?? 0;
-    return v <= 0 ? 1 : v;
-  }, [topUsuarios]);
-
-  const avatarFor = (name: string) => {
-    const url = userPhotoByName.get(name) || "";
-    if (url) return url;
-    return svgAvatar(initialsOf(name));
-  };
 
   // =====================
   // ELIMINAR
   // =====================
-  const eliminarReporte = async (id: string) => {
+{/*  const eliminarReporte = async (id: string) => {
     const ok = window.confirm("¿Seguro que deseas eliminar este reporte?");
     if (!ok) return;
 
@@ -510,7 +388,7 @@ export default function Reportes() {
     } catch (e: any) {
       alert(e?.message || "No se pudo eliminar el reporte");
     }
-  };
+  };*/} 
 
   /* =====================
         EXPORT PRO (MODAL)
@@ -847,7 +725,7 @@ export default function Reportes() {
         margin: { left: 14, right: 14 },
       });
 
-      // 👇 después del autoTable de Estado global
+      //Después del autoTable de Estado global
       cursorY = ((((doc as any).lastAutoTable?.finalY as number) ?? cursorY) +
         8) as number;
 
@@ -1101,7 +979,7 @@ export default function Reportes() {
 
                 {/* Acciones */}
                 <div className="topbar-actions">
-                  {/* ✅ EXPORTAR (MODAL PRO) */}
+                  {/*EXPORTAR (MODAL PRO) */}
                   <button
                     className="action-pill action-pill-icon"
                     onClick={() => setExportOpen(true)}
@@ -1228,7 +1106,7 @@ export default function Reportes() {
 
             {/* Charts + Side card */}
             <div className="grid-2col">
-              {/* ✅ IZQUIERDA: TABLA (en lugar de "Reportes en el tiempo") */}
+              {/*IZQUIERDA: TABLA (en lugar de "Reportes en el tiempo") */}
               <section className="reportes-card reportes-card-embedded card">
                 <div className="tabla-head">
                   <div>
@@ -1324,10 +1202,9 @@ export default function Reportes() {
                 </div>
               </section>
 
-              {/* ✅ DERECHA: tu side-card tal cual */}
+              {/* DERECHA: tu side-card tal cual */}
               <section className="side-card-v3 card">
                 {/* ... TU CÓDIGO ACTUAL DEL DONUT + TOP USUARIOS ... */}
-                {/* (no lo repito para no hacerlo eterno, lo dejas igual) */}
                 <div className="chart-head">
                   <div>
                     <div className="chart-title-v2">Reportes por comunidad</div>
@@ -1392,7 +1269,7 @@ export default function Reportes() {
               </section>
             </div>
 
-            {/* ✅ ABAJO: "Reportes en el tiempo" ahora full width (donde estaba la tabla) */}
+            {/* ABAJO: "Reportes en el tiempo" ahora full width (donde estaba la tabla) */}
             <section className="chart-card-v3 card chart-card-full">
               <div className="chart-head">
                 <div>

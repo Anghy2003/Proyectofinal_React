@@ -7,35 +7,37 @@
   z-index: 999;
 }
 
-/* ===== Modal confirmación ===== */
+/* ===== Modal confirmación (CENTRADO REAL) ===== */
 .modal-confirm {
   position: fixed;
-  top: 36%;
-  left: 39%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  margin: auto;
 
-  width: min(92vw, 420px); /* ⬅ más grande */
+  width: min(92vw, 420px);
+  height: fit-content;
+
   padding: 26px 28px;
-
   background: #ffffff;
   border-radius: 18px;
 
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35),
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.35),
     0 0 0 1px rgba(15, 23, 42, 0.05);
 
   text-align: center;
   z-index: 1000;
+  box-sizing: border-box;
 }
 
-/* Título */
+/* ===== Título ===== */
 .modal-confirm h3 {
   margin: 0 0 8px;
-  font-size: 20px; /* ⬅ más grande */
+  font-size: 20px;
   font-weight: 900;
   color: #0f172a;
 }
 
-/* Texto */
+/* ===== Texto ===== */
 .modal-confirm p {
   margin: 0 0 22px;
   font-size: 14.5px;
@@ -43,32 +45,36 @@
   line-height: 1.5;
 }
 
-/* Botones */
+/* ===== Botones ===== */
 .modal-actions {
   display: flex;
   gap: 14px;
   justify-content: center;
-  align-items: center;
-  
 }
 
-/* Cancelar */
+/* ===== MÓVIL ===== */
+@media (max-width: 480px) {
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}
+
+/* ===== Botón cancelar ===== */
 .btn-secondario {
+  padding: 13px 18px;
   border: 2px solid #f9505099;
   background: #ffffff;
   color: #0f172a;
   font-weight: 700;
   border-radius: 999px;
   cursor: pointer;
-  transition: background 0.2s ease;
 }
 
-.btn-secondario:hover {
-  background: rgba(249, 81, 80, 0.08);
-}
-
-
-/* Confirmar */
+/* ===== Botón confirmar ===== */
 .btn-primario {
   padding: 13.8px 18px;
   border-radius: 999px;
@@ -77,21 +83,9 @@
   color: #fff;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  position: relative;
-  line-height: 1;
 }
 
-.btn-primario:hover {
-filter: brightness(0.95);
-}
-
-.btn-secondario:focus,
-.btn-primario:focus {
-  outline: none;
-}
-
-
+/* ===== Focus ===== */
 .btn-secondario:focus-visible,
 .btn-primario:focus-visible {
   box-shadow: 0 0 0 3px rgba(249, 81, 80, 0.35);

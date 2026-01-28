@@ -17,7 +17,7 @@ import {
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ✅ IMPORTS DE ASSETS (Vite-friendly)
+//IMPORTS DE ASSETS (Vite-friendly)
 import HERO_PHONE from "../assets/celular1.png";
 import FEATURE_1 from "../assets/celular4.png";
 import FEATURE_2 from "../assets/celular2.png";
@@ -219,7 +219,7 @@ export default function HomeGenieNova() {
     window.scrollTo({ top: y, behavior: "smooth" });
   }
 
-  // ✅ Bloquear scroll del body cuando el menú móvil está abierto
+  //Bloquear scroll del body cuando el menú móvil está abierto
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -227,7 +227,7 @@ export default function HomeGenieNova() {
     };
   }, [menuOpen]);
 
-  // ✅ Si vuelve a desktop, cerrar menú móvil
+  //Si vuelve a desktop, cerrar menú móvil
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 900) setMenuOpen(false);
@@ -256,17 +256,6 @@ export default function HomeGenieNova() {
     if (!rootRef.current) return;
 
     const ctx = gsap.context(() => {
-      // NAV glass al hacer scroll
-      /*ScrollTrigger.create({
-        trigger: document.documentElement,
-        start: "top top",
-        end: "bottom bottom",
-        onUpdate: (self) => {
-          if (!navRef.current) return;
-          navRef.current.classList.toggle("sz-nav--scrolled", self.scroll() > 10);
-        },
-      });*/
-
       const mm = gsap.matchMedia();
 
       const buildHero = (opts: {
@@ -1137,7 +1126,7 @@ export default function HomeGenieNova() {
               </p>
 
               <div className="sz-cta__buttons">
-                {/* ✅ BOTÓN CORREGIDO */}
+                {/*BOTÓN CORREGIDO */}
                 <a
                   className="sz-btn sz-btn--primary"
                   data-magnetic="true"
@@ -1198,7 +1187,7 @@ export default function HomeGenieNova() {
         </div>
       </section>
 
-      {/* FOOTER ✅ (arreglado, sin CSS pegado dentro) */}
+      {/* FOOTER */}
       <footer className="sz-footer">
         <div className="sz-container sz-footer__inner">
           <div className="sz-footer__left">

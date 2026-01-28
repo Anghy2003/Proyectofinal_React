@@ -1,6 +1,3 @@
-// ===============================
-// src/pages/Comunidades.tsx
-// ===============================
 import "../styles/comunidad.css";
 import Sidebar from "../components/sidebar";
 
@@ -69,7 +66,7 @@ type SessionData = {
 
 type DailyPoint = {
   key: string; // YYYY-MM-DD
-  label: string; // "04 Ene"
+  label: string;
   total: number;
   activas: number;
   solicitadas: number;
@@ -283,7 +280,7 @@ export default function Comunidades() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // =========================
-  // ✅ EXPORT PRO (Modal)
+  //EXPORT Modal
   // =========================
   type ExportFormat = "PDF" | "XLSX";
   type ExportScope = "TABLE" | "FULL" | "TREND";
@@ -312,7 +309,7 @@ export default function Comunidades() {
   const [stateError, setStateError] = useState<string | null>(null);
   const [stateTarget, setStateTarget] = useState<Comunidad | null>(null);
 
-  // ✅ MODAL VER DETALLE
+  //MODAL VER DETALLE
   const [viewOpen, setViewOpen] = useState(false);
   const [viewTarget, setViewTarget] = useState<Comunidad | null>(null);
 
@@ -353,7 +350,7 @@ export default function Comunidades() {
   //Para habilitar solo si es reporte completo
   const kpisEnabled = exportScope === "FULL";
 
-  // ✅ Suspender y reactivar (borrado lógico)
+  //Suspender y reactivar (borrado lógico)
   const confirmToggleEstado = async () => {
     try {
       if (!stateTarget) return;
@@ -429,7 +426,7 @@ export default function Comunidades() {
     cargarComunidades();
   }, []);
 
-  // ✅ Cerrar sidebar al agrandar pantalla
+  //Cerrar sidebar al agrandar pantalla
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth >= 901) setSidebarOpen(false);
@@ -438,7 +435,7 @@ export default function Comunidades() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ✅ Cerrar modal export con ESC
+  //Cerrar modal export con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpenExport(false);
@@ -447,7 +444,7 @@ export default function Comunidades() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openExport]);
 
-  // ✅ Cerrar modal editar con ESC
+  //Cerrar modal editar con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setEditOpen(false);
@@ -456,7 +453,7 @@ export default function Comunidades() {
     return () => window.removeEventListener("keydown", onKey);
   }, [editOpen]);
 
-  // ✅ Cerrar modal suspender con ESC
+  //Cerrar modal suspender con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setStateOpen(false);
@@ -465,7 +462,7 @@ export default function Comunidades() {
     return () => window.removeEventListener("keydown", onKey);
   }, [stateOpen]);
 
-  // ✅ Cerrar modal ver con ESC
+  //Cerrar modal ver con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setViewOpen(false);
@@ -533,7 +530,7 @@ export default function Comunidades() {
   };
 
   // =========================
-  // ✅ LINE CHART DATA
+  //LINE CHART DATA
   // =========================
   const lineData = useMemo(
     () => buildDailySeries(comunidades, 14),
@@ -585,7 +582,6 @@ export default function Comunidades() {
       XLSX.utils.book_append_sheet(wb, ws, "Comunidades");
     }
 
-    // ✅ Serie 14d (si aplica)
     if (scope === "FULL" || scope === "TREND") {
       const chartRows = lineData.map((p) => ({
         Fecha: p.key,
@@ -621,7 +617,6 @@ export default function Comunidades() {
     const pageW = doc.internal.pageSize.getWidth();
     const pageH = doc.internal.pageSize.getHeight();
 
-    // Header logo centrado
     const logoSize = 40;
     const logoX = (pageW - logoSize) / 2;
     const logoY = 10;
@@ -648,7 +643,7 @@ export default function Comunidades() {
       },
     );
 
-    // ✅ Meta (filtro / registros)
+    //Meta (filtro / registros)
     let cursorY = titleY + 18;
 
     if (scope === "FULL" && exportWithKpis) {
@@ -677,7 +672,7 @@ export default function Comunidades() {
           cursorY) + 8;
     }
 
-    // ✅ TABLA (si aplica)
+    //TABLA (si aplica)
     if (scope === "TABLE" || scope === "FULL") {
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
@@ -749,7 +744,7 @@ export default function Comunidades() {
           cursorY) + 10;
     }
 
-    // ✅ TENDENCIA (si aplica)
+    //TENDENCIA (si aplica)
     if (scope === "FULL" || scope === "TREND") {
       // Si no entra, nueva página
       if (cursorY + 90 > pageH) {
@@ -803,7 +798,6 @@ export default function Comunidades() {
         cursorY += 20;
       }
 
-      // ✅ (Opcional pro) tabla corta con los últimos puntos
       const last = lineData;
       autoTable(doc, {
         startY: cursorY,
@@ -839,7 +833,7 @@ export default function Comunidades() {
   const canExport = comunidadesFiltradas.length > 0;
 
   // =========================
-  // ✅ Export helpers PRO
+  //Export helpers
   // =========================
   const nowStamp = () => new Date().toISOString().slice(0, 10);
 
@@ -937,7 +931,7 @@ export default function Comunidades() {
       : `conic-gradient(rgba(15,23,42,0.12) 0 100%)`;
 
   // =========================
-  // ✅ EDIT (modal)
+  //EDIT (modal)
   // =========================
   const openEdit = async (c: Comunidad) => {
     try {
@@ -1009,7 +1003,6 @@ export default function Comunidades() {
         prev.map((x) => (x.id === updated.id ? updated : x)),
       );
 
-      // si justo estabas viendo el detalle
       setViewTarget((prev) =>
         prev && prev.id === updated.id ? updated : prev,
       );
@@ -1029,6 +1022,7 @@ export default function Comunidades() {
       <div className="background" />
 
       <div className="dashboard">
+
         {/* Overlay móvil */}
         <AnimatePresence>
           {sidebarOpen && (
@@ -1099,7 +1093,7 @@ export default function Comunidades() {
                   </div>
                 </div>
 
-                {/* ✅ BOTONES */}
+                {/*BOTONES */}
                 <div ref={exportRef} className="topbar-actions">
                   <button
                     className="action-pill"
@@ -1179,9 +1173,8 @@ export default function Comunidades() {
               </div>
             </div>
 
-            {/* INSIGHTS: TABLA + DONUT */}
             <div className="grid-2col">
-              {/* ✅ TABLA (solo columnas importantes) */}
+              {/*TABLA*/}
               <section className="chart-card-v2 card">
                 <div className="chart-head">
                   <div>
@@ -1357,7 +1350,7 @@ export default function Comunidades() {
               </section>
             </div>
 
-            {/* ✅ GRÁFICA (full ancho) */}
+            {/*GRÁFICA*/}
             <section className="chart-card-v2 card chart-card-full">
               <div className="chart-head">
                 <div>
@@ -1433,7 +1426,7 @@ export default function Comunidades() {
         </main>
       </div>
 
-      {/* ✅ MODAL EDITAR (NO usa viewTarget) */}
+      {/*MODAL EDITAR*/}
       <AnimatePresence>
         {editOpen && (
           <motion.div
@@ -1563,7 +1556,7 @@ export default function Comunidades() {
         )}
       </AnimatePresence>
 
-      {/* ✅ MODAL SUSPENDER / REACTIVAR */}
+      {/*MODAL SUSPENDER / REACTIVAR */}
       <AnimatePresence>
         {stateOpen && (
           <motion.div
@@ -1669,7 +1662,7 @@ export default function Comunidades() {
         )}
       </AnimatePresence>
 
-      {/* ✅ MODAL VER DETALLE COMUNIDAD (PRO + Suspender/Reactivar aquí) */}
+      {/*MODAL VER DETALLE COMUNIDAD (PRO + Suspender/Reactivar aquí) */}
       <AnimatePresence>
         {viewOpen && viewTarget && (
           <motion.div
@@ -1814,7 +1807,7 @@ export default function Comunidades() {
         )}
       </AnimatePresence>
 
-      {/* ✅ MODAL EXPORTACIÓN */}
+      {/*MODAL EXPORTACIÓN */}
       <AnimatePresence>
         {openExport && (
           <motion.div
